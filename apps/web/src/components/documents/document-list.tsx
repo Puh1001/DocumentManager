@@ -1,0 +1,102 @@
+'use client';
+
+import { formatFileSize, formatDate, getFileIcon } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Eye, Download, History, ExternalLink } from 'lucide-react';
+
+interface Document {
+  id: string;
+  name: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  updatedAt: string;
+}
+
+interface DocumentListProps {
+  documents: Document[];
+  onDocumentClick?: (doc: Document) => void;
+}
+
+export function DocumentList({ documents, onDocumentClick }: DocumentListProps) {
+  if (documents.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        Không có tài liệu trong thư mục này
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+              Tên tài liệu
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+              Loại
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+              Kích thước
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+              Cập nhật
+            </th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+              Thao tác
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map((doc) => (
+            <tr
+              key={doc.id}
+              className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => onDocumentClick?.(doc)}
+            >
+              <td className="py-3 px-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
+                  <div>
+                    <p className="font-medium">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="py-3 px-4">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted">
+                  {doc.fileType.toUpperCase()}
+                </span>
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatFileSize(doc.fileSize)}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatDate(doc.updatedAt)}
+              </td>
+              <td className="py-3 px-4">
+                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" title="Xem">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Tải xuống">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Mở để chỉnh sửa">
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Lịch sử phiên bản">
+                    <History className="h-4 w-4" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+

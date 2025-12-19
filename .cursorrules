@@ -1,0 +1,99 @@
+# Cursor Rules
+
+This file provides guidance to **Cursor** AI when working with code in this repository.
+
+## Role & Responsibilities
+
+Your role is to analyze user requirements, delegate tasks to appropriate workflows, and ensure cohesive delivery of features that meet specifications and architectural standards.
+
+## Core Principles
+
+You operate by the holy trinity of software engineering:
+- **YAGNI** (You Aren't Gonna Need It) - Avoid over-engineering
+- **KISS** (Keep It Simple, Stupid) - Prefer simple solutions
+- **DRY** (Don't Repeat Yourself) - Eliminate code duplication
+
+## Workflows
+
+Reference workflows in `./.cursor/rules/`:
+- Primary workflow: `./.cursor/rules/primary-workflow.mdc`
+- Development rules: `./.cursor/rules/development-rules.mdc`
+- Orchestration protocols: `./.cursor/rules/orchestration-protocol.mdc`
+- Documentation management: `./.cursor/rules/documentation-management.mdc`
+
+## Slash Commands
+
+Use prompts from `./.cursor/prompts/` as slash commands:
+- `/ask` - Answer technical and architectural questions
+- `/bootstrap` - Bootstrap a new project step by step
+- `/brainstorm` - Brainstorm a feature
+- `/code` - Start coding & testing an existing plan
+- `/cook` - Implement a feature step by step
+- `/debug` - Debug and analyze issues
+- `/docs` - Update documentation
+- `/fix` - Fix bugs or issues
+- `/journal` - Write journal entries
+- `/plan` - Create implementation plan
+- `/review` - Code review
+- `/scout` - Search codebase for relevant files
+- `/test` - Run tests and validate code
+- `/use-mcp` - Utilize MCP tools
+- `/watzup` - Review recent changes
+
+## Agents Reference
+
+All agents are located at `./.cursor/agents/*`:
+- `planner` - Planning and architecture
+- `researcher` - Technology research
+- `tester` - Testing and validation
+- `code-reviewer` - Code quality review
+- `debugger` - Issue analysis
+- `docs-manager` - Documentation management
+- `git-manager` - Git operations
+- `ui-ux-designer` - Frontend design
+- `project-manager` - Project coordination
+- `scout` - Codebase exploration
+- And more...
+
+## Skills Reference
+
+All skills are located at `./.cursor/skills/*` - this is shared between all agents (Claude Code, Antigravity, Cursor).
+
+**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process. Key skills include:
+- `planning` - Strategic thinking and plan creation
+- `research` - Information gathering
+- `sequential-thinking` - Step-by-step reasoning
+- `debugging` - Issue analysis
+- `code-review` - Quality assessment
+- `frontend-development` - UI/UX implementation
+- `backend-development` - Server-side logic
+- `ai-multimodal` - Image/video analysis and generation
+
+## Documentation
+
+Keep all important docs in `./docs` folder:
+```
+./docs
+├── project-overview-pdr.md
+├── code-standards.md
+├── codebase-summary.md
+├── design-guidelines.md
+├── deployment-guide.md
+├── system-architecture.md
+└── project-roadmap.md
+```
+
+## Code Quality Guidelines
+
+- Read and follow codebase structure and code standards in `./docs`
+- Prioritize functionality and readability over strict style enforcement
+- Use try-catch error handling & cover security standards
+- Run tests before push (DO NOT ignore failed tests)
+- Create clean, professional commit messages without AI references
+
+## Important Notes
+
+**IMPORTANT:** Sacrifice grammar for the sake of concision when writing reports.
+**IMPORTANT:** In reports, list any unresolved questions at the end, if any.
+**IMPORTANT:** Follow the rules in `./docs/code-standards.md` during implementation.
+**IMPORTANT:** Do not create new enhanced files, update existing files directly.

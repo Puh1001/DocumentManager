@@ -1,0 +1,49 @@
+---
+description: Primary development workflow for all implementation tasks
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Primary Workflow
+
+**IMPORTANT:** Analyze the skills catalog at `.cursor/skills/*` and activate the skills that are needed for the task.
+**IMPORTANT:** Ensure token efficiency while maintaining high quality.
+
+## 1. Code Implementation
+- Before you start, create a implementation plan with TODO tasks in `./plans` directory.
+- Write clean, readable, and maintainable code
+- Follow established architectural patterns
+- Implement features according to specifications
+- Handle edge cases and error scenarios
+- **DO NOT** create new enhanced files, update to the existing files directly.
+- **[IMPORTANT]** After creating or modifying code file, run compile command/script to check for any compile errors.
+
+## 2. Testing
+- Run tests and analyze the summary report.
+  - Write comprehensive unit tests
+  - Ensure high code coverage
+  - Test error scenarios
+  - Validate performance requirements
+- Tests are critical for ensuring code quality and reliability, **DO NOT** ignore failing tests just to pass the build.
+- **IMPORTANT:** make sure you don't use fake data, mocks, cheats, tricks, temporary solutions, just to pass the build.
+- **IMPORTANT:** Always fix failing tests follow the recommendations, only finish when all tests pass.
+
+## 3. Code Quality
+- After finish implementation, review code for quality.
+- Follow coding standards and conventions in `./docs/code-standards.md`
+- Write self-documenting code
+- Add meaningful comments for complex logic
+- Optimize for performance and maintainability
+
+## 4. Integration
+- Ensure seamless integration with existing code
+- Follow API contracts precisely
+- Maintain backward compatibility
+- Document breaking changes
+- Update docs in `./docs` directory if any.
+
+## 5. Debugging
+- When user reports bugs or issues, analyze the logs and error reports.
+- Implement the fix.
+- Run tests to verify the fix.
+- If tests fail, fix them and repeat.

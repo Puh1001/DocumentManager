@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: iso-docs-web
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: iso-docs-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/documents_db
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_EXPIRES=15m
+      - JWT_REFRESH_EXPIRES=7d
+      - SMB_SHARE_PATH=${SMB_SHARE_PATH}
+      - SMB_NETWORK_PATH=${SMB_NETWORK_PATH}
+      - CORS_ORIGIN=http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount the shared folder for direct access
+      - ${SMB_MOUNT_PATH:-/mnt/shared}:/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: iso-docs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: documents_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d documents_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
