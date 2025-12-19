@@ -34,7 +34,7 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - **CI/CD**: GitHub Actions
   - CI workflow: lint, type-check, test (API/Web), build
   - Docker workflow: build & push images lên GitHub Container Registry (GHCR)
-  - Security workflow: CodeQL + Dependency Review
+  - Security workflow: Dependency Review (CodeQL disabled for private repo; enable when public/GHAS)
   - Deploy workflow: staging & production (manual / tag `v*`)
   - Chi tiết: xem `.github/workflows/README.md`
 

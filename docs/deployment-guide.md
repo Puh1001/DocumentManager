@@ -378,7 +378,7 @@ docker-compose -f docker-compose.prod.yml exec api npx ts-node prisma/seed.ts
 - **Workflows**:
   - `ci.yml`: Lint, type-check, test (API/Web), build
   - `docker.yml`: Build & push Docker images lên GitHub Container Registry (GHCR)
-  - `security.yml`: CodeQL + dependency review
+  - `security.yml`: Dependency review (CodeQL disabled for private repo; enable when public/GHAS)
   - `deploy.yml`: Trigger deployment scripts (staging/production)
 
 Chi tiết hơn xem `.github/workflows/README.md`.

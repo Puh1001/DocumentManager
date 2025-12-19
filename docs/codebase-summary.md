@@ -207,6 +207,6 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Workflows**:
   - `ci.yml`: Lint, type-check, test (API/Web), build
   - `docker.yml`: Build & push Docker images lên GitHub Container Registry
-  - `security.yml`: CodeQL + dependency review
+  - `security.yml`: Dependency review (CodeQL disabled for private repo; enable when public/GHAS)
   - `deploy.yml`: Trigger deploy scripts cho staging / production
   - Documentation: `.github/workflows/README.md`
