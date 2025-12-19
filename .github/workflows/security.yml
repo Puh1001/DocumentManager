@@ -10,9 +10,13 @@ on:
     - cron: "0 0 * * 1"
 
 jobs:
+  # CodeQL Analysis - Disabled for private repos
+  # Code scanning is only available for public repos or repos with GitHub Advanced Security
+  # To enable: Set if: true or remove the if condition and enable code scanning in repo settings
   codeql-analysis:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
+    if: false # Disabled: Code scanning not available for private repos
     permissions:
       actions: read
       contents: read

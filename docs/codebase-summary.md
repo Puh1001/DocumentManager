@@ -88,6 +88,17 @@ src/
 └── utils/       # Shared utilities
 ```
 
+### `.github/workflows` - CI/CD
+
+```
+.github/workflows/
+├── ci.yml        # Lint, type-check, test, build
+├── docker.yml    # Docker build & push to GHCR
+├── security.yml  # CodeQL + dependency review
+├── deploy.yml    # Staging & production deploy hooks
+└── README.md     # CI/CD documentation
+```
+
 ## Key Features
 
 ### 1. Authentication
@@ -189,3 +200,13 @@ npm run dev
 # Production
 docker-compose -f docker-compose.prod.yml up -d
 ```
+
+## CI/CD Pipelines
+
+- **Platform**: GitHub Actions
+- **Workflows**:
+  - `ci.yml`: Lint, type-check, test (API/Web), build
+  - `docker.yml`: Build & push Docker images lên GitHub Container Registry
+  - `security.yml`: CodeQL + dependency review
+  - `deploy.yml`: Trigger deploy scripts cho staging / production
+  - Documentation: `.github/workflows/README.md`

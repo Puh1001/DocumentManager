@@ -7,7 +7,7 @@
 
 ## Overview
 
-This guide covers deployment of ISO Document Management System to production environment using Docker.
+This guide covers deployment of ISO Document Management System to production environment using Docker and how it integrates with GitHub Actions CI/CD.
 
 ## Prerequisites
 
@@ -369,6 +369,33 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma db push
 # Seed initial data (optional)
 docker-compose -f docker-compose.prod.yml exec api npx ts-node prisma/seed.ts
 ```
+
+## CI/CD Integration (GitHub Actions)
+
+### Workflows Overview
+
+- **Location**: `.github/workflows`
+- **Workflows**:
+  - `ci.yml`: Lint, type-check, test (API/Web), build
+  - `docker.yml`: Build & push Docker images lên GitHub Container Registry (GHCR)
+  - `security.yml`: CodeQL + dependency review
+  - `deploy.yml`: Trigger deployment scripts (staging/production)
+
+Chi tiết hơn xem `.github/workflows/README.md`.
+
+### Typical Deployment Flow
+
+1. Developer push code lên `main` hoặc tạo tag `v*`
+2. GitHub Actions:
+   - Chạy CI (lint, type-check, test, build)
+   - Build & push images lên GHCR (`docker.yml`)
+   - Chạy security checks (`security.yml`)
+3. Trên server production:
+   - Pull images mới (nếu dùng GHCR) **hoặc** rebuild trực tiếp bằng `docker-compose.prod.yml`
+   - Chạy `docker-compose -f docker-compose.prod.yml up -d --build`
+   - Chạy migrations: `docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy`
+
+> Lưu ý: hiện tại file `deploy.yml` chỉ trigger shell scripts, bạn có thể nối nó với SSH deploy, Kubernetes, hay các công cụ khác tùy hạ tầng thực tế.
 
 ### 4. Verify Deployment
 

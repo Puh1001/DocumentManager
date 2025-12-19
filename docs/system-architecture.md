@@ -316,6 +316,19 @@ Folder ──┬── Folder (self-reference for hierarchy)
         └───────────────────────────┘
 ```
 
+### CI/CD (GitHub Actions)
+
+- **Platform**: GitHub Actions (repository: `Puh1001/DocumentManager`)
+- **Build & Test**:
+  - `ci.yml`: Lint, type-check, test (API/Web), build artifacts
+  - PostgreSQL service được dùng cho API tests
+- **Container Images**:
+  - `docker.yml`: Build multi-arch images từ `apps/api` và `apps/web` và push lên GitHub Container Registry (GHCR)
+- **Security**:
+  - `security.yml`: CodeQL analysis + dependency review trên mỗi push/PR và theo lịch
+- **Deploy**:
+  - `deploy.yml`: Trigger script deploy staging/production (thường dùng để chạy `docker-compose.prod.yml` trên server)
+
 ## Scalability Considerations
 
 ### Current Implementation

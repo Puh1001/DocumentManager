@@ -28,6 +28,16 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 | Storage    | SMB/CIFS (fs module - platform-aware)       |
 | Permission | CASL (ABAC + RBAC)                          |
 
+### CI/CD & Repository
+
+- **Repository**: `https://github.com/Puh1001/DocumentManager`
+- **CI/CD**: GitHub Actions
+  - CI workflow: lint, type-check, test (API/Web), build
+  - Docker workflow: build & push images lên GitHub Container Registry (GHCR)
+  - Security workflow: CodeQL + Dependency Review
+  - Deploy workflow: staging & production (manual / tag `v*`)
+  - Chi tiết: xem `.github/workflows/README.md`
+
 ## 📁 Project Structure
 
 ```

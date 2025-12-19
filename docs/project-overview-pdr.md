@@ -100,6 +100,7 @@ Xây dựng web-based document management system:
 - **Authorization:** CASL (planned for Phase 4)
 - **Monorepo:** Turborepo
 - **Container:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions (CI, Docker build, security scan, deploy)
 
 ## Success Metrics
 

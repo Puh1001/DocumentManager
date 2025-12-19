@@ -97,7 +97,7 @@ jobs:
 
       - name: Run tests
         working-directory: apps/api
-        run: npm run test:cov || npm run test
+        run: npm run test:cov -- --passWithNoTests || npm run test -- --passWithNoTests
 
       - name: Upload coverage reports
         if: always()

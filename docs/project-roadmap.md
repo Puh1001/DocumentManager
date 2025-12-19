@@ -234,13 +234,14 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [ ] Production Docker setup
 - [ ] Environment configuration
 - [ ] Deployment documentation
+- [x] CI/CD pipeline (GitHub Actions: CI, Docker, Security, Deploy)
 
 ### Deliverables
 
 - Test suite (>80% coverage)
 - Production deployment
 - Documentation
-- CI/CD pipeline
+- CI/CD pipeline (GitHub Actions workflows)
 
 ---
 
