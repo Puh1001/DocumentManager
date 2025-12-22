@@ -28,13 +28,13 @@ model User {
   sessions          Session[]
   documentVersions  DocumentVersion[]
   auditLogs         AuditLog[]
-  folderPermissions FolderPermission[]  @relation("UserFolderPermissions")
+  folderPermissions FolderPermission[]   @relation("UserFolderPermissions")
   docPermissions    DocumentPermission[] @relation("UserDocumentPermissions")
 
-  @@map("users")
   @@index([username])
   @@index([email])
   @@index([department])
+  @@map("users")
 }
 
 model Role {
@@ -46,7 +46,7 @@ model Role {
   // Relations
   users             UserRole[]
   permissions       RolePermission[]
-  folderPermissions FolderPermission[] @relation("RoleFolderPermissions")
+  folderPermissions FolderPermission[]   @relation("RoleFolderPermissions")
   docPermissions    DocumentPermission[] @relation("RoleDocumentPermissions")
 
   @@map("roles")
@@ -75,9 +75,9 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sessions")
   @@index([userId])
   @@index([expiresAt])
+  @@map("sessions")
 }
 
 // =====================
@@ -130,34 +130,37 @@ model Folder {
   documents   Document[]
   permissions FolderPermission[]
 
-  @@map("folders")
   @@index([parentId])
   @@index([path])
   @@index([deletedAt])
+  @@map("folders")
 }
 
 model Document {
-  id        String         @id @default(uuid())
-  name      String // Display name
-  fileName  String         @map("file_name") // Original filename
-  fileType  String         @map("file_type") // pdf, docx, xlsx, etc.
-  fileSize  Int            @map("file_size") // bytes
-  filePath  String         @map("file_path") // SMB path to current version
-  checksum  String // SHA-256 for integrity
-  folderId  String         @map("folder_id")
-  status    DocumentStatus @default(ACTIVE)
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
+  id             String         @id @default(uuid())
+  name           String // Display name
+  fileName       String         @map("file_name") // Original filename
+  fileType       String         @map("file_type") // pdf, docx, xlsx, etc.
+  mimeType       String?        @map("mime_type") // MIME type (e.g., application/pdf)
+  fileSize       Int            @map("file_size") // bytes
+  filePath       String         @map("file_path") // SMB path to current version
+  checksum       String // SHA-256 for integrity
+  fileCreatedAt  DateTime?      @map("file_created_at") // File creation date from file system
+  fileModifiedAt DateTime?      @map("file_modified_at") // File modification date from file system
+  folderId       String         @map("folder_id")
+  status         DocumentStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
   // Relations
   folder      Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
   versions    DocumentVersion[]
   permissions DocumentPermission[]
 
-  @@map("documents")
   @@index([folderId])
   @@index([status])
   @@index([fileType])
+  @@map("documents")
 }
 
 enum DocumentStatus {
@@ -186,8 +189,8 @@ model DocumentVersion {
   user     User     @relation(fields: [createdBy], references: [id])
 
   @@unique([documentId, version])
-  @@map("document_versions")
   @@index([documentId])
+  @@map("document_versions")
 }
 
 // =====================
@@ -210,9 +213,9 @@ model FolderPermission {
   role Role? @relation("RoleFolderPermissions", fields: [subjectId], references: [id], map: "folder_perm_role_fk")
 
   @@unique([folderId, subjectType, subjectId, permissionId])
-  @@map("folder_permissions")
   @@index([folderId])
   @@index([subjectId])
+  @@map("folder_permissions")
 }
 
 model DocumentPermission {
@@ -230,9 +233,9 @@ model DocumentPermission {
   role Role? @relation("RoleDocumentPermissions", fields: [subjectId], references: [id], map: "doc_perm_role_fk")
 
   @@unique([documentId, subjectType, subjectId, permissionId])
-  @@map("document_permissions")
   @@index([documentId])
   @@index([subjectId])
+  @@map("document_permissions")
 }
 
 enum SubjectType {
@@ -257,10 +260,9 @@ model AuditLog {
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@map("audit_logs")
   @@index([userId])
   @@index([action])
   @@index([resourceType, resourceId])
   @@index([createdAt])
+  @@map("audit_logs")
 }
-

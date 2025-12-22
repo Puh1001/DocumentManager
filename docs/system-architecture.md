@@ -88,12 +88,16 @@ apps/api/
 │       ├── SMB Service (fs module - platform-aware)
 │       ├── Folder Service (CRUD, tree, soft delete)
 │       ├── Folder Sync Service (two-pass sync with soft delete)
-│       ├── Document Service (CRUD, streaming, counts)
+│       ├── Folder Watcher Service (chokidar file system watcher)
+│       ├── Sync Scheduler Service (automated cron sync)
+│       ├── Document Service (CRUD, streaming, counts, metadata)
 │       ├── Version Service (history, restore)
 │       ├── Local Edit Service (network paths)
 │       ├── Stats Service (dashboard statistics)
 │       ├── Checksum Util (SHA-256 calculation)
-│       └── System User Util (automated operations)
+│       ├── System User Util (automated operations)
+│       └── Gateways
+│           └── Folder Sync Gateway (WebSocket real-time updates)
 │
 └── Common
     ├── Prisma Service (database)

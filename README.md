@@ -203,17 +203,20 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 
 ## 📊 Current Status
 
-**Phase 1-3 In Progress (40%)**
+**Phase 1-3 Complete (60%)**
 
 - ✅ Project setup & infrastructure
 - ✅ Authentication & user management
-- 🔄 Storage & file management (In Progress)
+- ✅ Storage & file management (Complete)
   - ✅ SMB integration
   - ✅ Folder CRUD operations
   - ✅ Document upload/download
   - ✅ File system sync (two-pass with soft delete)
   - ✅ Dashboard statistics API
-  - 🔲 Real-time sync (WebSocket)
+  - ✅ Upload progress tracking
+  - ✅ Enhanced metadata extraction (dates, MIME type)
+  - ✅ Real-time sync (WebSocket)
+  - ✅ Automated sync scheduling
 - 🔲 Authorization (RBAC + ABAC)
 - 🔲 Document viewer & security
 - 🔲 Version control

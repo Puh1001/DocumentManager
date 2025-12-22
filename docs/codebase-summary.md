@@ -112,13 +112,16 @@ src/
 
 - SMB shared folder integration
 - Folder tree navigation
-- Document upload/download
+- Document upload/download with **progress tracking**
 - File streaming for viewer
 - **Two-pass file system sync**:
   - Pass 1: Scan & update (create/update folders & documents)
   - Pass 2: Cleanup orphans (soft delete missing files/folders)
 - **Soft delete** for folders (preserves history)
 - **Checksum verification** (SHA-256) for file integrity
+- **Enhanced metadata extraction** (file dates, MIME type)
+- **Real-time sync** (WebSocket + file watcher)
+- **Automated sync scheduling** (cron jobs)
 - **Dashboard statistics** (total documents, folders, users, recent uploads)
 
 ### 3. Version Control

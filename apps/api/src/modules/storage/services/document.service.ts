@@ -65,15 +65,24 @@ export class DocumentService {
       .update(file.buffer)
       .digest("hex");
 
+    // Extract MIME type
+    const mimeType = this.getMimeType(fileType);
+
+    // File dates (from upload time, will be updated after file save)
+    const now = new Date();
+
     // Create document entry
     const document = await (this.prisma as PrismaClientLike).document.create({
       data: {
         name: documentName,
         fileName,
         fileType,
+        mimeType,
         fileSize: file.size,
         filePath: "", // Will be updated after file save
         checksum,
+        fileCreatedAt: now,
+        fileModifiedAt: now,
         folderId,
       },
     });
@@ -86,11 +95,24 @@ export class DocumentService {
       "Initial upload"
     );
 
-    // Update document with current file path
-    await (this.prisma as PrismaClientLike).document.update({
-      where: { id: document.id },
-      data: { filePath: version.filePath },
-    });
+    // Get file stats from saved file to extract actual file dates
+    try {
+      const stats = await this.smbService.getFileStats(version.filePath);
+      await (this.prisma as PrismaClientLike).document.update({
+        where: { id: document.id },
+        data: {
+          filePath: version.filePath,
+          fileCreatedAt: stats.birthtime,
+          fileModifiedAt: stats.mtime,
+        },
+      });
+    } catch (error) {
+      // If stats unavailable, just update filePath
+      await (this.prisma as PrismaClientLike).document.update({
+        where: { id: document.id },
+        data: { filePath: version.filePath },
+      });
+    }
 
     return this.findById(document.id);
   }

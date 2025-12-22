@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { FolderTree } from "@/components/documents/folder-tree";
 import { DocumentList } from "@/components/documents/document-list";
 import { DocumentToolbar } from "@/components/documents/document-toolbar";
+import { UploadProgress } from "@/components/documents/upload-progress";
 import { Card } from "@/components/ui/card";
+import { useFolderSync } from "@/hooks/use-folder-sync";
 
 interface Folder {
   id: string;
@@ -25,24 +27,28 @@ interface Document {
   updatedAt: string;
 }
 
+interface UploadProgress {
+  percentage: number;
+  speed: number;
+  eta: number;
+}
+
 export default function DocumentsPage() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(
+    null
+  );
+  const [uploadFileName, setUploadFileName] = useState<string>("");
+  const [uploadAbortController, setUploadAbortController] = useState<{
+    abort: () => void;
+  } | null>(null);
 
-  useEffect(() => {
-    loadFolderTree();
-  }, []);
-
-  useEffect(() => {
-    if (selectedFolderId) {
-      loadFolderContents(selectedFolderId);
-    }
-  }, [selectedFolderId]);
-
-  const loadFolderTree = async () => {
+  const loadFolderTree = useCallback(async () => {
     try {
       const tree = await api.get<Folder[]>("/storage/folders/tree");
       setFolders(tree || []);
@@ -57,9 +63,9 @@ export default function DocumentsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadFolderContents = async (folderId: string) => {
+  const loadFolderContents = useCallback(async (folderId: string) => {
     try {
       const folder = await api.get<Folder>(`/storage/folders/${folderId}`);
       setSelectedFolder(folder);
@@ -67,7 +73,64 @@ export default function DocumentsPage() {
     } catch (error) {
       console.error("Failed to load folder contents:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadFolderTree();
+  }, [loadFolderTree]);
+
+  useEffect(() => {
+    if (selectedFolderId) {
+      loadFolderContents(selectedFolderId);
+    }
+  }, [selectedFolderId, loadFolderContents]);
+
+  // Real-time sync with WebSocket
+  const handleSyncEvent = useCallback(
+    (event: {
+      type: string;
+      folderId?: string;
+      documentId?: string;
+      data?: unknown;
+    }) => {
+      // Refresh folder tree on any sync event
+      if (
+        event.type === "folder_added" ||
+        event.type === "folder_updated" ||
+        event.type === "folder_deleted" ||
+        event.type === "sync_completed"
+      ) {
+        loadFolderTree();
+      }
+
+      // Refresh folder contents if event affects current folder
+      if (selectedFolderId) {
+        // If event has folderId, only refresh if it matches selected folder
+        // Otherwise, refresh for any document_* event (fallback for events without folderId)
+        if (
+          event.folderId === selectedFolderId ||
+          (!event.folderId &&
+            (event.type === "document_added" ||
+              event.type === "document_updated" ||
+              event.type === "document_deleted"))
+        ) {
+          console.log(
+            `Refreshing folder ${selectedFolderId} due to event:`,
+            event.type,
+            event.folderId ? `(folderId: ${event.folderId})` : "(no folderId)"
+          );
+          loadFolderContents(selectedFolderId);
+        }
+      }
+    },
+    [selectedFolderId, loadFolderTree, loadFolderContents]
+  );
+
+  useFolderSync({
+    onSyncEvent: handleSyncEvent,
+    folderId: selectedFolderId || undefined,
+    enabled: true,
+  });
 
   const handleFolderSelect = (folderId: string) => {
     setSelectedFolderId(folderId);
@@ -76,14 +139,50 @@ export default function DocumentsPage() {
   const handleUpload = async (file: File) => {
     if (!selectedFolderId) return;
 
+    setUploading(true);
+    setUploadFileName(file.name);
+    setUploadProgress({ percentage: 0, speed: 0, eta: 0 });
+
+    const { promise, abort } = api.uploadWithProgress(
+      "/storage/documents/upload",
+      file,
+      { folderId: selectedFolderId },
+      (progress) => {
+        setUploadProgress({
+          percentage: progress.percentage,
+          speed: progress.speed,
+          eta: progress.eta,
+        });
+      }
+    );
+
+    setUploadAbortController({ abort } as AbortController);
+
     try {
-      await api.upload("/storage/documents/upload", file, {
-        folderId: selectedFolderId,
-      });
+      await promise;
+      setUploading(false);
+      setUploadProgress(null);
+      setUploadFileName("");
       loadFolderContents(selectedFolderId);
     } catch (error) {
       console.error("Upload failed:", error);
+      setUploading(false);
+      setUploadProgress(null);
+      setUploadFileName("");
+      if (error instanceof Error && error.message !== "Upload cancelled") {
+        alert(error.message);
+      }
     }
+  };
+
+  const handleCancelUpload = () => {
+    if (uploadAbortController && "abort" in uploadAbortController) {
+      (uploadAbortController as { abort: () => void }).abort();
+    }
+    setUploading(false);
+    setUploadProgress(null);
+    setUploadFileName("");
+    setUploadAbortController(null);
   };
 
   const handleSync = async () => {
@@ -155,6 +254,18 @@ export default function DocumentsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Upload Progress Dialog */}
+      {uploading && uploadProgress && (
+        <UploadProgress
+          open={uploading}
+          fileName={uploadFileName}
+          percentage={uploadProgress.percentage}
+          speed={uploadProgress.speed}
+          eta={uploadProgress.eta}
+          onCancel={handleCancelUpload}
+        />
+      )}
     </div>
   );
 }
