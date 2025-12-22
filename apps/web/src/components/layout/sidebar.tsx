@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   FileText,
@@ -10,15 +10,15 @@ import {
   Settings,
   Shield,
   FolderOpen,
-} from 'lucide-react';
+} from "lucide-react";
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Tài liệu', href: '/dashboard/documents', icon: FileText },
-  { name: 'Phòng ban', href: '/dashboard/departments', icon: FolderOpen },
-  { name: 'Người dùng', href: '/dashboard/users', icon: Users },
-  { name: 'Phân quyền', href: '/dashboard/permissions', icon: Shield },
-  { name: 'Cài đặt', href: '/dashboard/settings', icon: Settings },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Tài liệu", href: "/dashboard/documents", icon: FileText },
+  { name: "Phòng ban", href: "/dashboard/departments", icon: FolderOpen },
+  { name: "Người dùng", href: "/dashboard/users", icon: Users },
+  { name: "Phân quyền", href: "/dashboard/permissions", icon: Shield },
+  { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -34,7 +34,9 @@ export function Sidebar() {
           </div>
           <div>
             <span className="font-bold text-lg">ISO Docs</span>
-            <span className="block text-xs text-muted-foreground">Document Manager</span>
+            <span className="block text-xs text-muted-foreground">
+              Document Manager
+            </span>
           </div>
         </div>
 
@@ -42,19 +44,31 @@ export function Sidebar() {
         <nav className="flex flex-1 flex-col">
           <ul role="list" className="flex flex-1 flex-col gap-y-1">
             {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              // Fix: Dashboard should only match exactly, others match with startsWith
+              // This prevents both Dashboard and child routes from being active simultaneously
+              const isActive =
+                item.href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+
               return (
                 <li key={item.name}>
                   <Link
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      "flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out",
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <item.icon className="h-5 w-5 shrink-0" />
+                    <item.icon
+                      className={cn(
+                        "h-5 w-5 shrink-0 transition-transform duration-200",
+                        isActive && "scale-105"
+                      )}
+                    />
                     {item.name}
                   </Link>
                 </li>
@@ -66,4 +80,3 @@ export function Sidebar() {
     </aside>
   );
 }
-

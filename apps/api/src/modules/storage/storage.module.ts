@@ -7,6 +7,9 @@ import { DocumentService } from "./services/document.service";
 import { VersionService } from "./services/version.service";
 import { LocalEditService } from "./services/local-edit.service";
 import { StatsService } from "./services/stats.service";
+import { DocumentSyncHandler } from "./handlers/document-sync.handler";
+import { FolderSyncHandler } from "./handlers/folder-sync.handler";
+import { SyncDeletionHandler } from "./handlers/sync-deletion.handler";
 import { FolderController } from "./controllers/folder.controller";
 import { DocumentController } from "./controllers/document.controller";
 import { StatsController } from "./controllers/stats.controller";
@@ -23,6 +26,9 @@ import { UsersModule } from "@/modules/users/users.module";
     VersionService,
     LocalEditService,
     StatsService,
+    DocumentSyncHandler,
+    FolderSyncHandler,
+    SyncDeletionHandler,
   ],
   exports: [
     SmbService,
