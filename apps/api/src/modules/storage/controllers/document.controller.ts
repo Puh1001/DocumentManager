@@ -43,6 +43,15 @@ export class DocumentController {
     private readonly localEditService: LocalEditService
   ) {}
 
+  @Get("search")
+  @ApiOperation({ summary: "Search documents" })
+  async search(
+    @Query("q") query: string,
+    @Query("folderId") folderId?: string
+  ) {
+    return this.documentService.search(query, folderId);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get document by ID" })
   async findOne(@Param("id") id: string) {
@@ -128,15 +137,6 @@ export class DocumentController {
   async getOpenPath(@Param("id") id: string): Promise<OpenPathResponse> {
     const document = await this.documentService.findById(id);
     return this.localEditService.getOpenFilePath(document.filePath);
-  }
-
-  @Get("search")
-  @ApiOperation({ summary: "Search documents" })
-  async search(
-    @Query("q") query: string,
-    @Query("folderId") folderId?: string
-  ) {
-    return this.documentService.search(query, folderId);
   }
 
   // Version endpoints
