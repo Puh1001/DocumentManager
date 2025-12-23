@@ -36,22 +36,3 @@ api:
   depends_on:
     postgres:
       condition: service_healthy
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: iso-docs-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: documents_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d documents_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
