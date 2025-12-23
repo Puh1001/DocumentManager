@@ -1,10 +1,13 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
-# Build deps for native modules (e.g. canvas)
-RUN apk add --no-cache python3 make g++ cairo-dev pango-dev jpeg-dev giflib-dev pixman-dev
+# Build deps cho native modules (canvas, v.v.)
+RUN apt-get update && apt-get install -y \
+  python3 make g++ \
+  libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -26,14 +29,11 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS runner
-
-# Runtime deps for native modules (e.g. canvas)
-RUN apk add --no-cache libc6-compat cairo pango jpeg giflib
+FROM node:20 AS runner
 
 WORKDIR /app
 
-# Copy package files and install production deps
+# Copy package files và cài production deps
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 RUN npm ci --only=production
