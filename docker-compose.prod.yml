@@ -1,42 +1,41 @@
 version: "3.8"
 
-services:
-  web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    container_name: iso-docs-web
-    restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api:3001
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
+services:web:
+  build:
+    context: .
+    dockerfile: apps/web/Dockerfile
+  container_name: iso-docs-web
+  restart: unless-stopped
+  environment:
+    - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+  ports:
+    - "${WEB_PORT}:3000"
+  depends_on:
+    - api
 
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: iso-docs-api
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/documents_db
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ACCESS_EXPIRES=15m
-      - JWT_REFRESH_EXPIRES=7d
-      - SMB_SHARE_PATH=${SMB_SHARE_PATH}
-      - SMB_NETWORK_PATH=${SMB_NETWORK_PATH}
-      - CORS_ORIGIN=http://localhost:3000
-    ports:
-      - "3001:3001"
-    volumes:
-      # Mount the shared folder for direct access
-      - ${SMB_MOUNT_PATH:-/mnt/shared}:/shared
-    depends_on:
-      postgres:
-        condition: service_healthy
+api:
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  container_name: iso-docs-api
+  restart: unless-stopped
+  environment:
+    - NODE_ENV=${NODE_ENV}
+    - DATABASE_URL=${DATABASE_URL}
+    - JWT_SECRET=${JWT_SECRET}
+    - JWT_ACCESS_EXPIRES=${JWT_ACCESS_EXPIRES}
+    - JWT_REFRESH_EXPIRES=${JWT_REFRESH_EXPIRES}
+    - SMB_MOUNT_PATH=${SMB_MOUNT_PATH}
+    - SMB_BASE_PATH=${SMB_BASE_PATH}
+    - SMB_NETWORK_PATH=${SMB_NETWORK_PATH}
+    - CORS_ORIGIN=${CORS_ORIGIN}
+  ports:
+    - "${API_PORT}:3001"
+  volumes:
+    - ${SMB_MOUNT_PATH_HOST}:/shared
+  depends_on:
+    postgres:
+      condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
@@ -56,4 +55,3 @@ services:
 
 volumes:
   postgres_data:
-
