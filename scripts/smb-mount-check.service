@@ -1,8 +1,0 @@
-[Unit]
-Description=Check SMB Mount Health
-After=smb-mount.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/check-smb-mount.sh
-
