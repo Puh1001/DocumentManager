@@ -43,6 +43,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Entry point inside standalone bundle
-CMD ["node", "apps/web/server.js"]
+# Entry point inside standalone bundle (server.js is placed at /app by Next.js standalone output)
+CMD ["node", "server.js"]
 
