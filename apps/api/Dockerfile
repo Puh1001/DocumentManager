@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build deps for native modules (e.g. canvas)
+RUN apk add --no-cache python3 make g++ cairo-dev pango-dev jpeg-dev giflib-dev pixman-dev
+
 # Copy package files
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
@@ -24,6 +27,9 @@ RUN npm run build
 
 # Production stage
 FROM node:20-alpine AS runner
+
+# Runtime deps for native modules (e.g. canvas)
+RUN apk add --no-cache libc6-compat cairo pango jpeg giflib
 
 WORKDIR /app
 
