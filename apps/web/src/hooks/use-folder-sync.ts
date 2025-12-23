@@ -29,11 +29,17 @@ function getWebSocketUrl(): string {
     return "http://localhost:3001/storage";
   }
 
-  // Try to get from env, fallback to extracting from current origin or default
+  // Ưu tiên cấu hình tường minh qua NEXT_PUBLIC_WS_URL
+  const explicitWs = process.env.NEXT_PUBLIC_WS_URL;
+  if (explicitWs) {
+    return explicitWs.replace(/[/:]+$/, "") + "/storage";
+  }
+
+  // Fallback: dùng API URL và chuyển http -> ws
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (apiUrl) {
-    // Convert http:// to ws:// or https:// to wss://
-    const wsUrl = apiUrl.replace(/^http/, "ws");
+    const normalized = apiUrl.replace(/[/:]+$/, "");
+    const wsUrl = normalized.replace(/^http/, "ws");
     return `${wsUrl}/storage`;
   }
 
