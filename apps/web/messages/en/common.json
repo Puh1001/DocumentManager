@@ -10,7 +10,8 @@
     "departments": "Departments",
     "users": "Users",
     "permissions": "Permissions",
-    "settings": "Settings"
+    "settings": "Settings",
+    "maintenance": "Maintenance"
   },
   "actions": {
     "view": "View",

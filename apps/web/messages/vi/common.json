@@ -10,7 +10,8 @@
     "departments": "Phòng ban",
     "users": "Người dùng",
     "permissions": "Phân quyền",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "maintenance": "Bảo trì"
   },
   "actions": {
     "view": "Xem",

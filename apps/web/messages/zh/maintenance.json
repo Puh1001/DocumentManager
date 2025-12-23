@@ -1,0 +1,23 @@
+{
+  "pageTitle": "维护",
+  "pageDescription": "发布设备维护时间，让团队提前做好准备。",
+  "form": {
+    "sectionTitle": "创建维护公告",
+    "titleLabel": "标题",
+    "startLabel": "开始日期",
+    "endLabel": "结束日期",
+    "detailsLabel": "详情 / 影响",
+    "helper": "简要说明影响范围和预计完成时间。",
+    "submit": "发布公告",
+    "validationRequired": "请填写标题及开始/结束日期。",
+    "validationDate": "结束日期必须与开始日期相同或在之后。"
+  },
+  "list": {
+    "sectionTitle": "维护计划",
+    "empty": "暂无维护公告。",
+    "windowLabel": "时间"
+  },
+  "toast": {
+    "saved": "已添加维护公告。"
+  }
+}

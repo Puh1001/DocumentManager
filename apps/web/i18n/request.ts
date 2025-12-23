@@ -14,16 +14,25 @@ export default getRequestConfig(async ({ requestLocale }) => {
   }
 
   // Load all message files for the locale
-  const [common, auth, dashboard, documents, departments, errors, kpi] =
-    await Promise.all([
-      import(`../messages/${locale}/common.json`),
-      import(`../messages/${locale}/auth.json`),
-      import(`../messages/${locale}/dashboard.json`),
-      import(`../messages/${locale}/documents.json`),
-      import(`../messages/${locale}/departments.json`),
-      import(`../messages/${locale}/errors.json`),
-      import(`../messages/${locale}/kpi.json`),
-    ]);
+  const [
+    common,
+    auth,
+    dashboard,
+    documents,
+    departments,
+    errors,
+    kpi,
+    maintenance,
+  ] = await Promise.all([
+    import(`../messages/${locale}/common.json`),
+    import(`../messages/${locale}/auth.json`),
+    import(`../messages/${locale}/dashboard.json`),
+    import(`../messages/${locale}/documents.json`),
+    import(`../messages/${locale}/departments.json`),
+    import(`../messages/${locale}/errors.json`),
+    import(`../messages/${locale}/kpi.json`),
+    import(`../messages/${locale}/maintenance.json`),
+  ]);
 
   return {
     locale,
@@ -35,6 +44,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       departments: departments.default,
       errors: errors.default,
       kpi: kpi.default,
+      maintenance: maintenance.default,
     },
   };
 });

@@ -11,6 +11,9 @@
     "recentDocuments": "Tài liệu gần đây",
     "recentDocumentsDescription": "Danh sách tài liệu được cập nhật gần đây sẽ hiển thị ở đây.",
     "activity": "Hoạt động",
-    "activityDescription": "Lịch sử hoạt động của hệ thống sẽ hiển thị ở đây."
+    "activityDescription": "Lịch sử hoạt động của hệ thống sẽ hiển thị ở đây.",
+    "maintenance": "Lịch bảo trì",
+    "maintenanceDescription": "Các đợt bảo trì sắp tới sẽ hiển thị để mọi người chuẩn bị.",
+    "noMaintenance": "Chưa có thông báo bảo trì."
   }
 }

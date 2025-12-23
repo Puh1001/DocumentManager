@@ -12,6 +12,7 @@ import {
   Shield,
   FolderOpen,
   BarChart2,
+  Wrench,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -41,6 +42,11 @@ export function Sidebar() {
       name: t("navigation.permissions"),
       href: "/dashboard/permissions",
       icon: Shield,
+    },
+    {
+      name: t("navigation.maintenance"),
+      href: "/dashboard/maintenance",
+      icon: Wrench,
     },
     {
       name: t("navigation.settings"),

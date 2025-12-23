@@ -11,6 +11,9 @@
     "recentDocuments": "最近文档",
     "recentDocumentsDescription": "最近更新的文档列表将显示在这里。",
     "activity": "活动",
-    "activityDescription": "系统活动历史将显示在这里。"
+    "activityDescription": "系统活动历史将显示在这里。",
+    "maintenance": "维护计划",
+    "maintenanceDescription": "即将到来的维护窗口会显示在这里，方便大家提前安排。",
+    "noMaintenance": "暂无维护公告。"
   }
 }

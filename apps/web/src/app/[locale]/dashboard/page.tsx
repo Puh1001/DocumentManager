@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Folder, Users, Clock } from "lucide-react";
+import { FileText, Folder, Users, Clock, CalendarDays } from "lucide-react";
 import { api } from "@/lib/api";
+import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
 
 interface Stats {
   totalDocuments: number;
@@ -13,14 +14,28 @@ interface Stats {
   recentUploads: number;
 }
 
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
+  const { notices } = useMaintenanceNotices();
   const [stats, setStats] = useState<Stats>({
     totalDocuments: 0,
     totalFolders: 0,
     totalUsers: 0,
     recentUploads: 0,
   });
+  const upcomingNotices = useMemo(
+    () =>
+      [...notices]
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+        .slice(0, 3),
+    [notices]
+  );
 
   useEffect(() => {
     const loadStats = async () => {
@@ -97,7 +112,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -119,6 +134,45 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">
               {t("sections.activityDescription")}
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              {t("sections.maintenance")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("sections.maintenanceDescription")}
+            </p>
+            {upcomingNotices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("sections.noMaintenance")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingNotices.map((notice) => (
+                  <div
+                    key={notice.id}
+                    className="rounded-lg border border-border p-3"
+                  >
+                    <p className="text-sm font-semibold">{notice.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(notice.startDate)} -{" "}
+                      {formatDate(notice.endDate)}
+                    </p>
+                    {notice.description ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {notice.description}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

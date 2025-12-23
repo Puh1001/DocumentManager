@@ -1,0 +1,23 @@
+{
+  "pageTitle": "Maintenance",
+  "pageDescription": "Publish equipment maintenance windows so teams can prepare.",
+  "form": {
+    "sectionTitle": "Create maintenance notice",
+    "titleLabel": "Title",
+    "startLabel": "Start date",
+    "endLabel": "End date",
+    "detailsLabel": "Details / impact",
+    "helper": "Keep it short: what is impacted and when it will finish.",
+    "submit": "Publish notice",
+    "validationRequired": "Please provide a title and both dates.",
+    "validationDate": "End date must be the same or after start date."
+  },
+  "list": {
+    "sectionTitle": "Maintenance schedule",
+    "empty": "No maintenance notices yet.",
+    "windowLabel": "Window"
+  },
+  "toast": {
+    "saved": "Maintenance notice added."
+  }
+}

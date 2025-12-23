@@ -11,6 +11,9 @@
     "recentDocuments": "Recent Documents",
     "recentDocumentsDescription": "List of recently updated documents will be displayed here.",
     "activity": "Activity",
-    "activityDescription": "System activity history will be displayed here."
+    "activityDescription": "System activity history will be displayed here.",
+    "maintenance": "Maintenance Schedule",
+    "maintenanceDescription": "Upcoming maintenance windows will appear here so everyone can prepare.",
+    "noMaintenance": "No maintenance notices yet."
   }
 }

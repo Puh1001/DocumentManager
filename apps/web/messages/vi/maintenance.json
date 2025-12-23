@@ -1,0 +1,23 @@
+{
+  "pageTitle": "Bảo trì",
+  "pageDescription": "Công bố lịch bảo trì thiết bị để mọi người chủ động chuẩn bị.",
+  "form": {
+    "sectionTitle": "Tạo thông báo bảo trì",
+    "titleLabel": "Tiêu đề",
+    "startLabel": "Ngày bắt đầu",
+    "endLabel": "Ngày kết thúc",
+    "detailsLabel": "Chi tiết / ảnh hưởng",
+    "helper": "Ghi ngắn gọn: ảnh hưởng gì và khi nào hoàn tất.",
+    "submit": "Đăng thông báo",
+    "validationRequired": "Vui lòng nhập tiêu đề và đủ ngày bắt đầu/kết thúc.",
+    "validationDate": "Ngày kết thúc phải cùng hoặc sau ngày bắt đầu."
+  },
+  "list": {
+    "sectionTitle": "Lịch bảo trì",
+    "empty": "Chưa có thông báo bảo trì.",
+    "windowLabel": "Thời gian"
+  },
+  "toast": {
+    "saved": "Đã thêm thông báo bảo trì."
+  }
+}

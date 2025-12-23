@@ -10,7 +10,8 @@
     "departments": "部门",
     "users": "用户",
     "permissions": "权限",
-    "settings": "设置"
+    "settings": "设置",
+    "maintenance": "维护"
   },
   "actions": {
     "view": "查看",
