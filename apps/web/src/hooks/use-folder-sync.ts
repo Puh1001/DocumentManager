@@ -24,7 +24,7 @@ interface UseFolderSyncOptions {
 }
 
 // Get WebSocket URL - use same base as API but direct connection (no proxy)
-function getWebSocketUrl(): string {
+function getWebSocketUrl(): string | null {
   if (typeof window === "undefined") {
     return "http://localhost:3001/storage";
   }
@@ -43,12 +43,10 @@ function getWebSocketUrl(): string {
     return `${wsUrl}/storage`;
   }
 
-  // Fallback: use same origin with different port (for dev)
-  // In production, this should be set via env var
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const hostname = window.location.hostname;
-  const port = hostname === "localhost" ? "3001" : window.location.port;
-  return `${protocol}//${hostname}:${port}/storage`;
+  console.warn(
+    "Missing NEXT_PUBLIC_WS_URL and NEXT_PUBLIC_API_URL; skipping WebSocket connection"
+  );
+  return null;
 }
 
 export function useFolderSync({
@@ -108,6 +106,10 @@ export function useFolderSync({
 
     // Connect to WebSocket
     const wsUrl = getWebSocketUrl();
+    if (!wsUrl) {
+      console.warn("WebSocket URL is not configured; realtime sync disabled");
+      return;
+    }
     console.log(`Connecting to WebSocket: ${wsUrl}`);
 
     const socket = io(wsUrl, {
