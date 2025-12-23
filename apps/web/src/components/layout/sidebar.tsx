@@ -33,6 +33,11 @@ export function Sidebar() {
     },
     { name: t("navigation.kpi"), href: "/dashboard/kpi", icon: BarChart2 },
     {
+      name: t("navigation.maintenance"),
+      href: "/dashboard/maintenance",
+      icon: Wrench,
+    },
+    {
       name: t("navigation.departments"),
       href: "/dashboard/departments",
       icon: FolderOpen,
@@ -42,11 +47,6 @@ export function Sidebar() {
       name: t("navigation.permissions"),
       href: "/dashboard/permissions",
       icon: Shield,
-    },
-    {
-      name: t("navigation.maintenance"),
-      href: "/dashboard/maintenance",
-      icon: Wrench,
     },
     {
       name: t("navigation.settings"),
