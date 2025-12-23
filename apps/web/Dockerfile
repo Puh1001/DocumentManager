@@ -22,7 +22,7 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine AS runner
 
-WORKDIR /app/apps/web
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -31,9 +31,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built files (standalone bundle is nested under apps/web)
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./ 
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
+# Copy standalone output (monorepo: server.js nằm trong apps/web/)
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
 
@@ -42,5 +43,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# Entry point inside standalone bundle
+CMD ["node", "apps/web/server.js"]
 
