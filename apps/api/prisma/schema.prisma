@@ -266,3 +266,64 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// =====================
+// KPI Tracking
+// =====================
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   // e.g., "转机部 chuyển máy dệt dây đai-V-TECH"
+  code      String   @unique // e.g., "DEPT-001"
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  kpiRecords KpiRecord[]
+
+  @@index([code])
+  @@map("departments")
+}
+
+model KpiRecord {
+  id           String   @id @default(uuid())
+  departmentId String   @map("department_id")
+  year         Int      // e.g., 2024
+  title        String   // e.g., "梭织转机效率 Hiệu quả chuyển máy dệt thoi"
+  target       String   // e.g., "≥85%"
+  targetValue  Float?   @map("target_value") // numeric: 85
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdBy    String?  @map("created_by")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  metrics    KpiMetric[]
+
+  @@unique([departmentId, year, title])
+  @@index([departmentId])
+  @@index([year])
+  @@map("kpi_records")
+}
+
+enum MetricType {
+  TARGET // 理论转机数量 - theoretical/target values
+  ACTUAL // 转机实际 - actual values
+  CALCULATED // 梭织转机效率 - auto-calculated
+}
+
+model KpiMetric {
+  id          String     @id @default(uuid())
+  kpiRecordId String     @map("kpi_record_id")
+  name        String     // e.g., "理论转机数量 (台) Số máy cần chuyển (máy)"
+  type        MetricType @default(TARGET)
+  sortOrder   Int        @map("sort_order")
+  // Monthly values stored as JSON: {"m1": 599, "m2": 495, ...}
+  values      Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  kpiRecord KpiRecord @relation(fields: [kpiRecordId], references: [id], onDelete: Cascade)
+
+  @@index([kpiRecordId])
+  @@map("kpi_metrics")
+}

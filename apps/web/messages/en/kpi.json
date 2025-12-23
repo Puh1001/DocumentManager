@@ -1,0 +1,36 @@
+{
+  "title": "KPI",
+  "subtitle": "Manage KPI by department and month",
+  "year": "Year",
+  "kpiTitle": "KPI Title",
+  "target": "Target",
+  "efficiency": "Efficiency (%)",
+  "performance": "Performance (%)",
+  "targetLabel": "Target",
+  "addNewTable": "Add new table",
+  "exportExcel": "Export Excel",
+  "edit": "Edit",
+  "cancel": "Cancel",
+  "save": "Save",
+  "saving": "Saving...",
+  "chartTitle": "KPI / Efficiency (%)",
+  "targetPlaceholder": "Row 1: TARGET / Target (e.g., Planned quantity)",
+  "table": {
+    "itemColumn": "Item",
+    "months": {
+      "m1": "January",
+      "m2": "February",
+      "m3": "March",
+      "m4": "April",
+      "m5": "May",
+      "m6": "June",
+      "m7": "July",
+      "m8": "August",
+      "m9": "September",
+      "m10": "October",
+      "m11": "November",
+      "m12": "December",
+      "average": "Average Achievement Rate"
+    }
+  }
+}

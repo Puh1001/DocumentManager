@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "ISO Docs",
+    "description": "文档管理器"
+  },
+  "navigation": {
+    "dashboard": "仪表板",
+    "documents": "文档",
+    "kpi": "KPI",
+    "departments": "部门",
+    "users": "用户",
+    "permissions": "权限",
+    "settings": "设置"
+  },
+  "actions": {
+    "view": "查看",
+    "download": "下载",
+    "edit": "编辑",
+    "delete": "删除",
+    "create": "创建",
+    "update": "更新",
+    "save": "保存",
+    "cancel": "取消",
+    "submit": "提交",
+    "close": "关闭",
+    "search": "搜索",
+    "filter": "筛选",
+    "refresh": "刷新"
+  },
+  "status": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "noData": "无数据"
+  },
+  "searchPlaceholder": "搜索文档...",
+  "admin": "管理员"
+}

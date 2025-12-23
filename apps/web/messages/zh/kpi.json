@@ -1,0 +1,36 @@
+{
+  "title": "KPI",
+  "subtitle": "按部门和月份管理KPI",
+  "year": "年",
+  "kpiTitle": "KPI标题",
+  "target": "目标",
+  "efficiency": "效率 (%)",
+  "performance": "效率 (%)",
+  "targetLabel": "目标",
+  "addNewTable": "添加新表格",
+  "exportExcel": "导出Excel",
+  "edit": "编辑",
+  "cancel": "取消",
+  "save": "保存",
+  "saving": "保存中...",
+  "chartTitle": "KPI / 效率 (%)",
+  "targetPlaceholder": "第1行: 目标 (例如: 计划数量)",
+  "table": {
+    "itemColumn": "项目",
+    "months": {
+      "m1": "1月份",
+      "m2": "2月份",
+      "m3": "3月份",
+      "m4": "4月份",
+      "m5": "5月份",
+      "m6": "6月份",
+      "m7": "7月份",
+      "m8": "8月份",
+      "m9": "9月份",
+      "m10": "10月份",
+      "m11": "11月份",
+      "m12": "12月份",
+      "average": "平均达成率"
+    }
+  }
+}

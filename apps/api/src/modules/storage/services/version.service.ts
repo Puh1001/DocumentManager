@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { PrismaClientLike } from "@/common/types/prisma.types";
 import * as crypto from "crypto";
 import * as path from "path";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class VersionService {
@@ -32,7 +34,10 @@ export class VersionService {
     });
 
     if (!document) {
-      throw new NotFoundException("Document not found");
+      throw CustomException.notFound(
+        ErrorCodes.VERSION.DOCUMENT_NOT_FOUND,
+        "Document not found"
+      );
     }
 
     // Calculate next version
@@ -112,7 +117,10 @@ export class VersionService {
     });
 
     if (!docVersion) {
-      throw new NotFoundException("Version not found");
+      throw CustomException.notFound(
+        ErrorCodes.VERSION.NOT_FOUND,
+        "Version not found"
+      );
     }
 
     return docVersion;

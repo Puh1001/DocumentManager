@@ -1,10 +1,14 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
+import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { UsersService } from "../users/users.service";
 import { PrismaClientLike, UserWithRoles } from "@/common/types/prisma.types";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class AuthService {
@@ -26,12 +30,18 @@ export class AuthService {
     });
 
     if (!user || !user.isActive) {
-      throw new UnauthorizedException("Invalid credentials");
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.LOGIN_INVALID_CREDENTIALS,
+        "Invalid credentials"
+      );
     }
 
     const isPasswordValid = await argon2.verify(user.passwordHash, password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid credentials");
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.LOGIN_INVALID_CREDENTIALS,
+        "Invalid credentials"
+      );
     }
 
     return user;
@@ -45,23 +55,38 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get("JWT_REFRESH_EXPIRES", "7d"),
-    });
+    let refreshToken = this.generateRefreshToken(payload);
 
     // Save session
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await (this.prisma as PrismaClientLike).session.create({
-      data: {
-        userId: user.id,
-        refreshToken,
-        ipAddress,
-        userAgent,
-        expiresAt,
-      },
-    });
+    try {
+      await (this.prisma as PrismaClientLike).session.create({
+        data: {
+          userId: user.id,
+          refreshToken,
+          ipAddress,
+          userAgent,
+          expiresAt,
+        },
+      });
+    } catch (error) {
+      if (this.isRefreshTokenUniqueError(error)) {
+        refreshToken = this.generateRefreshToken(payload);
+        await (this.prisma as PrismaClientLike).session.create({
+          data: {
+            userId: user.id,
+            refreshToken,
+            ipAddress,
+            userAgent,
+            expiresAt,
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
 
     // Update last login
     await (this.prisma as PrismaClientLike).user.update({
@@ -106,7 +131,10 @@ export class AuthService {
     });
 
     if (!session || session.expiresAt < new Date()) {
-      throw new UnauthorizedException("Invalid or expired refresh token");
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.TOKEN_EXPIRED,
+        "Invalid or expired refresh token"
+      );
     }
 
     // Delete old session
@@ -116,6 +144,27 @@ export class AuthService {
 
     // Create new tokens
     return this.login(session.user);
+  }
+
+  private generateRefreshToken(payload: Record<string, unknown>): string {
+    const refreshJti = randomUUID();
+    return this.jwtService.sign(
+      { ...payload, jti: refreshJti },
+      {
+        expiresIn: this.configService.get("JWT_REFRESH_EXPIRES", "7d"),
+      }
+    );
+  }
+
+  private isRefreshTokenUniqueError(
+    error: unknown
+  ): error is Prisma.PrismaClientKnownRequestError {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002" &&
+      Array.isArray(error.meta?.target) &&
+      (error.meta?.target as string[]).includes("refresh_token")
+    );
   }
 
   async logout(userId: string) {
@@ -136,7 +185,10 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.usersService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException("User not found");
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.USER_NOT_FOUND,
+        "User not found"
+      );
     }
     return user;
   }

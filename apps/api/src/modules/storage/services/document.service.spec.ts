@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { DocumentService } from "./document.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
@@ -124,7 +124,7 @@ describe("DocumentService", () => {
       prismaService.document.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.findById("invalid-id")).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -234,7 +234,7 @@ describe("DocumentService", () => {
 
       await expect(
         service.upload("invalid-folder", mockFile, "user-1")
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
 
     it("should handle file stats unavailable gracefully", async () => {
@@ -302,7 +302,7 @@ describe("DocumentService", () => {
 
       await expect(
         service.updateFile("invalid-id", mockFile, "user-1")
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
   });
 

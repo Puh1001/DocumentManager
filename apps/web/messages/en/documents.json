@@ -1,0 +1,32 @@
+{
+  "title": "Document Management",
+  "description": "Browse and manage ISO documents",
+  "folder": "Folder",
+  "selectFolder": "Select a folder to view documents",
+  "toolbar": {
+    "sync": "Sync with file system",
+    "syncing": "Syncing...",
+    "refresh": "Refresh",
+    "openFolder": "Open folder",
+    "upload": "Upload",
+    "location": "Location",
+    "pathCopied": "Path copied:\n{path}\n\nPaste into Windows Explorer (Win+E) to open folder.",
+    "pathCopiedTitle": "Path copied"
+  },
+  "list": {
+    "empty": "No documents in this folder",
+    "columns": {
+      "name": "Document Name",
+      "type": "Type",
+      "size": "Size",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "download": "Download",
+      "openToEdit": "Open to Edit",
+      "versionHistory": "Version History"
+    }
+  }
+}

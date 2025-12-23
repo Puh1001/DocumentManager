@@ -1,14 +1,12 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import * as argon2 from "argon2";
 import { PrismaService, Prisma } from "@/common/prisma/prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { QueryUsersDto } from "./dto/query-users.dto";
 import { PrismaClientLike } from "@/common/types/prisma.types";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class UsersService {
@@ -23,7 +21,10 @@ export class UsersService {
     });
 
     if (existing) {
-      throw new ConflictException("Username or email already exists");
+      throw CustomException.conflict(
+        ErrorCodes.USER.USERNAME_OR_EMAIL_EXISTS,
+        "Username or email already exists"
+      );
     }
 
     const passwordHash = await argon2.hash(dto.password);
@@ -126,7 +127,10 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw CustomException.notFound(
+        ErrorCodes.USER.NOT_FOUND,
+        "User not found"
+      );
     }
 
     return {
@@ -140,7 +144,10 @@ export class UsersService {
       where: { id },
     });
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw CustomException.notFound(
+        ErrorCodes.USER.NOT_FOUND,
+        "User not found"
+      );
     }
 
     const data: Prisma.UserUpdateInput = {};

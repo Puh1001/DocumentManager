@@ -1,12 +1,16 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { AppModule } from "./app.module";
+import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Global exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -17,29 +21,29 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-    }),
+    })
   );
 
   // CORS
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN', 'http://localhost:3000'),
+    origin: configService.get("CORS_ORIGIN", "http://localhost:3000"),
     credentials: true,
   });
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('ISO Document Manager API')
-    .setDescription('API for ISO Document Management System')
-    .setVersion('1.0')
+    .setTitle("ISO Document Manager API")
+    .setDescription("API for ISO Document Management System")
+    .setVersion("1.0")
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup("api/docs", app, document);
 
   // Global prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
 
-  const port = configService.get('API_PORT', 3001);
+  const port = configService.get("API_PORT", 3001);
   await app.listen(port);
 
   console.log(`🚀 API running on http://localhost:${port}`);
@@ -47,4 +51,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

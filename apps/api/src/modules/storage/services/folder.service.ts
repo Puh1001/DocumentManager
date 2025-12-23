@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService, Prisma } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
 import { PrismaClientLike } from "@/common/types/prisma.types";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 // Export FolderTreeNode for use in controllers
 export interface FolderTreeNode {
@@ -60,7 +62,10 @@ export class FolderService {
     });
 
     if (!folder || folder.deletedAt) {
-      throw new NotFoundException("Folder not found");
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        "Folder not found"
+      );
     }
 
     return folder;
@@ -75,7 +80,10 @@ export class FolderService {
         where: { id: dto.parentId },
       });
       if (!parent || parent.deletedAt) {
-        throw new NotFoundException("Parent folder not found or deleted");
+        throw CustomException.notFound(
+          ErrorCodes.FOLDER.PARENT_NOT_FOUND,
+          "Parent folder not found or deleted"
+        );
       }
       if (parent) {
         folderPath = `${parent.path}/${dto.name}`;
@@ -101,7 +109,10 @@ export class FolderService {
       where: { id },
     });
     if (!folder || folder.deletedAt) {
-      throw new NotFoundException("Folder not found or deleted");
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        "Folder not found or deleted"
+      );
     }
 
     const data: Prisma.FolderUpdateInput = {};
@@ -135,10 +146,17 @@ export class FolderService {
     });
 
     if (!folder) {
-      throw new NotFoundException("Folder not found");
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        "Folder not found"
+      );
     }
 
-    if (folder.children.length > 0 || folder.documents.length > 0) {
+    const hasActiveDocs = folder.documents.some(
+      (doc) => doc.status !== "DELETED"
+    );
+
+    if (folder.children.length > 0 || hasActiveDocs) {
       throw new Error("Cannot delete non-empty folder");
     }
 

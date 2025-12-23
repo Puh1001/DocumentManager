@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { FolderService } from "./folder.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
@@ -145,7 +145,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.findById("invalid-id")).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
 
@@ -156,7 +156,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.findById("folder-1")).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -234,7 +234,7 @@ describe("FolderService", () => {
 
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
-      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto)).rejects.toThrow(CustomException);
     });
 
     it("should throw NotFoundException when parent is deleted", async () => {
@@ -254,7 +254,7 @@ describe("FolderService", () => {
         .fn()
         .mockResolvedValue(deletedParent);
 
-      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto)).rejects.toThrow(CustomException);
     });
   });
 
@@ -317,7 +317,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.update("invalid-id", dto)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
 
@@ -330,7 +330,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.update("folder-1", dto)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -354,7 +354,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.delete("invalid-id")).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
 

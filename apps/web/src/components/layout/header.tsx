@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
-import { LogOut, User, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { useTranslations } from "next-intl";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { LogOut, User, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LanguageSwitcher } from "./language-switcher";
 
 export function Header() {
+  const t = useTranslations("auth.logout");
+  const tCommon = useTranslations("common");
   const { user, logout } = useAuth();
 
   return (
@@ -16,7 +20,7 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Tìm kiếm tài liệu..."
+            placeholder={tCommon("searchPlaceholder")}
             className="pl-10 w-full"
           />
         </div>
@@ -26,21 +30,23 @@ export function Header() {
 
       {/* User menu */}
       <div className="flex items-center gap-4">
+        <LanguageSwitcher />
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <User className="w-4 h-4 text-primary" />
           </div>
           <div className="hidden md:block">
             <p className="text-sm font-medium">{user?.fullName}</p>
-            <p className="text-xs text-muted-foreground">{user?.department || 'Admin'}</p>
+            <p className="text-xs text-muted-foreground">
+              {user?.department || tCommon("admin")}
+            </p>
           </div>
         </div>
 
-        <Button variant="ghost" size="icon" onClick={logout} title="Đăng xuất">
+        <Button variant="ghost" size="icon" onClick={logout} title={t("title")}>
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
     </header>
   );
 }
-

@@ -31,7 +31,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: Omit<User, 'passwordHash'>;
+  user: Omit<User, "passwordHash">;
 }
 
 export interface RefreshRequest {
@@ -53,7 +53,7 @@ export interface Document {
   updatedAt: Date;
 }
 
-export type DocumentStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+export type DocumentStatus = "ACTIVE" | "ARCHIVED" | "DELETED";
 
 // Folder types
 export interface Folder {
@@ -86,9 +86,16 @@ export interface DocumentVersion {
 }
 
 // Permission types
-export type PermissionAction = 'view' | 'download' | 'print' | 'edit' | 'create' | 'delete' | 'manage';
+export type PermissionAction =
+  | "view"
+  | "download"
+  | "print"
+  | "edit"
+  | "create"
+  | "delete"
+  | "manage";
 
-export type SubjectType = 'USER' | 'ROLE';
+export type SubjectType = "USER" | "ROLE";
 
 export interface Permission {
   id: string;
@@ -138,4 +145,3 @@ export interface FileInfo {
   modifiedAt?: Date;
   mimeType?: string;
 }
-

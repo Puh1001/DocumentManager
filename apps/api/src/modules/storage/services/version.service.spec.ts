@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { VersionService } from "./version.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
@@ -142,7 +142,7 @@ describe("VersionService", () => {
 
       await expect(
         service.createVersion("invalid-id", Buffer.from("data"), "user-1")
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
   });
 
@@ -199,7 +199,7 @@ describe("VersionService", () => {
         .mockResolvedValue(null);
 
       await expect(service.getVersion("doc-1", 999)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });

@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import { Link } from "../../../i18n/routing";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -10,19 +11,43 @@ import {
   Settings,
   Shield,
   FolderOpen,
+  BarChart2,
 } from "lucide-react";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Tài liệu", href: "/dashboard/documents", icon: FileText },
-  { name: "Phòng ban", href: "/dashboard/departments", icon: FolderOpen },
-  { name: "Người dùng", href: "/dashboard/users", icon: Users },
-  { name: "Phân quyền", href: "/dashboard/permissions", icon: Shield },
-  { name: "Cài đặt", href: "/dashboard/settings", icon: Settings },
-];
-
 export function Sidebar() {
+  const t = useTranslations("common");
   const pathname = usePathname();
+  const locale = useLocale();
+
+  const navigation = [
+    {
+      name: t("navigation.dashboard"),
+      href: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      name: t("navigation.documents"),
+      href: "/dashboard/documents",
+      icon: FileText,
+    },
+    { name: t("navigation.kpi"), href: "/dashboard/kpi", icon: BarChart2 },
+    {
+      name: t("navigation.departments"),
+      href: "/dashboard/departments",
+      icon: FolderOpen,
+    },
+    { name: t("navigation.users"), href: "/dashboard/users", icon: Users },
+    {
+      name: t("navigation.permissions"),
+      href: "/dashboard/permissions",
+      icon: Shield,
+    },
+    {
+      name: t("navigation.settings"),
+      href: "/dashboard/settings",
+      icon: Settings,
+    },
+  ];
 
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
@@ -33,9 +58,9 @@ export function Sidebar() {
             <FileText className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <span className="font-bold text-lg">ISO Docs</span>
+            <span className="font-bold text-lg">{t("app.name")}</span>
             <span className="block text-xs text-muted-foreground">
-              Document Manager
+              {t("app.description")}
             </span>
           </div>
         </div>
@@ -46,14 +71,17 @@ export function Sidebar() {
             {navigation.map((item) => {
               // Fix: Dashboard should only match exactly, others match with startsWith
               // This prevents both Dashboard and child routes from being active simultaneously
+              // Remove locale prefix for comparison
+              const pathWithoutLocale =
+                pathname.replace(`/${locale}`, "") || "/";
               const isActive =
                 item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname === item.href ||
-                    pathname.startsWith(item.href + "/");
+                  ? pathWithoutLocale === "/dashboard"
+                  : pathWithoutLocale === item.href ||
+                    pathWithoutLocale.startsWith(item.href + "/");
 
               return (
-                <li key={item.name}>
+                <li key={item.href}>
                   <Link
                     href={item.href}
                     className={cn(

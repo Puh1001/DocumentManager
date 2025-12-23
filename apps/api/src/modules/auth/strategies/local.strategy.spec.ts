@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { UnauthorizedException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { LocalStrategy } from "./local.strategy";
 import { AuthService } from "../auth.service";
 import { UserWithRoles } from "@/common/types/prisma.types";
@@ -67,24 +67,30 @@ describe("LocalStrategy", () => {
       );
     });
 
-    it("should throw UnauthorizedException when validateUser throws", async () => {
+    it("should throw CustomException when validateUser throws", async () => {
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException("Invalid credentials")
+        CustomException.unauthorized(
+          "AUTH_INVALID_CREDENTIALS",
+          "Invalid credentials"
+        )
       );
 
       await expect(
         strategy.validate("testuser", "wrong-password")
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(CustomException);
     });
 
-    it("should throw UnauthorizedException when validateUser throws", async () => {
+    it("should throw CustomException when validateUser throws", async () => {
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException("Invalid credentials")
+        CustomException.unauthorized(
+          "AUTH_INVALID_CREDENTIALS",
+          "Invalid credentials"
+        )
       );
 
       await expect(
         strategy.validate("testuser", "wrong-password")
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(CustomException);
     });
   });
 });

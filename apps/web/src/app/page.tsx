@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  redirect('/dashboard');
+  // Redirect to default locale dashboard (vi)
+  redirect("/en/dashboard");
 }
-

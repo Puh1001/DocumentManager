@@ -1,0 +1,83 @@
+{
+  "generic": {
+    "somethingWentWrong": "Đã xảy ra lỗi",
+    "tryAgain": "Vui lòng thử lại"
+  },
+  "auth": {
+    "login": {
+      "invalid_credentials": "Tên đăng nhập hoặc mật khẩu không đúng"
+    },
+    "token": {
+      "expired": "Token đã hết hạn",
+      "invalid": "Token không hợp lệ"
+    },
+    "user": {
+      "not_found": "Không tìm thấy người dùng"
+    }
+  },
+  "user": {
+    "not_found": "Không tìm thấy người dùng",
+    "create": {
+      "username_exists": "Tên đăng nhập đã tồn tại",
+      "email_exists": "Email đã tồn tại",
+      "username_or_email_exists": "Tên đăng nhập hoặc email đã tồn tại"
+    }
+  },
+  "department": {
+    "not_found": "Không tìm thấy phòng ban",
+    "create": {
+      "code_exists": "Mã phòng ban đã tồn tại"
+    },
+    "list": {
+      "load_failed": "Không tải được danh sách phòng ban"
+    }
+  },
+  "folder": {
+    "not_found": "Không tìm thấy thư mục",
+    "create": {
+      "parent_not_found": "Thư mục cha không tồn tại hoặc đã bị xóa"
+    },
+    "deleted": "Thư mục đã bị xóa"
+  },
+  "document": {
+    "not_found": "Không tìm thấy tài liệu",
+    "upload": {
+      "folder_required": "Cần có ID thư mục",
+      "file_required": "Cần có file",
+      "folder_not_found": "Không tìm thấy thư mục"
+    }
+  },
+  "version": {
+    "not_found": "Không tìm thấy phiên bản",
+    "document": {
+      "not_found": "Không tìm thấy tài liệu"
+    }
+  },
+  "kpi": {
+    "record": {
+      "not_found": "Không tìm thấy bản ghi KPI"
+    },
+    "metric": {
+      "not_found": "Không tìm thấy chỉ số KPI"
+    }
+  },
+  "permission": {
+    "not_found": "Không tìm thấy quyền",
+    "role": {
+      "not_found": "Không tìm thấy vai trò"
+    },
+    "folder": {
+      "not_found": "Không tìm thấy thư mục"
+    },
+    "document": {
+      "not_found": "Không tìm thấy tài liệu"
+    },
+    "permissions": {
+      "not_found": "Một hoặc nhiều quyền không tồn tại"
+    },
+    "user": {
+      "not_found": "Không tìm thấy người dùng"
+    },
+    "invalid_subject": "Loại đối tượng không hợp lệ"
+  }
+}

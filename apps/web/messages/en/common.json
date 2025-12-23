@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "ISO Docs",
+    "description": "Document Manager"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "documents": "Documents",
+    "kpi": "KPI",
+    "departments": "Departments",
+    "users": "Users",
+    "permissions": "Permissions",
+    "settings": "Settings"
+  },
+  "actions": {
+    "view": "View",
+    "download": "Download",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh"
+  },
+  "status": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "noData": "No data available"
+  },
+  "searchPlaceholder": "Search documents...",
+  "admin": "Admin"
+}

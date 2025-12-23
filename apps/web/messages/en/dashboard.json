@@ -1,0 +1,16 @@
+{
+  "title": "Dashboard",
+  "description": "ISO Document Management System Overview",
+  "stats": {
+    "totalDocuments": "Total Documents",
+    "folders": "Folders",
+    "users": "Users",
+    "recentUploads": "Recent Uploads"
+  },
+  "sections": {
+    "recentDocuments": "Recent Documents",
+    "recentDocumentsDescription": "List of recently updated documents will be displayed here.",
+    "activity": "Activity",
+    "activityDescription": "System activity history will be displayed here."
+  }
+}

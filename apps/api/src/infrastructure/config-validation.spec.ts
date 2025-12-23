@@ -86,9 +86,9 @@ describe("Phase 1: Configuration Validation", () => {
       expect(tsConfig.compilerOptions.paths["@/*"]).toEqual(["src/*"]);
     });
 
-    it("should have Jest module name mapper configured", () => {
+    it("should have Jest module name mapper configured", async () => {
       const jestConfigPath = resolve(appsDir, "api", "jest.config.js");
-      const jestConfig = require(jestConfigPath);
+      const jestConfig = await import(jestConfigPath);
 
       expect(jestConfig.moduleNameMapper).toBeDefined();
       expect(jestConfig.moduleNameMapper["^@/(.*)$"]).toBe("<rootDir>/$1");

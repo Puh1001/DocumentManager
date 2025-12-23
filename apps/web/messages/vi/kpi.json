@@ -1,0 +1,36 @@
+{
+  "title": "KPI",
+  "subtitle": "Quản lý KPI theo bộ môn và tháng",
+  "year": "Năm",
+  "kpiTitle": "Tiêu đề KPI",
+  "target": "Mục tiêu",
+  "efficiency": "Hiệu suất (%)",
+  "performance": "Hiệu suất (%)",
+  "targetLabel": "Mục tiêu",
+  "addNewTable": "Thêm bảng mới",
+  "exportExcel": "Xuất Excel",
+  "edit": "Chỉnh sửa",
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "saving": "Đang lưu...",
+  "chartTitle": "KPI / Hiệu suất (%)",
+  "targetPlaceholder": "Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)",
+  "table": {
+    "itemColumn": "Mục",
+    "months": {
+      "m1": "Tháng 1",
+      "m2": "Tháng 2",
+      "m3": "Tháng 3",
+      "m4": "Tháng 4",
+      "m5": "Tháng 5",
+      "m6": "Tháng 6",
+      "m7": "Tháng 7",
+      "m8": "Tháng 8",
+      "m9": "Tháng 9",
+      "m10": "Tháng 10",
+      "m11": "Tháng 11",
+      "m12": "Tháng 12",
+      "average": "Trung bình"
+    }
+  }
+}

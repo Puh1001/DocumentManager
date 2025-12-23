@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { UnauthorizedException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
@@ -127,7 +127,7 @@ describe("AuthService", () => {
 
       await expect(
         service.validateUser("nonexistent", "password123")
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(CustomException);
       expect(mockArgon2.verify).not.toHaveBeenCalled();
     });
 
@@ -137,7 +137,7 @@ describe("AuthService", () => {
 
       await expect(
         service.validateUser("testuser", "password123")
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(CustomException);
       expect(mockArgon2.verify).not.toHaveBeenCalled();
     });
 
@@ -147,7 +147,7 @@ describe("AuthService", () => {
 
       await expect(
         service.validateUser("testuser", "wrong-password")
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(CustomException);
       expect(mockArgon2.verify).toHaveBeenCalled();
     });
   });
@@ -274,7 +274,7 @@ describe("AuthService", () => {
       prismaService.session.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.refreshTokens("invalid-token")).rejects.toThrow(
-        UnauthorizedException
+        CustomException
       );
       expect(prismaService.session.delete).not.toHaveBeenCalled();
     });
@@ -293,7 +293,7 @@ describe("AuthService", () => {
         .mockResolvedValue(expiredSession);
 
       await expect(service.refreshTokens("expired-token")).rejects.toThrow(
-        UnauthorizedException
+        CustomException
       );
       expect(prismaService.session.delete).not.toHaveBeenCalled();
     });
@@ -348,9 +348,7 @@ describe("AuthService", () => {
       const userId = "nonexistent";
       usersService.findById = jest.fn().mockResolvedValue(null);
 
-      await expect(service.getProfile(userId)).rejects.toThrow(
-        UnauthorizedException
-      );
+      await expect(service.getProfile(userId)).rejects.toThrow(CustomException);
     });
   });
 });

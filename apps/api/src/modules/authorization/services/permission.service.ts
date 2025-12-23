@@ -1,10 +1,8 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SubjectType } from "@prisma/client";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class PermissionService {
@@ -22,7 +20,10 @@ export class PermissionService {
     });
 
     if (!permission) {
-      throw new NotFoundException(`Permission with ID ${id} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.NOT_FOUND,
+        `Permission with ID ${id} not found`
+      );
     }
 
     return permission;
@@ -47,7 +48,10 @@ export class PermissionService {
     });
 
     if (!role) {
-      throw new NotFoundException(`Role with ID ${roleId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.ROLE_NOT_FOUND,
+        `Role with ID ${roleId} not found`
+      );
     }
 
     return {
@@ -63,7 +67,10 @@ export class PermissionService {
     });
 
     if (!role) {
-      throw new NotFoundException(`Role with ID ${roleId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.ROLE_NOT_FOUND,
+        `Role with ID ${roleId} not found`
+      );
     }
 
     // Verify permissions exist
@@ -72,7 +79,10 @@ export class PermissionService {
     });
 
     if (permissions.length !== permissionIds.length) {
-      throw new BadRequestException("One or more permissions not found");
+      throw CustomException.badRequest(
+        ErrorCodes.PERMISSION.PERMISSIONS_NOT_FOUND,
+        "One or more permissions not found"
+      );
     }
 
     // Delete existing permissions and assign new ones
@@ -105,7 +115,10 @@ export class PermissionService {
     });
 
     if (!folder) {
-      throw new NotFoundException(`Folder with ID ${folderId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.FOLDER_NOT_FOUND,
+        `Folder with ID ${folderId} not found`
+      );
     }
 
     return {
@@ -136,7 +149,10 @@ export class PermissionService {
     });
 
     if (!folder) {
-      throw new NotFoundException(`Folder with ID ${folderId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.FOLDER_NOT_FOUND,
+        `Folder with ID ${folderId} not found`
+      );
     }
 
     // Verify all subjects exist
@@ -146,7 +162,8 @@ export class PermissionService {
           where: { id: perm.subjectId },
         });
         if (!user) {
-          throw new BadRequestException(
+          throw CustomException.badRequest(
+            ErrorCodes.PERMISSION.USER_NOT_FOUND,
             `User with ID ${perm.subjectId} not found`
           );
         }
@@ -155,7 +172,8 @@ export class PermissionService {
           where: { id: perm.subjectId },
         });
         if (!role) {
-          throw new BadRequestException(
+          throw CustomException.badRequest(
+            ErrorCodes.PERMISSION.ROLE_NOT_FOUND,
             `Role with ID ${perm.subjectId} not found`
           );
         }
@@ -166,7 +184,8 @@ export class PermissionService {
         where: { id: perm.permissionId },
       });
       if (!permission) {
-        throw new BadRequestException(
+        throw CustomException.badRequest(
+          ErrorCodes.PERMISSION.PERMISSIONS_NOT_FOUND,
           `Permission with ID ${perm.permissionId} not found`
         );
       }
@@ -208,7 +227,10 @@ export class PermissionService {
     });
 
     if (!document) {
-      throw new NotFoundException(`Document with ID ${documentId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.DOCUMENT_NOT_FOUND,
+        `Document with ID ${documentId} not found`
+      );
     }
 
     return {
@@ -237,7 +259,10 @@ export class PermissionService {
     });
 
     if (!document) {
-      throw new NotFoundException(`Document with ID ${documentId} not found`);
+      throw CustomException.notFound(
+        ErrorCodes.PERMISSION.DOCUMENT_NOT_FOUND,
+        `Document with ID ${documentId} not found`
+      );
     }
 
     // Verify all subjects and permissions exist
@@ -247,7 +272,8 @@ export class PermissionService {
           where: { id: perm.subjectId },
         });
         if (!user) {
-          throw new BadRequestException(
+          throw CustomException.badRequest(
+            ErrorCodes.PERMISSION.USER_NOT_FOUND,
             `User with ID ${perm.subjectId} not found`
           );
         }
@@ -256,7 +282,8 @@ export class PermissionService {
           where: { id: perm.subjectId },
         });
         if (!role) {
-          throw new BadRequestException(
+          throw CustomException.badRequest(
+            ErrorCodes.PERMISSION.ROLE_NOT_FOUND,
             `Role with ID ${perm.subjectId} not found`
           );
         }
@@ -266,7 +293,8 @@ export class PermissionService {
         where: { id: perm.permissionId },
       });
       if (!permission) {
-        throw new BadRequestException(
+        throw CustomException.badRequest(
+          ErrorCodes.PERMISSION.PERMISSIONS_NOT_FOUND,
           `Permission with ID ${perm.permissionId} not found`
         );
       }

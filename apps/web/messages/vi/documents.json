@@ -1,0 +1,32 @@
+{
+  "title": "Quản lý tài liệu",
+  "description": "Duyệt và quản lý tài liệu ISO",
+  "folder": "Thư mục",
+  "selectFolder": "Chọn một thư mục để xem tài liệu",
+  "toolbar": {
+    "sync": "Sync với file system",
+    "syncing": "Đang sync...",
+    "refresh": "Làm mới",
+    "openFolder": "Mở thư mục",
+    "upload": "Upload",
+    "location": "Vị trí",
+    "pathCopied": "Đường dẫn đã được sao chép:\n{path}\n\nDán vào Windows Explorer (Win+E) để mở thư mục.",
+    "pathCopiedTitle": "Đường dẫn đã được sao chép"
+  },
+  "list": {
+    "empty": "Không có tài liệu trong thư mục này",
+    "columns": {
+      "name": "Tên tài liệu",
+      "type": "Loại",
+      "size": "Kích thước",
+      "updated": "Cập nhật",
+      "actions": "Thao tác"
+    },
+    "actions": {
+      "view": "Xem",
+      "download": "Tải xuống",
+      "openToEdit": "Mở để chỉnh sửa",
+      "versionHistory": "Lịch sử phiên bản"
+    }
+  }
+}

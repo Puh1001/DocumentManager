@@ -1,0 +1,29 @@
+{
+  "title": "部门管理",
+  "description": "管理系统中的部门列表",
+  "add": "添加部门",
+  "empty": "还没有部门",
+  "code": "代码",
+  "active": "活跃",
+  "inactive": "不活跃",
+  "form": {
+    "createTitle": "添加新部门",
+    "updateTitle": "更新部门",
+    "createDescription": "填写信息以创建新部门",
+    "updateDescription": "更新部门信息",
+    "name": "部门名称",
+    "namePlaceholder": "示例: 转机部 chuyển máy dệt dây đai-V-TECH",
+    "codePlaceholder": "示例: V-TECH",
+    "isActive": "部门处于活跃状态",
+    "processing": "处理中...",
+    "create": "创建",
+    "update": "更新"
+  },
+  "errors": {
+    "loadFailed": "无法加载部门列表",
+    "createFailed": "无法创建部门",
+    "updateFailed": "无法更新部门",
+    "deleteFailed": "无法删除部门",
+    "deleteConfirm": "您确定要删除此部门吗？"
+  }
+}

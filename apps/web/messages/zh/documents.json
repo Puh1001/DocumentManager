@@ -1,0 +1,32 @@
+{
+  "title": "文档管理",
+  "description": "浏览和管理ISO文档",
+  "folder": "文件夹",
+  "selectFolder": "选择一个文件夹以查看文档",
+  "toolbar": {
+    "sync": "与文件系统同步",
+    "syncing": "同步中...",
+    "refresh": "刷新",
+    "openFolder": "打开文件夹",
+    "upload": "上传",
+    "location": "位置",
+    "pathCopied": "路径已复制:\n{path}\n\n粘贴到Windows资源管理器 (Win+E) 以打开文件夹。",
+    "pathCopiedTitle": "路径已复制"
+  },
+  "list": {
+    "empty": "此文件夹中没有文档",
+    "columns": {
+      "name": "文档名称",
+      "type": "类型",
+      "size": "大小",
+      "updated": "更新",
+      "actions": "操作"
+    },
+    "actions": {
+      "view": "查看",
+      "download": "下载",
+      "openToEdit": "打开编辑",
+      "versionHistory": "版本历史"
+    }
+  }
+}

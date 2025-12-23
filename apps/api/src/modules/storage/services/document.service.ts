@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService, Prisma } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { VersionService } from "./version.service";
@@ -6,6 +6,8 @@ import { PrismaClientLike } from "@/common/types/prisma.types";
 import { Express } from "express";
 import * as crypto from "crypto";
 import * as path from "path";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class DocumentService {
@@ -29,7 +31,10 @@ export class DocumentService {
     });
 
     if (!document) {
-      throw new NotFoundException("Document not found");
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.NOT_FOUND,
+        "Document not found"
+      );
     }
 
     return document;
@@ -48,12 +53,29 @@ export class DocumentService {
     userId: string,
     name?: string
   ) {
+    if (!folderId) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.FOLDER_REQUIRED,
+        "folderId is required"
+      );
+    }
+
+    if (!file) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.FILE_REQUIRED,
+        "file is required"
+      );
+    }
+
     const folder = await (this.prisma as PrismaClientLike).folder.findUnique({
       where: { id: folderId },
     });
 
     if (!folder) {
-      throw new NotFoundException("Folder not found");
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.FOLDER_NOT_FOUND,
+        "Folder not found"
+      );
     }
 
     const fileName = file.originalname;

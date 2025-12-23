@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as fs from "fs";
 import * as path from "path";
@@ -26,10 +26,11 @@ interface FileInfo {
  * - Domain: bestpacific.com
  */
 @Injectable()
-export class SmbService implements OnModuleInit {
+export class SmbService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SmbService.name);
   private basePath: string;
   private readonly platform: "windows" | "linux";
+  private connectionTestTimer: NodeJS.Timeout | null = null;
 
   constructor(private readonly configService: ConfigService) {
     this.platform = process.platform === "win32" ? "windows" : "linux";
@@ -81,8 +82,18 @@ export class SmbService implements OnModuleInit {
   }
 
   async onModuleInit() {
+    // Skip connection test in test environment to avoid noisy logs/timers
+    const isTestEnv =
+      process.env.NODE_ENV === "test" ||
+      this.configService.get<string>("NODE_ENV") === "test";
+    if (isTestEnv) {
+      return;
+    }
+
     // Test connection on startup (non-blocking)
-    setTimeout(async () => {
+    // Store timer reference so it can be cleared if needed
+    // Use unref() to prevent timer from keeping process alive
+    this.connectionTestTimer = setTimeout(async () => {
       try {
         await this.testConnection();
         this.logger.log("SMB path accessible");
@@ -97,8 +108,22 @@ export class SmbService implements OnModuleInit {
             "Make sure you have network access to SMB share or mount drive first"
           );
         }
+      } finally {
+        this.connectionTestTimer = null;
       }
-    }, 1000); // Delay 1 second
+    }, 1000);
+    // Use unref() to prevent timer from keeping the process alive
+    if (this.connectionTestTimer && typeof this.connectionTestTimer.unref === "function") {
+      this.connectionTestTimer.unref();
+    }
+  }
+
+  async onModuleDestroy() {
+    // Clear connection test timer if it exists
+    if (this.connectionTestTimer) {
+      clearTimeout(this.connectionTestTimer);
+      this.connectionTestTimer = null;
+    }
   }
 
   async testConnection(): Promise<boolean> {
@@ -108,7 +133,13 @@ export class SmbService implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`SMB connection test error: ${errorMessage}`);
+      // Don't log errors in test environment to avoid noisy test output
+      const isTestEnv =
+        process.env.NODE_ENV === "test" ||
+        this.configService.get<string>("NODE_ENV") === "test";
+      if (!isTestEnv) {
+        this.logger.error(`SMB connection test error: ${errorMessage}`);
+      }
       throw error;
     }
   }
@@ -161,9 +192,15 @@ export class SmbService implements OnModuleInit {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to list directory ${fullPath}: ${errorMessage}`
-      );
+      // Don't log errors in test environment to avoid noisy test output
+      const isTestEnv =
+        process.env.NODE_ENV === "test" ||
+        this.configService.get<string>("NODE_ENV") === "test";
+      if (!isTestEnv) {
+        this.logger.error(
+          `Failed to list directory ${fullPath}: ${errorMessage}`
+        );
+      }
       throw error;
     }
   }

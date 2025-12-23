@@ -1,0 +1,83 @@
+{
+  "generic": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Please try again"
+  },
+  "auth": {
+    "login": {
+      "invalid_credentials": "Invalid username or password"
+    },
+    "token": {
+      "expired": "Token has expired",
+      "invalid": "Invalid token"
+    },
+    "user": {
+      "not_found": "User not found"
+    }
+  },
+  "user": {
+    "not_found": "User not found",
+    "create": {
+      "username_exists": "Username already exists",
+      "email_exists": "Email already exists",
+      "username_or_email_exists": "Username or email already exists"
+    }
+  },
+  "department": {
+    "not_found": "Department not found",
+    "create": {
+      "code_exists": "Department code already exists"
+    },
+    "list": {
+      "load_failed": "Failed to load department list"
+    }
+  },
+  "folder": {
+    "not_found": "Folder not found",
+    "create": {
+      "parent_not_found": "Parent folder not found or deleted"
+    },
+    "deleted": "Folder has been deleted"
+  },
+  "document": {
+    "not_found": "Document not found",
+    "upload": {
+      "folder_required": "Folder ID is required",
+      "file_required": "File is required",
+      "folder_not_found": "Folder not found"
+    }
+  },
+  "version": {
+    "not_found": "Version not found",
+    "document": {
+      "not_found": "Document not found"
+    }
+  },
+  "kpi": {
+    "record": {
+      "not_found": "KPI record not found"
+    },
+    "metric": {
+      "not_found": "KPI metric not found"
+    }
+  },
+  "permission": {
+    "not_found": "Permission not found",
+    "role": {
+      "not_found": "Role not found"
+    },
+    "folder": {
+      "not_found": "Folder not found"
+    },
+    "document": {
+      "not_found": "Document not found"
+    },
+    "permissions": {
+      "not_found": "One or more permissions not found"
+    },
+    "user": {
+      "not_found": "User not found"
+    },
+    "invalid_subject": "Invalid subject type"
+  }
+}

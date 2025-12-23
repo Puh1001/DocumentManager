@@ -4,7 +4,6 @@ import { ConfigService } from "@nestjs/config";
 
 describe("JwtStrategy", () => {
   let strategy: JwtStrategy;
-  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const mockConfigService = {
@@ -19,7 +18,6 @@ describe("JwtStrategy", () => {
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
-    configService = module.get(ConfigService);
   });
 
   afterEach(() => {

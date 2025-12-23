@@ -1,0 +1,83 @@
+{
+  "generic": {
+    "somethingWentWrong": "出错了",
+    "tryAgain": "请重试"
+  },
+  "auth": {
+    "login": {
+      "invalid_credentials": "用户名或密码错误"
+    },
+    "token": {
+      "expired": "令牌已过期",
+      "invalid": "令牌无效"
+    },
+    "user": {
+      "not_found": "未找到用户"
+    }
+  },
+  "user": {
+    "not_found": "未找到用户",
+    "create": {
+      "username_exists": "用户名已存在",
+      "email_exists": "电子邮件已存在",
+      "username_or_email_exists": "用户名或电子邮件已存在"
+    }
+  },
+  "department": {
+    "not_found": "未找到部门",
+    "create": {
+      "code_exists": "部门代码已存在"
+    },
+    "list": {
+      "load_failed": "无法加载部门列表"
+    }
+  },
+  "folder": {
+    "not_found": "未找到文件夹",
+    "create": {
+      "parent_not_found": "父文件夹不存在或已被删除"
+    },
+    "deleted": "文件夹已被删除"
+  },
+  "document": {
+    "not_found": "未找到文档",
+    "upload": {
+      "folder_required": "需要文件夹ID",
+      "file_required": "需要文件",
+      "folder_not_found": "未找到文件夹"
+    }
+  },
+  "version": {
+    "not_found": "未找到版本",
+    "document": {
+      "not_found": "未找到文档"
+    }
+  },
+  "kpi": {
+    "record": {
+      "not_found": "未找到KPI记录"
+    },
+    "metric": {
+      "not_found": "未找到KPI指标"
+    }
+  },
+  "permission": {
+    "not_found": "未找到权限",
+    "role": {
+      "not_found": "未找到角色"
+    },
+    "folder": {
+      "not_found": "未找到文件夹"
+    },
+    "document": {
+      "not_found": "未找到文档"
+    },
+    "permissions": {
+      "not_found": "一个或多个权限不存在"
+    },
+    "user": {
+      "not_found": "未找到用户"
+    },
+    "invalid_subject": "无效的主题类型"
+  }
+}

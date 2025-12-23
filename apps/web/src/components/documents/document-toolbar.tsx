@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Upload, RefreshCw, FolderOpen, MapPin, RotateCw } from "lucide-react";
 
@@ -24,6 +25,7 @@ export function DocumentToolbar({
   onRefresh,
   onSync,
 }: DocumentToolbarProps) {
+  const t = useTranslations("documents.toolbar");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -46,9 +48,7 @@ export function DocumentToolbar({
 
       // Copy to clipboard
       await navigator.clipboard.writeText(data.networkPath);
-      alert(
-        `Đường dẫn đã được sao chép:\n${data.networkPath}\n\nDán vào Windows Explorer (Win+E) để mở thư mục.`
-      );
+      alert(t("pathCopied", { path: data.networkPath }));
     } catch (error) {
       console.error("Failed to get folder path:", error);
     }
@@ -94,25 +94,25 @@ export function DocumentToolbar({
             <RotateCw
               className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`}
             />
-            {isSyncing ? "Đang sync..." : "Sync với file system"}
+            {isSyncing ? t("syncing") : t("sync")}
           </Button>
         )}
 
         <Button variant="outline" size="sm" onClick={onRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Làm mới
+          {t("refresh")}
         </Button>
 
         {folder && (
           <>
             <Button variant="outline" size="sm" onClick={handleOpenFolder}>
               <FolderOpen className="h-4 w-4 mr-2" />
-              Mở thư mục
+              {t("openFolder")}
             </Button>
 
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload
+              {t("upload")}
             </Button>
             <input
               ref={fileInputRef}

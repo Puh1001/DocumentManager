@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/lib/auth-context";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap", // Better loading behavior, prevents blocking
-  fallback: ["system-ui", "arial"], // Fallback fonts if Google Fonts fails
-});
+import { routing } from "../../i18n/routing";
 
 export const metadata: Metadata = {
   title: "ISO Document Manager",
@@ -20,14 +12,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Root layout provides html/body for root redirect page
+  // Locale layout will override this for [locale] routes
   return (
-    <html lang="vi">
-      <body className={inter.className}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
-      </body>
+    <html lang={routing.defaultLocale}>
+      <body>{children}</body>
     </html>
   );
 }

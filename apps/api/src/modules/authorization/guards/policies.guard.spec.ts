@@ -4,10 +4,7 @@ import { Reflector } from "@nestjs/core";
 import { PoliciesGuard } from "./policies.guard";
 import { CaslAbilityFactory } from "../factories/casl-ability.factory";
 import { PrismaService } from "@/common/prisma/prisma.service";
-import {
-  CHECK_POLICIES_KEY,
-  PolicyHandler,
-} from "../decorators/check-policies.decorator";
+import { PolicyHandler } from "../decorators/check-policies.decorator";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import { AppAbility, Document, Folder } from "../types/ability.types";
 

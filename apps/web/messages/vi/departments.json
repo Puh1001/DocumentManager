@@ -1,0 +1,29 @@
+{
+  "title": "Quản lý Phòng ban",
+  "description": "Quản lý danh sách các phòng ban trong hệ thống",
+  "add": "Thêm phòng ban",
+  "empty": "Chưa có phòng ban nào",
+  "code": "Mã",
+  "active": "Hoạt động",
+  "inactive": "Không hoạt động",
+  "form": {
+    "createTitle": "Thêm phòng ban mới",
+    "updateTitle": "Cập nhật phòng ban",
+    "createDescription": "Điền thông tin để tạo phòng ban mới",
+    "updateDescription": "Cập nhật thông tin phòng ban",
+    "name": "Tên phòng ban",
+    "namePlaceholder": "Ví dụ: 转机部 chuyển máy dệt dây đai-V-TECH",
+    "codePlaceholder": "Ví dụ: V-TECH",
+    "isActive": "Phòng ban đang hoạt động",
+    "processing": "Đang xử lý...",
+    "create": "Tạo mới",
+    "update": "Cập nhật"
+  },
+  "errors": {
+    "loadFailed": "Không tải được danh sách phòng ban",
+    "createFailed": "Không thể tạo phòng ban",
+    "updateFailed": "Không thể cập nhật phòng ban",
+    "deleteFailed": "Không thể xóa phòng ban",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa phòng ban này?"
+  }
+}

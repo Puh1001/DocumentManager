@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { CustomException } from "@/common/errors/custom-exception";
 import { PermissionService } from "./permission.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SubjectType } from "@prisma/client";
@@ -98,7 +98,7 @@ describe("PermissionService", () => {
       mockPrismaService.permission.findUnique.mockResolvedValue(null);
 
       await expect(service.findPermissionById(permissionId)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -136,7 +136,7 @@ describe("PermissionService", () => {
       mockPrismaService.role.findUnique.mockResolvedValue(null);
 
       await expect(service.getRolePermissions(roleId)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -199,7 +199,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.assignPermissionsToRole(roleId, permissionIds)
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
 
     it("should throw BadRequestException when permission not found", async () => {
@@ -214,7 +214,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.assignPermissionsToRole(roleId, permissionIds)
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(CustomException);
     });
   });
 
@@ -255,7 +255,7 @@ describe("PermissionService", () => {
       mockPrismaService.folder.findUnique.mockResolvedValue(null);
 
       await expect(service.getFolderPermissions(folderId)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -340,7 +340,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.setFolderPermissions(folderId, permissions)
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
 
     it("should throw BadRequestException when user not found", async () => {
@@ -360,7 +360,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.setFolderPermissions(folderId, permissions)
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(CustomException);
     });
 
     it("should throw BadRequestException when role not found", async () => {
@@ -380,7 +380,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.setFolderPermissions(folderId, permissions)
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(CustomException);
     });
   });
 
@@ -420,7 +420,7 @@ describe("PermissionService", () => {
       mockPrismaService.document.findUnique.mockResolvedValue(null);
 
       await expect(service.getDocumentPermissions(documentId)).rejects.toThrow(
-        NotFoundException
+        CustomException
       );
     });
   });
@@ -494,7 +494,7 @@ describe("PermissionService", () => {
 
       await expect(
         service.setDocumentPermissions(documentId, permissions)
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(CustomException);
     });
   });
 });

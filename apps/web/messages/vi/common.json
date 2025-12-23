@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "ISO Docs",
+    "description": "Quản lý Tài liệu"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "documents": "Tài liệu",
+    "kpi": "KPI",
+    "departments": "Phòng ban",
+    "users": "Người dùng",
+    "permissions": "Phân quyền",
+    "settings": "Cài đặt"
+  },
+  "actions": {
+    "view": "Xem",
+    "download": "Tải xuống",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "create": "Tạo",
+    "update": "Cập nhật",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "submit": "Gửi",
+    "close": "Đóng",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "refresh": "Làm mới"
+  },
+  "status": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "noData": "Không có dữ liệu"
+  },
+  "searchPlaceholder": "Tìm kiếm tài liệu...",
+  "admin": "Quản trị viên"
+}

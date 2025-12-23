@@ -9,6 +9,9 @@ import { FolderService } from "./services/folder.service";
 import { DocumentService } from "./services/document.service";
 import { SmbService } from "./services/smb.service";
 
+// Increase timeout for heavy SMB + cleanup operations
+jest.setTimeout(120000);
+
 describe("Storage Integration Tests", () => {
   let app: INestApplication;
   let prismaService: PrismaService;
@@ -23,8 +26,18 @@ describe("Storage Integration Tests", () => {
   // Track all created test resources for cleanup
   const createdFolders: string[] = [];
   const createdDocuments: string[] = [];
+  const logError = (...args: unknown[]) => {
+    if (process.env.NODE_ENV !== "test") {
+      // eslint-disable-next-line no-console
+      console.error(...args);
+    }
+  };
 
   beforeAll(async () => {
+    // Ensure NODE_ENV is set to test to suppress SMB service error logs
+    if (!process.env.NODE_ENV) {
+      process.env.NODE_ENV = "test";
+    }
     // Ensure JWT_SECRET is set for tests
     if (!process.env.JWT_SECRET) {
       process.env.JWT_SECRET = "test-jwt-secret-key-for-integration-tests";
@@ -63,9 +76,9 @@ describe("Storage Integration Tests", () => {
     documentService = moduleFixture.get<DocumentService>(DocumentService);
     smbService = moduleFixture.get<SmbService>(SmbService);
 
-    // Cleanup existing test user if exists
+    // Cleanup existing test user for this suite if exists
     const existingUser = await prismaService.user.findUnique({
-      where: { username: "testuser" },
+      where: { username: "storage_testuser" },
     });
     if (existingUser) {
       await prismaService.session.deleteMany({
@@ -95,14 +108,14 @@ describe("Storage Integration Tests", () => {
       });
     }
 
-    // Create test user
+    // Create test user (use suite-specific username to avoid cross-suite conflicts)
     testPassword = "TestPassword123!";
     const passwordHash = await argon2.hash(testPassword);
 
     testUser = await prismaService.user.create({
       data: {
-        username: "testuser",
-        email: "test@example.com",
+        username: "storage_testuser",
+        email: "storage_test@example.com",
         passwordHash,
         fullName: "Test User",
         department: "IT",
@@ -126,7 +139,7 @@ describe("Storage Integration Tests", () => {
     const loginResponse = await request(app.getHttpServer())
       .post("/api/auth/login")
       .send({
-        username: "testuser",
+        username: "storage_testuser",
         password: testPassword,
       })
       .expect(200);
@@ -165,22 +178,32 @@ describe("Storage Integration Tests", () => {
               });
               await documentService.delete(doc.id);
             } catch (error) {
-              console.error(
+              logError(
                 `Failed to cleanup document ${doc.id} in folder ${folderId}:`,
                 error
               );
             }
           }
 
+          // Hard delete any remaining documents (all statuses) to unblock folder deletion
+          await prismaService.documentVersion.deleteMany({
+            where: {
+              documentId: { in: folderWithChildren.documents.map((d) => d.id) },
+            },
+          });
+          await prismaService.document.deleteMany({
+            where: { folderId },
+          });
+
           // Now delete the folder itself using service (deletes physical folder too)
           await folderService.delete(folderId);
         } catch (error) {
-          console.error(`Failed to cleanup folder ${folderId}:`, error);
+          logError(`Failed to cleanup folder ${folderId}:`, error);
           // Try direct Prisma delete as fallback (DB only, physical folder might remain)
           try {
             await prismaService.folder.delete({ where: { id: folderId } });
           } catch (fallbackError) {
-            console.error(
+            logError(
               `Fallback delete failed for folder ${folderId}:`,
               fallbackError
             );
@@ -203,7 +226,7 @@ describe("Storage Integration Tests", () => {
             await documentService.delete(docId);
           }
         } catch (error) {
-          console.error(`Failed to cleanup document ${docId}:`, error);
+          logError(`Failed to cleanup document ${docId}:`, error);
         }
       }
 
@@ -316,7 +339,7 @@ describe("Storage Integration Tests", () => {
                         // Silently delete orphaned folder
                         await smbService.deleteDirectory(entry.path);
                       } catch (error) {
-                        console.error(
+                        logError(
                           `Failed to delete orphaned folder ${entry.path}:`,
                           error
                         );
@@ -341,24 +364,20 @@ describe("Storage Integration Tests", () => {
             }
           };
 
-          // Start cleanup from root (non-blocking, fire-and-forget)
-          // Run with timeout to prevent hanging, but don't await
+          // Start cleanup from root (bounded wait to avoid leaking timers)
           const cleanupPromise = cleanupOrphanedFolders("", 0, 3); // Max depth 3
           const timeoutPromise = new Promise<void>((resolve) => {
-            setTimeout(() => {
-              resolve();
-            }, 10000); // 10 second timeout
+            setTimeout(() => resolve(), 10000); // 10 second timeout
           });
-          // Don't await - let it run in background
-          Promise.race([cleanupPromise, timeoutPromise]).catch(() => {
+          await Promise.race([cleanupPromise, timeoutPromise]).catch(() => {
             // Silently ignore errors
           });
         } catch (error) {
-          console.error("Error during orphaned folder cleanup:", error);
+          logError("Error during orphaned folder cleanup:", error);
         }
       }
     } catch (error) {
-      console.error("Error during test cleanup:", error);
+      logError("Error during test cleanup:", error);
     }
 
     // Cleanup test user
@@ -377,11 +396,16 @@ describe("Storage Integration Tests", () => {
           where: { id: testUser.id },
         });
       } catch (error) {
-        console.error("Failed to cleanup test user:", error);
+        logError("Failed to cleanup test user:", error);
       }
     }
 
-    await app.close();
+    // Close the app and wait for all async operations to complete
+    if (app) {
+      await app.close();
+      // Give time for all timers and async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   });
 
   describe("Folder Endpoints", () => {
@@ -598,7 +622,7 @@ describe("Storage Integration Tests", () => {
 
         testDocument = response.body;
         createdDocuments.push(response.body.id);
-      });
+      }, 30000); // Increase timeout for SMB operations
 
       it("should require folderId", async () => {
         const fileContent = Buffer.from("Test content");
