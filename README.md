@@ -11,6 +11,10 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 📁 **Quản lý File & Folder**: Browse, upload, download tài liệu từ SMB shared folder
 - 🔄 **File System Sync**: Two-pass sync với soft delete để đồng bộ database với file system
 - 📊 **Dashboard Statistics**: Thống kê tổng quan (documents, folders, users, recent uploads)
+- 🏢 **Department Management**: Quản lý phòng ban với CRUD operations
+- 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
+- 🔧 **Maintenance Notices**: Quản lý thông báo bảo trì theo phòng ban
+- 🌐 **Internationalization**: Hỗ trợ đa ngôn ngữ (English, Vietnamese, Chinese)
 - 🔒 **Phân quyền RBAC + ABAC**: Role-based + Attribute-based access control
 - 📄 **Document Viewer**: Xem PDF/DOCX trực tiếp trên web với copy protection
 - 📝 **Version Control**: Theo dõi lịch sử thay đổi, restore phiên bản cũ
@@ -27,6 +31,9 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 | Auth       | JWT + Passport                              |
 | Storage    | SMB/CIFS (fs module - platform-aware)       |
 | Permission | CASL (ABAC + RBAC)                          |
+| i18n       | next-intl (English, Vietnamese, Chinese)    |
+| Charts     | Chart.js (KPI visualization)                |
+| Export     | ExcelJS (KPI export)                        |
 
 ### CI/CD & Repository
 
@@ -152,6 +159,10 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 | GET    | /storage/documents/:id          | Document info         |
 | GET    | /storage/documents/:id/stream   | Stream for viewer     |
 | GET    | /storage/documents/:id/versions | Version history       |
+| GET    | /departments                    | List departments      |
+| POST   | /departments                    | Create department      |
+| GET    | /kpi/records                    | List KPI records      |
+| GET    | /kpi/records/:id/export         | Export KPI to Excel   |
 
 ### Users
 
@@ -203,7 +214,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 
 ## 📊 Current Status
 
-**Phase 1-3 Complete (60%)**
+**Phase 1-3 + Additional Features Complete (65%)**
 
 - ✅ Project setup & infrastructure
 - ✅ Authentication & user management
@@ -217,7 +228,22 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Enhanced metadata extraction (dates, MIME type)
   - ✅ Real-time sync (WebSocket)
   - ✅ Automated sync scheduling
-- 🔲 Authorization (RBAC + ABAC)
+- ✅ Department Management
+  - ✅ Department CRUD operations
+  - ✅ Department management UI
+- ✅ KPI Tracking
+  - ✅ KPI record management
+  - ✅ Monthly metric tracking
+  - ✅ Chart visualization
+  - ✅ Excel export
+- ✅ Maintenance Notices
+  - ✅ Notice creation and management
+  - ✅ Department filtering
+  - ✅ Dashboard integration
+- ✅ Internationalization (i18n)
+  - ✅ Multi-language support (EN, VI, ZH)
+  - ✅ Locale-based routing
+- 🔄 Authorization (RBAC + ABAC) - In Progress (50%)
 - 🔲 Document viewer & security
 - 🔲 Version control
 - 🔲 Local edit integration

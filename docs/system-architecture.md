@@ -1,7 +1,7 @@
 # System Architecture
 
-**Last Updated:** 2024-12-19  
-**Status:** Phase 1-3 In Progress (40%)
+**Last Updated:** 2025-01-XX  
+**Status:** Phase 1-3 Complete, Additional Features Added (65%)
 
 ---
 
@@ -30,6 +30,10 @@ ISO Document Management System follows a **Librarian Model** architecture where 
 │  │  │  Auth   │  │  Users   │  │ Storage  │  │  Perms   │ │  │
 │  │  │ Module │  │  Module  │  │  Module  │  │  Module  │ │  │
 │  │  └─────────┘  └──────────┘  └──────────┘  └──────────┘ │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐            │  │
+│  │  │  Dept   │  │   KPI    │  │  Maint   │            │  │
+│  │  │ Module │  │  Module  │  │  Module  │            │  │
+│  │  └─────────┘  └──────────┘  └──────────┘            │  │
 │  └──────────────────────────────────────────────────────────┘  │
 └─────────┬────────────────────────────────────────────────────────┘
           │
@@ -54,10 +58,13 @@ ISO Document Management System follows a **Librarian Model** architecture where 
 ```
 apps/web/
 ├── App Router (Server Components)
-│   ├── /login              # Public login page
-│   └── /dashboard          # Protected routes
-│       ├── /documents      # Document browser
-│       └── /documents/[id]/view  # Document viewer
+│   ├── [locale]/          # Internationalization
+│   │   ├── /login              # Public login page
+│   │   └── /dashboard          # Protected routes
+│   │       ├── /documents      # Document browser
+│   │       ├── /departments    # Department management
+│   │       ├── /kpi            # KPI tracking
+│   │       └── /maintenance    # Maintenance notices
 │
 ├── Client Components
 │   ├── Layout (Sidebar, Header)
@@ -83,6 +90,16 @@ apps/api/
 │   ├── Users
 │   │   ├── CRUD operations
 │   │   └── Role assignment
+│   │
+│   ├── Department
+│   │   ├── CRUD operations
+│   │   └── Department listing
+│   │
+│   ├── KPI
+│   │   ├── KPI Record service (by department/year)
+│   │   ├── KPI Metric service (monthly values)
+│   │   ├── KPI Export service (Excel)
+│   │   └── Calculation logic (efficiency, averages)
 │   │
 │   └── Storage
 │       ├── SMB Service (fs module - platform-aware)
@@ -235,6 +252,8 @@ Folder ──┬── Folder (self-reference for hierarchy)
 - **Folder**: Self-referential (parent-child)
 - **Document → Folder**: Many-to-one
 - **DocumentVersion → Document**: One-to-many
+- **Department → KpiRecord**: One-to-many
+- **KpiRecord → KpiMetric**: One-to-many
 - **FolderPermission**: Folder + Subject (User/Role) + Permission
 - **DocumentPermission**: Document + Subject (User/Role) + Permission
 
@@ -357,14 +376,18 @@ Folder ──┬── Folder (self-reference for hierarchy)
 | Frontend | Next.js      | 14.0.4   | React framework with App Router |
 | Frontend | Tailwind CSS | 3.4.0    | Utility-first CSS               |
 | Frontend | ShadcnUI     | Latest   | Component library               |
+| Frontend | next-intl    | Latest   | Internationalization           |
+| Frontend | Chart.js     | Latest   | Chart visualization             |
 | Backend  | NestJS       | 10.3.0   | Node.js framework               |
 | Backend  | Prisma       | 5.7.1    | ORM for PostgreSQL              |
 | Database | PostgreSQL   | 16       | Relational database             |
 | Cache    | Redis        | 7        | Rate limiting, sessions         |
 | Auth     | Passport     | 0.7.0    | Authentication middleware       |
 | Auth     | JWT          | 10.2.0   | Token-based auth                |
+| Auth     | CASL         | Latest   | Authorization (RBAC + ABAC)    |
 | Storage  | Node.js fs   | Built-in | SMB file access                 |
 | Viewer   | mammoth.js   | Latest   | DOCX to HTML                    |
+| Export   | ExcelJS      | Latest   | Excel export (KPI)              |
 | Monorepo | Turborepo    | 2.3.3    | Build system                    |
 
 ## API Architecture
@@ -385,6 +408,26 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   ├── POST   /          # Create
 │   ├── PATCH  /:id       # Update
 │   └── DELETE /:id       # Deactivate
+│
+├── /departments
+│   ├── GET    /          # List all
+│   ├── GET    /:id       # Get one
+│   ├── POST   /          # Create (admin)
+│   ├── PATCH  /:id       # Update (admin)
+│   └── DELETE /:id       # Delete (admin)
+│
+├── /kpi
+│   ├── /records
+│   │   ├── GET    /          # List (query: departmentId, year)
+│   │   ├── GET    /:id       # Get with metrics
+│   │   ├── POST   /          # Create
+│   │   ├── PATCH  /:id       # Update
+│   │   ├── DELETE /:id       # Delete
+│   │   └── GET    /:id/export # Export to Excel
+│   └── /metrics
+│       ├── POST   /          # Add metric
+│       ├── PATCH  /:id       # Update metric
+│       └── DELETE /:id       # Delete metric
 │
 └── /storage
     ├── /folders

@@ -33,6 +33,9 @@ src/
 └── modules/
     ├── auth/              # Authentication (JWT, Passport)
     ├── users/             # User management
+    ├── department/        # Department management
+    ├── kpi/               # KPI tracking and metrics
+    ├── authorization/     # RBAC + ABAC permissions
     └── storage/           # File/folder management
         ├── controllers/
         │   ├── folder.controller.ts
@@ -57,22 +60,25 @@ src/
 ```
 src/
 ├── app/
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home (redirect)
-│   ├── login/             # Login page
-│   └── dashboard/
-│       ├── layout.tsx     # Dashboard layout
-│       ├── page.tsx       # Dashboard home
-│       └── documents/
-│           ├── page.tsx   # Document browser
-│           └── [id]/view/ # Document viewer
+│   ├── [locale]/          # Internationalization routes
+│   │   ├── layout.tsx     # Root layout
+│   │   ├── page.tsx       # Home (redirect)
+│   │   ├── login/         # Login page
+│   │   └── dashboard/
+│   │       ├── layout.tsx     # Dashboard layout
+│   │       ├── page.tsx      # Dashboard home
+│   │       ├── documents/    # Document browser
+│   │       ├── departments/  # Department management
+│   │       ├── kpi/          # KPI tracking
+│   │       └── maintenance/  # Maintenance notices
 ├── components/
 │   ├── ui/                # ShadcnUI components
 │   ├── layout/            # Sidebar, Header
 │   ├── documents/         # Document components
 │   └── viewers/           # PDF/DOCX viewers
 ├── hooks/
-│   └── use-copy-protection.ts
+│   ├── use-copy-protection.ts
+│   └── use-maintenance-notices.ts
 └── lib/
     ├── auth-context.tsx   # Auth state
     ├── api.ts             # API client
@@ -124,6 +130,28 @@ src/
 - **Automated sync scheduling** (cron jobs)
 - **Dashboard statistics** (total documents, folders, users, recent uploads)
 
+### 2.5. Department Management
+
+- Department CRUD operations
+- Department listing and filtering
+- Integration with KPI and maintenance notices
+- Department-based access control
+
+### 2.6. KPI Tracking
+
+- KPI record management (by department and year)
+- KPI metric tracking (monthly values)
+- Auto-calculation of efficiency and averages
+- Chart visualization (Chart.js)
+- Excel export functionality
+
+### 2.7. Maintenance Notices
+
+- Maintenance notice creation and management
+- Department-specific notices
+- Dashboard integration (upcoming notices)
+- Local storage persistence (demo mode)
+
 ### 3. Version Control
 
 - Automatic versioning on upload
@@ -137,6 +165,8 @@ src/
 - Actions: view, download, print, edit, create, delete, manage
 - Folder-level permissions with inheritance
 - Document-level permissions (override folder)
+- CASL-based authorization system
+- Policy-based access control
 
 ### 5. Document Viewer
 
@@ -151,6 +181,13 @@ src/
 - Generate network path for clipboard
 - Instructions for Windows Explorer
 
+### 7. Internationalization (i18n)
+
+- Multi-language support (English, Vietnamese, Chinese)
+- next-intl integration
+- Locale-based routing
+- Translation files for all features
+
 ## Database Schema
 
 ### Core Models
@@ -163,6 +200,9 @@ src/
 - **Document**: Document metadata
   - **Status**: ACTIVE, DELETED (soft delete)
 - **DocumentVersion**: Version history
+- **Department**: Department information
+- **KpiRecord**: KPI records by department and year
+- **KpiMetric**: KPI metric values (monthly)
 - **Permission**: Action definitions
 - **FolderPermission**: Folder-level access
 - **DocumentPermission**: Document-level access
@@ -213,3 +253,13 @@ docker-compose -f docker-compose.prod.yml up -d
   - `security.yml`: Dependency review (CodeQL disabled for private repo; enable when public/GHAS)
   - `deploy.yml`: Trigger deploy scripts cho staging / production
   - Documentation: `.github/workflows/README.md`
+
+## Recent Updates
+
+### New Features (2024-2025)
+
+- **Department Management Module**: Full CRUD operations for departments
+- **KPI Tracking Module**: Track KPIs by department with monthly metrics, charts, and Excel export
+- **Maintenance Notices**: Create and manage maintenance notices with department filtering
+- **Internationalization**: Multi-language support with next-intl (English, Vietnamese, Chinese)
+- **Enhanced Dashboard**: Statistics cards, upcoming maintenance notices, activity tracking

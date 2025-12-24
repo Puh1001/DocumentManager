@@ -3,8 +3,8 @@
 **Project Name:** ISO Document Management System (Librarian Model)  
 **Version:** 1.0.0  
 **Created:** 2024-12-18  
-**Last Updated:** 2024-12-19  
-**Status:** 🟢 In Development (Phase 1-3 In Progress - 40%)
+**Last Updated:** 2025-01-XX  
+**Status:** 🟢 In Development (Phase 1-3 Complete, Additional Features Added - 65%)
 
 ---
 
@@ -49,6 +49,28 @@ Xây dựng web-based document management system:
 - **Two-pass file system sync** with soft delete
 - **Dashboard statistics** API
 - Automatic detection of deleted/renamed/moved files
+
+### 1.5. Department Management
+
+- Department CRUD operations
+- Department listing and management UI
+- Integration with KPI and maintenance features
+- Department-based filtering and access control
+
+### 1.6. KPI Tracking
+
+- KPI record management by department and year
+- Monthly metric tracking with auto-calculations
+- Chart visualization (Chart.js)
+- Excel export functionality
+- Real-time data updates
+
+### 1.7. Maintenance Notices
+
+- Create and manage maintenance notices
+- Department-specific notices
+- Dashboard integration (upcoming notices display)
+- Edit and delete functionality
 
 ### 2. Authorization (RBAC + ABAC)
 
@@ -97,7 +119,9 @@ Xây dựng web-based document management system:
 - **Auth:** JWT + Passport (username/password)
 - **Storage:** SMB/CIFS via direct file system access (Node.js fs)
 - **Viewer:** PDF (iframe), DOCX (mammoth.js)
-- **Authorization:** CASL (planned for Phase 4)
+- **Authorization:** CASL (RBAC + ABAC)
+- **i18n:** next-intl (English, Vietnamese, Chinese)
+- **Charts:** Chart.js (for KPI visualization)
 - **Monorepo:** Turborepo
 - **Container:** Docker + Docker Compose
 - **CI/CD:** GitHub Actions (CI, Docker build, security scan, deploy)
@@ -114,10 +138,16 @@ Xây dựng web-based document management system:
 | Phase                        | Duration       | Status         |
 | ---------------------------- | -------------- | -------------- |
 | Phase 1-2: Foundation        | 1 week         | ✅ Complete    |
-| Phase 3-4: Core Features     | 1.5 weeks      | 🔄 In Progress |
+| Phase 3: Storage & Files    | 1.5 weeks      | ✅ Complete    |
+| Additional Features         | Ongoing        | ✅ In Progress |
+| - Department Management      | -              | ✅ Complete    |
+| - KPI Tracking               | -              | ✅ Complete    |
+| - Maintenance Notices         | -              | ✅ Complete    |
+| - Internationalization       | -              | ✅ Complete    |
+| Phase 4: Authorization      | 1 week         | 🔄 In Progress |
 | Phase 5-6: Document Features | 1 week         | 🔲 Pending     |
 | Phase 7-8: Integration & QA  | 1 week         | 🔲 Pending     |
-| **Total**                    | **~4.5 weeks** | **40% Done**   |
+| **Total**                    | **~4.5 weeks** | **65% Done**   |
 
 ## Risks & Mitigations
 

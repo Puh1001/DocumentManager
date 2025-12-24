@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Last Updated:** 2024-12-19  
-**Current Phase:** Phase 1-3 In Progress (40%)
+**Last Updated:** 2025-01-XX  
+**Current Phase:** Phase 1-3 Complete, Additional Features Added (65%)
 
 ---
 
@@ -16,7 +16,11 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 | 1     | Project Setup & Infrastructure   | ✅ Complete | 100%     | 2-3 days |
 | 2     | Authentication & User Management | ✅ Complete | 100%     | 2-3 days |
 | 3     | Storage & File Management        | ✅ Complete | 100%     | 3-4 days |
-| 4     | Authorization (RBAC + ABAC)      | 🔲 Pending  | 0%       | 3-4 days |
+| 3.5   | Department Management            | ✅ Complete | 100%     | 1-2 days |
+| 3.6   | KPI Tracking                     | ✅ Complete | 100%     | 3-4 days |
+| 3.7   | Maintenance Notices               | ✅ Complete | 100%     | 1-2 days |
+| 3.8   | Internationalization (i18n)      | ✅ Complete | 100%     | 1-2 days |
+| 4     | Authorization (RBAC + ABAC)      | 🔄 In Progress | 50%   | 3-4 days |
 | 5     | Document Viewer & Security       | 🔲 Pending  | 0%       | 2-3 days |
 | 6     | Version Control                  | 🔲 Pending  | 0%       | 2-3 days |
 | 7     | Local Edit Integration           | 🔲 Pending  | 0%       | 2 days   |
@@ -117,18 +121,114 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 ---
 
-## Phase 4: Authorization (RBAC + ABAC) 🔲
+## Phase 3.5: Department Management ✅
 
-**Status:** Pending  
+**Status:** Complete  
+**Duration:** 1-2 days  
+**Completed:** 2024-12-XX
+
+### Completed Tasks
+
+- [x] Department database schema (Prisma)
+- [x] Department API module (NestJS)
+- [x] Department CRUD endpoints
+- [x] Department management UI
+- [x] Integration with KPI and maintenance features
+
+### Deliverables
+
+- ✅ Department management API
+- ✅ Department management UI
+- ✅ Department integration with other modules
+
+---
+
+## Phase 3.6: KPI Tracking ✅
+
+**Status:** Complete  
 **Duration:** 3-4 days  
-**Priority:** P1 - High
+**Completed:** 2024-12-XX
 
-### Tasks
+### Completed Tasks
 
-- [ ] CASL ability factory
-- [ ] Permission models (FolderPermission, DocumentPermission)
-- [ ] PoliciesGuard implementation
-- [ ] Permission management API
+- [x] KPI database schema (Department, KpiRecord, KpiMetric)
+- [x] KPI API module (NestJS)
+- [x] KPI record CRUD operations
+- [x] KPI metric management
+- [x] Auto-calculation logic (efficiency, averages)
+- [x] Chart visualization (Chart.js)
+- [x] Excel export functionality
+- [x] KPI management UI
+
+### Deliverables
+
+- ✅ KPI tracking system
+- ✅ Chart visualization
+- ✅ Excel export
+- ✅ KPI management UI
+
+---
+
+## Phase 3.7: Maintenance Notices ✅
+
+**Status:** Complete  
+**Duration:** 1-2 days  
+**Completed:** 2024-12-XX
+
+### Completed Tasks
+
+- [x] Maintenance notice data model
+- [x] Maintenance notice hook (localStorage)
+- [x] Maintenance notice form UI
+- [x] Maintenance notice list UI
+- [x] Department filtering
+- [x] Edit and delete functionality
+- [x] Dashboard integration
+- [x] Internationalization support
+
+### Deliverables
+
+- ✅ Maintenance notice management
+- ✅ Dashboard integration
+- ✅ Department filtering
+
+---
+
+## Phase 3.8: Internationalization (i18n) ✅
+
+**Status:** Complete  
+**Duration:** 1-2 days  
+**Completed:** 2024-12-XX
+
+### Completed Tasks
+
+- [x] next-intl integration
+- [x] Locale-based routing
+- [x] Translation files (English, Vietnamese, Chinese)
+- [x] Translation coverage for all features
+- [x] Locale switcher (if implemented)
+
+### Deliverables
+
+- ✅ Multi-language support
+- ✅ Translation infrastructure
+- ✅ Localized UI
+
+---
+
+## Phase 4: Authorization (RBAC + ABAC) 🔄
+
+**Status:** In Progress  
+**Duration:** 3-4 days  
+**Priority:** P1 - High  
+**Progress:** 50%
+
+### Completed Tasks
+
+- [x] CASL ability factory (partial)
+- [x] Permission models (FolderPermission, DocumentPermission)
+- [x] PoliciesGuard implementation (partial)
+- [x] Permission management API (partial)
 - [ ] Permission UI in admin panel
 - [ ] Conditional rendering based on permissions
 - [ ] Permission inheritance logic
@@ -247,12 +347,14 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 ```
 Week 1: Phase 1-2 (Foundation) ✅
-Week 2: Phase 3-4 (Core Features)
-Week 3: Phase 5-6 (Document Features)
-Week 4: Phase 7-8 (Integration & QA)
+Week 2: Phase 3 (Storage & Files) ✅
+Week 2-3: Phase 3.5-3.8 (Additional Features) ✅
+Week 3-4: Phase 4 (Authorization) 🔄
+Week 4-5: Phase 5-6 (Document Features) 🔲
+Week 5-6: Phase 7-8 (Integration & QA) 🔲
 ```
 
-**Total Estimated Duration:** ~4.5 weeks
+**Total Estimated Duration:** ~6 weeks (extended due to additional features)
 
 ---
 
@@ -260,8 +362,8 @@ Week 4: Phase 7-8 (Integration & QA)
 
 ### Phase 9: Advanced Features
 
-- [ ] KPI Tracking module
-- [ ] Equipment Maintenance module
+- [x] KPI Tracking module ✅
+- [ ] Equipment Maintenance module (enhanced)
 - [ ] Improvement Items (CR) module
 - [ ] Advanced search with full-text
 - [ ] Document templates
