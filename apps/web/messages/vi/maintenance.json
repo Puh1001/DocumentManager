@@ -4,6 +4,8 @@
   "form": {
     "sectionTitle": "Tạo thông báo bảo trì",
     "titleLabel": "Tiêu đề",
+    "departmentLabel": "Phòng ban",
+    "allDepartments": "Tất cả phòng ban",
     "startLabel": "Ngày bắt đầu",
     "endLabel": "Ngày kết thúc",
     "detailsLabel": "Chi tiết / ảnh hưởng",
@@ -15,7 +17,21 @@
   "list": {
     "sectionTitle": "Lịch bảo trì",
     "empty": "Chưa có thông báo bảo trì.",
-    "windowLabel": "Thời gian"
+    "windowLabel": "Thời gian",
+    "department": "Phòng ban",
+    "allDepartments": "Tất cả phòng ban"
+  },
+  "actions": {
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy"
+  },
+  "deleteConfirm": {
+    "title": "Xóa thông báo bảo trì",
+    "message": "Bạn có chắc chắn muốn xóa thông báo này?",
+    "confirm": "Xóa",
+    "cancel": "Hủy"
   },
   "toast": {
     "saved": "Đã thêm thông báo bảo trì."

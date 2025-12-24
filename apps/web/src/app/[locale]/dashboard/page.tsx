@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Folder, Users, Clock, CalendarDays } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, type Department } from "@/lib/api";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
+import { useTranslations as useMaintenanceTranslations } from "next-intl";
 
 interface Stats {
   totalDocuments: number;
@@ -22,6 +23,7 @@ const formatDate = (date: string) =>
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
+  const maintT = useMaintenanceTranslations("maintenance");
   const { notices } = useMaintenanceNotices();
   const [stats, setStats] = useState<Stats>({
     totalDocuments: 0,
@@ -29,6 +31,7 @@ export default function DashboardPage() {
     totalUsers: 0,
     recentUploads: 0,
   });
+  const [departments, setDepartments] = useState<Department[]>([]);
   const upcomingNotices = useMemo(
     () =>
       [...notices]
@@ -36,6 +39,12 @@ export default function DashboardPage() {
         .slice(0, 3),
     [notices]
   );
+
+  const getDepartmentName = (departmentId?: string) => {
+    if (!departmentId) return maintT("list.allDepartments");
+    const dept = departments.find((d) => d.id === departmentId);
+    return dept?.name ?? maintT("list.allDepartments");
+  };
 
   useEffect(() => {
     const loadStats = async () => {
@@ -54,6 +63,18 @@ export default function DashboardPage() {
       }
     };
     loadStats();
+  }, []);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const data = await api.get<Department[]>("/departments");
+        setDepartments(data);
+      } catch (err) {
+        console.error("Failed to load departments", err);
+      }
+    };
+    loadDepartments();
   }, []);
 
   const statCards = [
@@ -160,6 +181,10 @@ export default function DashboardPage() {
                     className="rounded-lg border border-border p-3"
                   >
                     <p className="text-sm font-semibold">{notice.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {maintT("list.department")}:{" "}
+                      {getDepartmentName(notice.departmentId)}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(notice.startDate)} -{" "}
                       {formatDate(notice.endDate)}

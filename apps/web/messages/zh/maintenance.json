@@ -4,6 +4,8 @@
   "form": {
     "sectionTitle": "创建维护公告",
     "titleLabel": "标题",
+    "departmentLabel": "部门",
+    "allDepartments": "所有部门",
     "startLabel": "开始日期",
     "endLabel": "结束日期",
     "detailsLabel": "详情 / 影响",
@@ -15,7 +17,21 @@
   "list": {
     "sectionTitle": "维护计划",
     "empty": "暂无维护公告。",
-    "windowLabel": "时间"
+    "windowLabel": "时间",
+    "department": "部门",
+    "allDepartments": "所有部门"
+  },
+  "actions": {
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存更改",
+    "cancel": "取消"
+  },
+  "deleteConfirm": {
+    "title": "删除维护公告",
+    "message": "您确定要删除此公告吗？",
+    "confirm": "删除",
+    "cancel": "取消"
   },
   "toast": {
     "saved": "已添加维护公告。"

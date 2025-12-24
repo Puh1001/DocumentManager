@@ -1,22 +1,32 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarDays, Megaphone } from "lucide-react";
+import { CalendarDays, Megaphone, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   MaintenanceNotice,
   useMaintenanceNotices,
 } from "@/hooks/use-maintenance-notices";
+import { api, type Department } from "@/lib/api";
 
 interface FormState {
   title: string;
   startDate: string;
   endDate: string;
   description: string;
+  departmentId: string;
 }
 
 const initialForm: FormState = {
@@ -24,6 +34,7 @@ const initialForm: FormState = {
   startDate: "",
   endDate: "",
   description: "",
+  departmentId: "",
 };
 
 const formatDate = (date: string) =>
@@ -36,14 +47,62 @@ const formatDate = (date: string) =>
 export default function MaintenancePage() {
   const t = useTranslations("maintenance");
   const commonT = useTranslations("common");
-  const { notices, addNotice, loading } = useMaintenanceNotices();
+  const { notices, addNotice, updateNotice, deleteNotice, loading } =
+    useMaintenanceNotices();
   const [form, setForm] = useState<FormState>(initialForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const data = await api.get<Department[]>("/departments");
+        setDepartments(data);
+      } catch (err) {
+        console.error("Failed to load departments", err);
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+    loadDepartments();
+  }, []);
 
   const sortedNotices = useMemo(
     () => [...notices].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [notices]
   );
+
+  const getDepartmentName = (departmentId?: string) => {
+    if (!departmentId) return t("list.allDepartments");
+    const dept = departments.find((d) => d.id === departmentId);
+    return dept?.name ?? t("list.allDepartments");
+  };
+
+  const handleEdit = (notice: MaintenanceNotice) => {
+    setForm({
+      title: notice.title,
+      startDate: notice.startDate,
+      endDate: notice.endDate,
+      description: notice.description,
+      departmentId: notice.departmentId ?? "",
+    });
+    setEditingId(notice.id);
+    setFormError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setForm(initialForm);
+    setEditingId(null);
+    setFormError(null);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteNotice(id);
+    setDeleteConfirmId(null);
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,9 +123,15 @@ export default function MaintenancePage() {
       description: form.description,
       startDate: form.startDate,
       endDate: form.endDate,
+      departmentId: form.departmentId || undefined,
     };
 
-    addNotice(payload);
+    if (editingId) {
+      updateNotice(editingId, payload);
+      setEditingId(null);
+    } else {
+      addNotice(payload);
+    }
     setForm(initialForm);
   };
 
@@ -104,6 +169,27 @@ export default function MaintenancePage() {
                   }
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="departmentId">{t("form.departmentLabel")}</Label>
+                <select
+                  id="departmentId"
+                  name="departmentId"
+                  value={form.departmentId}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, departmentId: e.target.value }))
+                  }
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  disabled={loadingDepartments}
+                >
+                  <option value="">{t("form.allDepartments")}</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -159,9 +245,19 @@ export default function MaintenancePage() {
                 <p className="text-sm text-destructive">{formError}</p>
               ) : null}
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {editingId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                  >
+                    {t("actions.cancel")}
+                  </Button>
+                ) : null}
                 <Button type="submit" disabled={loading}>
-                  {t("form.submit")}
+                  {editingId ? t("actions.save") : t("form.submit")}
                 </Button>
               </div>
             </form>
@@ -194,16 +290,37 @@ export default function MaintenancePage() {
                   className="rounded-lg border border-border p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div className="flex-1 space-y-1">
                       <p className="text-sm font-semibold">{notice.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("list.department")}: {getDepartmentName(notice.departmentId)}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {t("list.windowLabel")}: {formatDate(notice.startDate)}{" "}
                         - {formatDate(notice.endDate)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {new Date(notice.createdAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {new Date(notice.createdAt).toLocaleDateString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(notice)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteConfirmId(notice.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   {notice.description ? (
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -216,6 +333,29 @@ export default function MaintenancePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("deleteConfirm.title")}</DialogTitle>
+            <DialogDescription>{t("deleteConfirm.message")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              {t("deleteConfirm.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+            >
+              {t("deleteConfirm.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

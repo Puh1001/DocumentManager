@@ -8,6 +8,7 @@ export interface MaintenanceNotice {
   description: string;
   startDate: string;
   endDate: string;
+  departmentId?: string;
   createdAt: string;
 }
 
@@ -50,6 +51,7 @@ const parseStored = (raw: string | null): MaintenanceNotice[] => {
         description: String(item.description ?? ""),
         startDate: String(item.startDate ?? ""),
         endDate: String(item.endDate ?? ""),
+        departmentId: item.departmentId ? String(item.departmentId) : undefined,
         createdAt: String(item.createdAt ?? new Date().toISOString()),
       }))
       .filter((item) => item.title && item.startDate && item.endDate);
@@ -106,9 +108,30 @@ export function useMaintenanceNotices() {
     [notices, persistNotices]
   );
 
+  const updateNotice = useCallback(
+    (id: string, updates: Partial<Omit<MaintenanceNotice, "id" | "createdAt">>): MaintenanceNotice | null => {
+      const updated = notices.map((notice) =>
+        notice.id === id ? { ...notice, ...updates } : notice
+      );
+      persistNotices(updated);
+      return updated.find((n) => n.id === id) ?? null;
+    },
+    [notices, persistNotices]
+  );
+
+  const deleteNotice = useCallback(
+    (id: string): void => {
+      const filtered = notices.filter((notice) => notice.id !== id);
+      persistNotices(filtered);
+    },
+    [notices, persistNotices]
+  );
+
   return {
     notices: sortNotices(notices),
     addNotice,
+    updateNotice,
+    deleteNotice,
     loading,
     error,
   };
