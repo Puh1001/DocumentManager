@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Folder, Users, Clock, CalendarDays } from "lucide-react";
-import { api, type Department } from "@/lib/api";
+import { api, type Department, type MaintenanceNotice } from "@/lib/api";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
 import { useTranslations as useMaintenanceTranslations } from "next-intl";
 
@@ -40,10 +40,15 @@ export default function DashboardPage() {
     [notices]
   );
 
-  const getDepartmentName = (departmentId?: string) => {
-    if (!departmentId) return maintT("list.allDepartments");
-    const dept = departments.find((d) => d.id === departmentId);
-    return dept?.name ?? maintT("list.allDepartments");
+  const getDepartmentName = (notice: MaintenanceNotice) => {
+    if (notice.department) {
+      return notice.department.name;
+    }
+    if (notice.departmentId) {
+      const dept = departments.find((d) => d.id === notice.departmentId);
+      return dept?.name ?? maintT("list.allDepartments");
+    }
+    return maintT("list.allDepartments");
   };
 
   useEffect(() => {
@@ -182,8 +187,7 @@ export default function DashboardPage() {
                   >
                     <p className="text-sm font-semibold">{notice.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {maintT("list.department")}:{" "}
-                      {getDepartmentName(notice.departmentId)}
+                      {maintT("list.department")}: {getDepartmentName(notice)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(notice.startDate)} -{" "}

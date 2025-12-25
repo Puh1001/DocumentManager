@@ -23,24 +23,24 @@ interface UseFolderSyncOptions {
   enabled?: boolean;
 }
 
-// Get WebSocket URL - use same base as API but direct connection (no proxy)
+// Get WebSocket URL - return base URL only, namespace handled by Socket.IO client
 function getWebSocketUrl(): string | null {
   if (typeof window === "undefined") {
-    return "http://localhost:3001/storage";
+    return null;
   }
 
-  // Ưu tiên cấu hình tường minh qua NEXT_PUBLIC_WS_URL
+  // Get base URL (without namespace)
   const explicitWs = process.env.NEXT_PUBLIC_WS_URL;
   if (explicitWs) {
-    return explicitWs.replace(/[/:]+$/, "") + "/storage";
+    // Return base URL only, namespace handled by socket.io client
+    return explicitWs.replace(/[/:]+$/, "");
   }
 
-  // Fallback: dùng API URL và chuyển http -> ws
+  // Fallback: use API URL and convert http -> ws
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (apiUrl) {
     const normalized = apiUrl.replace(/[/:]+$/, "");
-    const wsUrl = normalized.replace(/^http/, "ws");
-    return `${wsUrl}/storage`;
+    return normalized.replace(/^http/, "ws");
   }
 
   console.warn(
@@ -110,9 +110,11 @@ export function useFolderSync({
       console.warn("WebSocket URL is not configured; realtime sync disabled");
       return;
     }
-    console.log(`Connecting to WebSocket: ${wsUrl}`);
+    console.log(`Connecting to WebSocket: ${wsUrl}/storage`);
 
-    const socket = io(wsUrl, {
+    // Connect to /storage namespace (matches gateway configuration)
+    const socket = io(`${wsUrl}/storage`, {
+      path: "/socket.io",
       auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,

@@ -19,19 +19,33 @@ export class StatsService {
   ) {}
 
   async getStats(): Promise<StatsResponse> {
-    const [totalDocuments, totalFolders, totalUsers, recentUploads] =
-      await Promise.all([
-        this.documentService.count(),
-        this.folderService.count(),
-        this.usersService.count(),
-        this.documentService.countRecent(7), // Last 7 days
-      ]);
+    try {
+      const [totalDocuments, totalFolders, totalUsers, recentUploads] =
+        await Promise.all([
+          this.documentService.count(),
+          this.folderService.count(),
+          this.usersService.count(),
+          this.documentService.countRecent(7), // Last 7 days
+        ]);
 
-    return {
-      totalDocuments,
-      totalFolders,
-      totalUsers,
-      recentUploads,
-    };
+      return {
+        totalDocuments,
+        totalFolders,
+        totalUsers,
+        recentUploads,
+      };
+    } catch (error) {
+      // Log error for debugging
+      console.error("Error in getStats():", error);
+
+      // Return default values to prevent complete failure
+      // This allows the dashboard to still load with empty stats
+      return {
+        totalDocuments: 0,
+        totalFolders: 0,
+        totalUsers: 0,
+        recentUploads: 0,
+      };
+    }
   }
 }

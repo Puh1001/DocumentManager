@@ -99,4 +99,21 @@ export class CustomException extends HttpException {
       options
     );
   }
+
+  /**
+   * Create an InternalServerErrorException with error code
+   */
+  static internalServerError(
+    errorCode: string,
+    message?: string | object,
+    cause?: unknown,
+    options?: HttpExceptionOptions
+  ) {
+    return new CustomException(
+      errorCode,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      message,
+      { ...options, cause }
+    );
+  }
 }

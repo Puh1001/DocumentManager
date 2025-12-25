@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -8,6 +9,7 @@ import { StorageModule } from "./modules/storage/storage.module";
 import { DepartmentModule } from "./modules/department/department.module";
 import { HealthController } from "./health.controller";
 import { KpiModule } from "./modules/kpi/kpi.module";
+import { MaintenanceModule } from "./modules/maintenance/maintenance.module";
 
 @Module({
   imports: [
@@ -16,6 +18,9 @@ import { KpiModule } from "./modules/kpi/kpi.module";
       isGlobal: true,
       envFilePath: [".env.local", ".env"],
     }),
+
+    // Event emitter (required for @OnEvent decorator)
+    EventEmitterModule.forRoot(),
 
     // Rate limiting - important for 10k+ users
     ThrottlerModule.forRoot([
@@ -45,6 +50,7 @@ import { KpiModule } from "./modules/kpi/kpi.module";
     StorageModule,
     DepartmentModule,
     KpiModule,
+    MaintenanceModule,
   ],
   controllers: [HealthController],
 })

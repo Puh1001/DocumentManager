@@ -22,13 +22,19 @@ export interface User {
   id: string;
 }
 
+export interface Maintenance {
+  id: string;
+}
+
 export type Subjects =
   | Document
   | Folder
   | User
+  | Maintenance
   | "Document"
   | "Folder"
   | "User"
+  | "Maintenance"
   | "all";
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>;

@@ -73,11 +73,31 @@ export class SmbService implements OnModuleInit, OnModuleDestroy {
       }
     } else {
       // Production: Linux mounted path (from Docker volume)
-      this.basePath = this.configService.get<string>(
+      const mountPath = this.configService.get<string>(
         "SMB_MOUNT_PATH",
         "/shared"
       );
-      this.logger.log(`Using mounted path: ${this.basePath}`);
+      const basePath = this.configService.get<string>(
+        "SMB_BASE_PATH",
+        ""
+      );
+
+      // Append basePath to mountPath if provided
+      // Example: /shared + IT-Information Technology Dept/devTest
+      // This ensures we sync only the specified subfolder, not the entire share
+      if (basePath) {
+        // Normalize path separators for Linux (convert backslashes to forward slashes)
+        const normalizedBasePath = basePath.replace(/\\/g, "/");
+        this.basePath = path.join(mountPath, normalizedBasePath);
+        this.logger.log(
+          `Using mounted path with basePath: ${this.basePath} (mountPath: ${mountPath}, basePath: ${basePath})`
+        );
+      } else {
+        this.basePath = mountPath;
+        this.logger.warn(
+          `SMB_BASE_PATH not set in production! Syncing from root: ${this.basePath}. This may sync entire share instead of specific folder.`
+        );
+      }
     }
   }
 
@@ -129,6 +149,16 @@ export class SmbService implements OnModuleInit, OnModuleDestroy {
   async testConnection(): Promise<boolean> {
     try {
       await fs.promises.access(this.basePath, fs.constants.R_OK);
+      
+      // Additional validation: check if it's a directory
+      const stats = await fs.promises.stat(this.basePath);
+      if (!stats.isDirectory()) {
+        const errorMsg = `SMB basePath is not a directory: ${this.basePath}`;
+        this.logger.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      this.logger.log(`SMB basePath validated: ${this.basePath}`);
       return true;
     } catch (error: unknown) {
       const errorMessage =
@@ -139,6 +169,9 @@ export class SmbService implements OnModuleInit, OnModuleDestroy {
         this.configService.get<string>("NODE_ENV") === "test";
       if (!isTestEnv) {
         this.logger.error(`SMB connection test error: ${errorMessage}`);
+        this.logger.error(
+          `SMB basePath: ${this.basePath}, platform: ${this.platform}`
+        );
       }
       throw error;
     }

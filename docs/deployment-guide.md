@@ -34,6 +34,7 @@ JWT_REFRESH_EXPIRES=7d
 
 # SMB Storage (Production - Linux)
 SMB_MOUNT_PATH=/shared  # Path in container (mounted from host /mnt/smb)
+SMB_BASE_PATH=IT-Information Technology Dept/devTest  # Subfolder to sync (relative to mount path)
 
 # App
 API_PORT=3001
@@ -273,6 +274,7 @@ services:
       - /mnt/smb:/shared # Mount from host to container
     environment:
       - SMB_MOUNT_PATH=/shared # Path in container
+      - SMB_BASE_PATH=${SMB_BASE_PATH} # Subfolder to sync
     depends_on:
       - postgres
     restart: unless-stopped
@@ -441,6 +443,7 @@ services:
       - DATABASE_URL=postgresql://admin:password@postgres:5432/documents_db
       - JWT_SECRET=${JWT_SECRET}
       - SMB_MOUNT_PATH=/shared # Path in container
+      - SMB_BASE_PATH=${SMB_BASE_PATH} # Subfolder to sync
     ports:
       - "3001:3001"
     volumes:

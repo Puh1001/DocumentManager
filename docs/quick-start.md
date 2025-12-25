@@ -41,7 +41,7 @@ JWT_REFRESH_SECRET="your-refresh-secret-key"
 JWT_REFRESH_EXPIRES_IN="30d"
 
 # API
-API_PORT=3001
+API_PORT=3010
 CORS_ORIGIN="http://localhost:3000"
 
 # SMB Configuration
@@ -60,6 +60,16 @@ SMB_MOUNTED_DRIVE=Z:  # Only used if SMB_USE_MOUNTED_DRIVE=true
 ```
 
 **Lưu ý:** Thay thế các giá trị với thông tin thực tế của bạn, đặc biệt là SMB credentials.
+
+**Tạo file `.env.local` trong `apps/web/` với các biến sau:**
+
+```env
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:3010
+NEXT_PUBLIC_WS_URL=http://localhost:3010
+```
+
+**Lưu ý:** Đảm bảo `API_PORT` trong backend `.env` khớp với `NEXT_PUBLIC_API_URL` trong frontend `.env.local` (cả hai đều dùng port `3010`).
 
 ### 4. Setup Database
 
@@ -84,7 +94,7 @@ npm run dev
 
 # Hoặc chạy riêng từng app:
 cd apps/web && npm run dev      # Frontend: http://localhost:3000
-cd apps/api && npm run dev      # Backend: http://localhost:3001
+cd apps/api && npm run dev      # Backend: http://localhost:3010 (nếu API_PORT=3010 trong .env)
 ```
 
 **Access Points:**

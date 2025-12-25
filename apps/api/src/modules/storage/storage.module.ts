@@ -10,13 +10,16 @@ import { StatsService } from "./services/stats.service";
 import { DocumentSyncHandler } from "./handlers/document-sync.handler";
 import { FolderSyncHandler } from "./handlers/folder-sync.handler";
 import { SyncDeletionHandler } from "./handlers/sync-deletion.handler";
+import { FolderSyncGateway } from "./gateways/folder-sync.gateway";
+import { FolderSyncListener } from "./listeners/folder-sync.listener";
 import { FolderController } from "./controllers/folder.controller";
 import { DocumentController } from "./controllers/document.controller";
 import { StatsController } from "./controllers/stats.controller";
 import { UsersModule } from "@/modules/users/users.module";
+import { AuthModule } from "@/modules/auth/auth.module";
 
 @Module({
-  imports: [ConfigModule, UsersModule],
+  imports: [ConfigModule, UsersModule, AuthModule],
   controllers: [FolderController, DocumentController, StatsController],
   providers: [
     SmbService,
@@ -29,6 +32,8 @@ import { UsersModule } from "@/modules/users/users.module";
     DocumentSyncHandler,
     FolderSyncHandler,
     SyncDeletionHandler,
+    FolderSyncGateway,
+    FolderSyncListener,
   ],
   exports: [
     SmbService,

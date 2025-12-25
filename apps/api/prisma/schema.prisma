@@ -30,6 +30,7 @@ model User {
   auditLogs         AuditLog[]
   folderPermissions FolderPermission[]   @relation("UserFolderPermissions")
   docPermissions    DocumentPermission[] @relation("UserDocumentPermissions")
+  maintenanceNotices MaintenanceNotice[] @relation("MaintenanceNoticeCreator")
 
   @@index([username])
   @@index([email])
@@ -279,7 +280,8 @@ model Department {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  kpiRecords KpiRecord[]
+  kpiRecords         KpiRecord[]
+  maintenanceNotices MaintenanceNotice[]
 
   @@index([code])
   @@map("departments")
@@ -326,4 +328,28 @@ model KpiMetric {
 
   @@index([kpiRecordId])
   @@map("kpi_metrics")
+}
+
+// =====================
+// Maintenance Notices
+// =====================
+
+model MaintenanceNotice {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+  departmentId String?  @map("department_id")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  creator     User        @relation("MaintenanceNoticeCreator", fields: [createdBy], references: [id])
+
+  @@index([departmentId])
+  @@index([startDate])
+  @@index([createdBy])
+  @@map("maintenance_notices")
 }

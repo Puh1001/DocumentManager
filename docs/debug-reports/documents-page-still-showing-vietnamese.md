@@ -151,3 +151,4 @@ After clearing caches and restarting:
 - ✅ `/vi/dashboard/documents` shows Vietnamese text
 - ✅ `/zh/dashboard/documents` shows Chinese text
 - ✅ All translations update correctly when switching locales
+

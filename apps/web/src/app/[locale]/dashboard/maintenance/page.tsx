@@ -15,11 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  MaintenanceNotice,
-  useMaintenanceNotices,
-} from "@/hooks/use-maintenance-notices";
-import { api, type Department } from "@/lib/api";
+import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
+import { api, type Department, type MaintenanceNotice } from "@/lib/api";
 
 interface FormState {
   title: string;
@@ -75,18 +72,23 @@ export default function MaintenancePage() {
     [notices]
   );
 
-  const getDepartmentName = (departmentId?: string) => {
-    if (!departmentId) return t("list.allDepartments");
-    const dept = departments.find((d) => d.id === departmentId);
-    return dept?.name ?? t("list.allDepartments");
+  const getDepartmentName = (notice: MaintenanceNotice) => {
+    if (notice.department) {
+      return notice.department.name;
+    }
+    if (notice.departmentId) {
+      const dept = departments.find((d) => d.id === notice.departmentId);
+      return dept?.name ?? t("list.allDepartments");
+    }
+    return t("list.allDepartments");
   };
 
   const handleEdit = (notice: MaintenanceNotice) => {
     setForm({
       title: notice.title,
-      startDate: notice.startDate,
-      endDate: notice.endDate,
-      description: notice.description,
+      startDate: notice.startDate.split("T")[0], // Extract date part
+      endDate: notice.endDate.split("T")[0], // Extract date part
+      description: notice.description || "",
       departmentId: notice.departmentId ?? "",
     });
     setEditingId(notice.id);
@@ -99,12 +101,17 @@ export default function MaintenancePage() {
     setFormError(null);
   };
 
-  const handleDelete = (id: string) => {
-    deleteNotice(id);
-    setDeleteConfirmId(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteNotice(id);
+      setDeleteConfirmId(null);
+    } catch (err) {
+      console.error("Failed to delete notice", err);
+      setFormError(t("form.validationRequired")); // Use appropriate error message
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
 
@@ -118,21 +125,26 @@ export default function MaintenancePage() {
       return;
     }
 
-    const payload: Omit<MaintenanceNotice, "id" | "createdAt"> = {
+    const payload = {
       title: form.title,
-      description: form.description,
+      description: form.description || undefined,
       startDate: form.startDate,
       endDate: form.endDate,
       departmentId: form.departmentId || undefined,
     };
 
-    if (editingId) {
-      updateNotice(editingId, payload);
-      setEditingId(null);
-    } else {
-      addNotice(payload);
+    try {
+      if (editingId) {
+        await updateNotice(editingId, payload);
+        setEditingId(null);
+      } else {
+        await addNotice(payload);
+      }
+      setForm(initialForm);
+    } catch (err) {
+      console.error("Failed to save notice", err);
+      setFormError(t("form.validationRequired")); // Use appropriate error message
     }
-    setForm(initialForm);
   };
 
   return (
@@ -172,13 +184,18 @@ export default function MaintenancePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="departmentId">{t("form.departmentLabel")}</Label>
+                <Label htmlFor="departmentId">
+                  {t("form.departmentLabel")}
+                </Label>
                 <select
                   id="departmentId"
                   name="departmentId"
                   value={form.departmentId}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, departmentId: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      departmentId: e.target.value,
+                    }))
                   }
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   disabled={loadingDepartments}
@@ -293,7 +310,7 @@ export default function MaintenancePage() {
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-semibold">{notice.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t("list.department")}: {getDepartmentName(notice.departmentId)}
+                        {t("list.department")}: {getDepartmentName(notice)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {t("list.windowLabel")}: {formatDate(notice.startDate)}{" "}
@@ -334,17 +351,17 @@ export default function MaintenancePage() {
         </Card>
       </div>
 
-      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+      <Dialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("deleteConfirm.title")}</DialogTitle>
             <DialogDescription>{t("deleteConfirm.message")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteConfirmId(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
               {t("deleteConfirm.cancel")}
             </Button>
             <Button

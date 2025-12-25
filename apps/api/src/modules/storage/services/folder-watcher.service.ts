@@ -45,10 +45,31 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
         this.basePath = `\\\\${server}\\${share}\\${basePath}`;
       }
     } else {
-      this.basePath = this.configService.get<string>(
+      // Production: Linux mounted path (from Docker volume)
+      const mountPath = this.configService.get<string>(
         "SMB_MOUNT_PATH",
         "/shared"
       );
+      const basePath = this.configService.get<string>(
+        "SMB_BASE_PATH",
+        ""
+      );
+
+      // Append basePath to mountPath if provided
+      // This ensures we watch only the specified subfolder, not the entire share
+      if (basePath) {
+        // Normalize path separators for Linux (convert backslashes to forward slashes)
+        const normalizedBasePath = basePath.replace(/\\/g, "/");
+        this.basePath = path.join(mountPath, normalizedBasePath);
+        this.logger.log(
+          `Using mounted path with basePath: ${this.basePath} (mountPath: ${mountPath}, basePath: ${basePath})`
+        );
+      } else {
+        this.basePath = mountPath;
+        this.logger.warn(
+          `SMB_BASE_PATH not set in production! Watching from root: ${this.basePath}. This may watch entire share instead of specific folder.`
+        );
+      }
     }
   }
 

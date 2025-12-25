@@ -19,11 +19,13 @@ export const ErrorCodes = {
     NOT_FOUND: "department.not_found",
     CODE_EXISTS: "department.create.code_exists",
     LOAD_FAILED: "department.list.load_failed",
+    FETCH_FAILED: "department.fetch.failed",
   },
   FOLDER: {
     NOT_FOUND: "folder.not_found",
     PARENT_NOT_FOUND: "folder.create.parent_not_found",
     DELETED: "folder.deleted",
+    TREE_FETCH_FAILED: "folder.tree.fetch_failed",
   },
   DOCUMENT: {
     NOT_FOUND: "document.not_found",
@@ -39,6 +41,11 @@ export const ErrorCodes = {
     RECORD_NOT_FOUND: "kpi.record.not_found",
     METRIC_NOT_FOUND: "kpi.metric.not_found",
   },
+  MAINTENANCE: {
+    NOT_FOUND: "maintenance.not_found",
+    INVALID_DATES: "maintenance.invalid_dates",
+    FETCH_FAILED: "maintenance.fetch.failed",
+  },
   PERMISSION: {
     NOT_FOUND: "permission.not_found",
     ROLE_NOT_FOUND: "permission.role.not_found",
@@ -48,6 +55,8 @@ export const ErrorCodes = {
     USER_NOT_FOUND: "permission.user.not_found",
     INVALID_SUBJECT: "permission.invalid_subject",
   },
+  NOT_FOUND: "not_found",
+  INVALID_INPUT: "invalid_input",
 } as const;
 
 // Type for error code values

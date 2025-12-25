@@ -440,3 +440,52 @@ export const departmentApi = {
     api.patch<Department>(`/departments/${id}`, data),
   delete: (id: string) => api.delete(`/departments/${id}`),
 };
+
+// Maintenance Notice types and API methods
+export interface MaintenanceNotice {
+  id: string;
+  title: string;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  departmentId: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  department?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  creator?: {
+    id: string;
+    username: string;
+    fullName: string;
+  };
+}
+
+export interface CreateMaintenanceNoticeDto {
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  departmentId?: string;
+}
+
+export interface UpdateMaintenanceNoticeDto {
+  title?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  departmentId?: string;
+}
+
+export const maintenanceApi = {
+  getAll: () => api.get<MaintenanceNotice[]>("/maintenance"),
+  getById: (id: string) => api.get<MaintenanceNotice>(`/maintenance/${id}`),
+  create: (data: CreateMaintenanceNoticeDto) =>
+    api.post<MaintenanceNotice>("/maintenance", data),
+  update: (id: string, data: UpdateMaintenanceNoticeDto) =>
+    api.patch<MaintenanceNotice>(`/maintenance/${id}`, data),
+  delete: (id: string) => api.delete(`/maintenance/${id}`),
+};

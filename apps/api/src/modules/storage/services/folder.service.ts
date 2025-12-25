@@ -168,32 +168,44 @@ export class FolderService {
   }
 
   async getTree() {
-    // Get all active folders
-    const folders = await (this.prisma as PrismaClientLike).folder.findMany({
-      where: { deletedAt: null }, // Only active folders
-      orderBy: { path: "asc" },
-      include: {
-        _count: {
-          select: { documents: true },
+    try {
+      // Get all active folders
+      const folders = await (this.prisma as PrismaClientLike).folder.findMany({
+        where: { deletedAt: null }, // Only active folders
+        orderBy: { path: "asc" },
+        include: {
+          _count: {
+            select: { documents: true },
+          },
         },
-      },
-    });
+      });
 
-    // Build tree structure
-    const buildTree = (parentId: string | null = null): FolderTreeNode[] => {
-      return folders
-        .filter((f: (typeof folders)[0]) => f.parentId === parentId)
-        .map((f: (typeof folders)[0]) => ({
-          id: f.id,
-          name: f.name,
-          path: f.path,
-          physicalLocation: f.physicalLocation,
-          documentCount: f._count.documents,
-          children: buildTree(f.id),
-        }));
-    };
+      // Build tree structure
+      const buildTree = (parentId: string | null = null): FolderTreeNode[] => {
+        return folders
+          .filter((f: (typeof folders)[0]) => f.parentId === parentId)
+          .map((f: (typeof folders)[0]) => ({
+            id: f.id,
+            name: f.name,
+            path: f.path,
+            physicalLocation: f.physicalLocation,
+            documentCount: f._count.documents,
+            children: buildTree(f.id),
+          }));
+      };
 
-    return buildTree();
+      return buildTree();
+    } catch (error) {
+      // Log error for debugging
+      console.error("Error in getTree():", error);
+
+      // Re-throw as CustomException for proper error handling
+      throw CustomException.internalServerError(
+        ErrorCodes.FOLDER.TREE_FETCH_FAILED,
+        "Failed to fetch folder tree",
+        error
+      );
+    }
   }
 
   async count(): Promise<number> {

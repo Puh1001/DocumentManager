@@ -10,10 +10,22 @@ export class DepartmentService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.department.findMany({
-      where: { isActive: true },
-      orderBy: { name: "asc" },
-    });
+    try {
+      return this.prisma.department.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      });
+    } catch (error) {
+      // Log error for debugging
+      console.error("Error in DepartmentService.findAll():", error);
+
+      // Re-throw as CustomException for proper error handling
+      throw CustomException.internalServerError(
+        ErrorCodes.DEPARTMENT.FETCH_FAILED,
+        "Failed to fetch departments",
+        error
+      );
+    }
   }
 
   async findOne(id: string) {
