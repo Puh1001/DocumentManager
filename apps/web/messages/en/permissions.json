@@ -1,0 +1,47 @@
+{
+  "title": "Permissions & Roles",
+  "description": "Manage roles and their permissions in the system",
+  "addRole": "Add Role",
+  "addPermission": "Add Permission",
+  "availablePermissions": "Available Permissions",
+  "roles": "Roles",
+  "noPermissions": "No permissions found",
+  "noRoles": "No roles found",
+  "searchRoles": "Search roles...",
+  "searchPermissions": "Search permissions...",
+  "usedBy": "Used by",
+  "folderDocumentPermissions": "Folder & Document Permissions",
+  "folderDocumentPermissionsDescription": "Folder and document permission management can be accessed from the Documents page. Select a folder or document and use the permissions button to manage access.",
+  "form": {
+    "createRoleTitle": "Add New Role",
+    "updateRoleTitle": "Update Role",
+    "createRoleDescription": "Fill in the information to create a new role",
+    "updateRoleDescription": "Update role information",
+    "createPermissionTitle": "Add New Permission",
+    "updatePermissionTitle": "Update Permission",
+    "createPermissionDescription": "Fill in the information to create a new permission",
+    "updatePermissionDescription": "Update permission information",
+    "roleName": "Role Name",
+    "roleNamePlaceholder": "Enter role name",
+    "permissionName": "Permission Name",
+    "permissionNamePlaceholder": "Enter permission name (e.g., view:User, manage:Department)",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter description (optional)",
+    "processing": "Processing...",
+    "create": "Create",
+    "update": "Update"
+  },
+  "permissions": {
+    "assignTitle": "Assign Permissions",
+    "assignDescription": "Select the permissions to assign to this role"
+  },
+  "errors": {
+    "loadFailed": "Failed to load permissions and roles",
+    "createFailed": "Cannot create role",
+    "updateFailed": "Cannot update role",
+    "deleteFailed": "Cannot delete role",
+    "deleteRoleConfirm": "Are you sure you want to delete this role? This action cannot be undone.",
+    "deletePermissionConfirm": "Are you sure you want to delete this permission? This action cannot be undone.",
+    "deletePermissionInUse": "Cannot delete permission. It is currently used by the following roles: {roles}"
+  }
+}

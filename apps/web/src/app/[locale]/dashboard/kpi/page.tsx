@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { useCanAccess } from "@/hooks/use-can-access";
+import { AccessDenied } from "@/components/access-denied";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -96,6 +98,7 @@ export default function KpiPage() {
   const [error, setError] = useState<string | null>(null);
 
   const year = new Date().getFullYear();
+  const canAccess = useCanAccess("view", "Kpi");
 
   useEffect(() => {
     const loadDepartments = async () => {
@@ -568,6 +571,10 @@ export default function KpiPage() {
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  if (!canAccess) {
+    return <AccessDenied />;
+  }
 
   if (loading) {
     return (

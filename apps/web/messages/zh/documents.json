@@ -9,9 +9,17 @@
     "refresh": "刷新",
     "openFolder": "打开文件夹",
     "upload": "上传",
+    "assignDepartment": "分配部门",
     "location": "位置",
     "pathCopied": "路径已复制:\n{path}\n\n粘贴到Windows资源管理器 (Win+E) 以打开文件夹。",
     "pathCopiedTitle": "路径已复制"
+  },
+  "assignDepartment": {
+    "title": "为 {folder} 分配部门",
+    "description": "将此文件夹链接到部门，以便BOSS可以查看其文档。",
+    "department": "部门",
+    "selectDepartment": "选择部门",
+    "none": "无（取消分配）"
   },
   "list": {
     "empty": "此文件夹中没有文档",

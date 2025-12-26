@@ -14,6 +14,12 @@ interface DocumentPermission {
   action: Actions;
 }
 
+interface ModulePermission {
+  permissionName: string;
+  action: Actions;
+  module: string;
+}
+
 @Injectable()
 export class CaslAbilityFactory {
   constructor(private readonly prisma: PrismaService) {}
@@ -30,14 +36,32 @@ export class CaslAbilityFactory {
       return build();
     }
 
+    // Boss has read-only access to all resources
+    if (userRoles.includes("boss")) {
+      can("view", "all");
+      can("download", "all");
+      can("print", "all");
+      // Boss can view all folders and documents without explicit permissions
+      return build();
+    }
+
     // Load user roles
     const roleIds = await this.loadRoleIds(userRoles);
+
+    // Load module permissions (for page access control)
+    const modulePerms = await this.loadModulePermissions(userId, roleIds);
 
     // Load folder permissions (both user and role-based)
     const folderPerms = await this.loadFolderPermissions(userId, roleIds);
 
     // Load document permissions (both user and role-based)
     const docPerms = await this.loadDocumentPermissions(userId, roleIds);
+
+    // Apply module permissions (for page access)
+    for (const perm of modulePerms) {
+      const moduleSubject = perm.module as "User" | "Department" | "Kpi" | "Maintenance" | "Permission";
+      can(perm.action, moduleSubject);
+    }
 
     // Apply folder permissions
     for (const perm of folderPerms) {
@@ -112,5 +136,49 @@ export class CaslAbilityFactory {
       documentId: p.documentId,
       action: p.permission.name as Actions,
     }));
+  }
+
+  private async loadModulePermissions(
+    userId: string,
+    roleIds: string[]
+  ): Promise<ModulePermission[]> {
+    if (roleIds.length === 0) return [];
+
+    // Load all permissions assigned to user's roles
+    const rolePermissions = await this.prisma.rolePermission.findMany({
+      where: {
+        roleId: { in: roleIds },
+      },
+      include: {
+        permission: true,
+      },
+    });
+
+    const modulePerms: ModulePermission[] = [];
+
+    // Parse permissions that match module pattern (e.g., "view:User", "manage:Department")
+    for (const rp of rolePermissions) {
+      const permName = rp.permission.name;
+      const parts = permName.split(":");
+
+      if (parts.length === 2) {
+        const [action, module] = parts;
+        // Validate action and module
+        if (
+          ["view", "manage", "create", "edit", "delete"].includes(action) &&
+          ["User", "Department", "Kpi", "Maintenance", "Permission"].includes(
+            module
+          )
+        ) {
+          modulePerms.push({
+            permissionName: permName,
+            action: action as Actions,
+            module,
+          });
+        }
+      }
+    }
+
+    return modulePerms;
   }
 }

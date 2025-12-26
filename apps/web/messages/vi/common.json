@@ -11,7 +11,8 @@
     "users": "Người dùng",
     "permissions": "Phân quyền",
     "settings": "Cài đặt",
-    "maintenance": "Bảo trì"
+    "maintenance": "Bảo trì",
+    "boss": "Bảng điều khiển BOSS"
   },
   "actions": {
     "view": "Xem",
@@ -35,5 +36,10 @@
     "noData": "Không có dữ liệu"
   },
   "searchPlaceholder": "Tìm kiếm tài liệu...",
-  "admin": "Quản trị viên"
+  "admin": "Quản trị viên",
+  "accessDenied": {
+    "title": "Truy cập bị từ chối",
+    "description": "Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.",
+    "backToDashboard": "Quay lại Dashboard"
+  }
 }

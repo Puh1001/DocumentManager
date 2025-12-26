@@ -1,7 +1,7 @@
 # System Architecture
 
 **Last Updated:** 2025-01-XX  
-**Status:** Phase 1-3 Complete, Additional Features Added (65%)
+**Status:** Phase 1-4 Complete, Additional Features Added (75%)
 
 ---
 
@@ -69,11 +69,13 @@ apps/web/
 ├── Client Components
 │   ├── Layout (Sidebar, Header)
 │   ├── Documents (Tree, List, Toolbar)
+│   ├── AccessDenied (Permission denied UI)
 │   └── Viewers (PDF, DOCX, Watermark)
 │
 └── Shared
     ├── Auth Context (JWT management)
     ├── API Client (REST calls)
+    ├── Hooks (useAbility, useCanAccess)
     └── Utils (formatting, helpers)
 ```
 
@@ -100,6 +102,16 @@ apps/api/
 │   │   ├── KPI Metric service (monthly values)
 │   │   ├── KPI Export service (Excel)
 │   │   └── Calculation logic (efficiency, averages)
+│   │
+│   ├── Maintenance
+│   │   ├── Maintenance notice service
+│   │   └── Department filtering
+│   │
+│   ├── Authorization
+│   │   ├── CASL Ability Factory (dynamic permissions)
+│   │   ├── Policies Guard (route protection)
+│   │   ├── Permission Service (CRUD permissions)
+│   │   └── Permission Controller (API endpoints)
 │   │
 │   └── Storage
 │       ├── SMB Service (fs module - platform-aware)
@@ -269,11 +281,18 @@ Folder ──┬── Folder (self-reference for hierarchy)
 
 ### Authorization
 
-- **Model**: RBAC + ABAC hybrid
-- **RBAC Layer**: Roles (admin, manager, editor, viewer)
-- **ABAC Layer**: Folder/Document-level permissions
-- **Inheritance**: Folder permissions apply to subfolders and documents
+- **Model**: RBAC + ABAC hybrid (CASL implementation)
+- **RBAC Layer**: Roles (admin, boss, manager, editor, viewer)
+- **ABAC Layer**: Folder/Document/Page-level permissions
+- **Subjects**: Document, Folder, User, Department, Kpi, Maintenance, Permission, "all"
+- **Inheritance**: Folder permissions apply to subfolders and documents (via `inherit` flag)
 - **Override**: Document permissions override folder permissions
+- **Boss Role**: Read-only access (view, download, print) to all resources
+- **Implementation**: CASL MongoAbility with dynamic ability factory
+- **Backend Enforcement**: PoliciesGuard with CheckPolicies decorator
+- **Frontend Enforcement**: `useCanAccess` hook with route-level checks
+- **Navigation Filtering**: Sidebar items filtered based on permissions
+- **Page Protection**: All dashboard pages protected by permission checks
 
 ### Data Protection
 
@@ -428,6 +447,15 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │       ├── POST   /          # Add metric
 │       ├── PATCH  /:id       # Update metric
 │       └── DELETE /:id       # Delete metric
+│
+├── /permissions
+│   ├── GET    /                    # List all permissions (manage: all)
+│   ├── GET    /roles/:id           # Get role permissions
+│   ├── POST   /roles/:id           # Assign permissions to role
+│   ├── GET    /folders/:id         # Get folder permissions
+│   ├── POST   /folders/:id         # Set folder permissions
+│   ├── GET    /documents/:id       # Get document permissions
+│   └── POST   /documents/:id       # Set document permissions
 │
 └── /storage
     ├── /folders

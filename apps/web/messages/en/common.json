@@ -11,7 +11,8 @@
     "users": "Users",
     "permissions": "Permissions",
     "settings": "Settings",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "boss": "Boss Dashboard"
   },
   "actions": {
     "view": "View",
@@ -35,5 +36,10 @@
     "noData": "No data available"
   },
   "searchPlaceholder": "Search documents...",
-  "admin": "Admin"
+  "admin": "Admin",
+  "accessDenied": {
+    "title": "Access Denied",
+    "description": "You don't have permission to access this page. Please contact your administrator if you believe this is an error.",
+    "backToDashboard": "Back to Dashboard"
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocale } from "next-intl";
@@ -15,12 +15,29 @@ export default function DashboardLayout({
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const locale = useLocale();
+  const pathname = usePathname();
 
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
       router.push(`/${locale}/login`);
     }
   }, [user, isLoading, router, locale]);
+
+  // Redirect BOSS users to BOSS dashboard if accessing other routes
+  useEffect(() => {
+    if (!isLoading && user) {
+      const isBoss = user.roles?.includes("boss");
+      const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
+      const isBossRoute =
+        pathWithoutLocale === "/dashboard/boss" ||
+        pathWithoutLocale.startsWith("/dashboard/boss/");
+
+      if (isBoss && !isBossRoute) {
+        router.push(`/${locale}/dashboard/boss`);
+      }
+    }
+  }, [user, isLoading, router, locale, pathname]);
 
   if (isLoading) {
     return (
@@ -34,6 +51,18 @@ export default function DashboardLayout({
     return null;
   }
 
+  // Check if current route is BOSS route
+  const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
+  const isBossRoute =
+    pathWithoutLocale === "/dashboard/boss" ||
+    pathWithoutLocale.startsWith("/dashboard/boss/");
+
+  // BOSS route - let BOSS layout handle everything (no Sidebar/Header)
+  if (isBossRoute) {
+    return <>{children}</>;
+  }
+
+  // Regular dashboard route - show Sidebar and Header
   return (
     <div className="min-h-screen bg-muted/30">
       <Sidebar />

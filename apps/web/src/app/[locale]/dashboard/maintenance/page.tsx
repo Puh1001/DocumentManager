@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
 import { api, type Department, type MaintenanceNotice } from "@/lib/api";
+import { useCanAccess } from "@/hooks/use-can-access";
+import { AccessDenied } from "@/components/access-denied";
 
 interface FormState {
   title: string;
@@ -71,6 +73,7 @@ export default function MaintenancePage() {
     () => [...notices].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [notices]
   );
+  const canAccess = useCanAccess("view", "Maintenance");
 
   const getDepartmentName = (notice: MaintenanceNotice) => {
     if (notice.department) {
@@ -146,6 +149,10 @@ export default function MaintenancePage() {
       setFormError(t("form.validationRequired")); // Use appropriate error message
     }
   };
+
+  if (!canAccess) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className="space-y-6">

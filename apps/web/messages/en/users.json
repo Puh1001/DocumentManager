@@ -1,0 +1,59 @@
+{
+  "title": "User Management",
+  "description": "Manage users, roles, and permissions in the system",
+  "add": "Add User",
+  "empty": "No users found",
+  "searchPlaceholder": "Search by username, email, or name...",
+  "table": {
+    "username": "Username",
+    "fullName": "Full Name",
+    "email": "Email",
+    "department": "Department",
+    "roles": "Roles",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "form": {
+    "createTitle": "Add New User",
+    "updateTitle": "Update User",
+    "createDescription": "Fill in the information to create a new user",
+    "updateDescription": "Update user information",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "email": "Email",
+    "emailPlaceholder": "Enter email address",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password (min 6 characters)",
+    "passwordOptional": "Leave blank to keep current password",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter full name",
+    "department": "Department",
+    "departmentPlaceholder": "Enter department name",
+    "processing": "Processing...",
+    "create": "Create",
+    "update": "Update"
+  },
+  "roles": {
+    "title": "Manage User Roles",
+    "description": "Assign or remove roles for {name}",
+    "currentRoles": "Current Roles",
+    "assignRole": "Available Roles",
+    "noRoles": "No roles assigned",
+    "allRolesAssigned": "All available roles have been assigned"
+  },
+  "pagination": {
+    "showing": "Showing {from} to {to} of {total} users"
+  },
+  "errors": {
+    "loadFailed": "Failed to load user list",
+    "createFailed": "Cannot create user",
+    "updateFailed": "Cannot update user",
+    "deleteFailed": "Cannot delete user",
+    "deleteConfirm": "Are you sure you want to deactivate this user?"
+  }
+}
+

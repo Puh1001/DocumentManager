@@ -12,6 +12,9 @@ describe("CaslAbilityFactory", () => {
     role: {
       findMany: jest.fn(),
     },
+    rolePermission: {
+      findMany: jest.fn(),
+    },
     folderPermission: {
       findMany: jest.fn(),
     },
@@ -57,6 +60,7 @@ describe("CaslAbilityFactory", () => {
       const documentId = "doc-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -100,6 +104,7 @@ describe("CaslAbilityFactory", () => {
       const userRoles: string[] = [];
 
       mockPrismaService.role.findMany.mockResolvedValue([]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
       mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
       mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
 
@@ -116,6 +121,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -145,6 +151,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -173,6 +180,7 @@ describe("CaslAbilityFactory", () => {
       const documentId = "doc-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -205,6 +213,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -231,6 +240,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
         {
@@ -249,6 +259,114 @@ describe("CaslAbilityFactory", () => {
       const folder: Folder = { id: folderId };
       // Role-based folder permission should work
       expect(ability.can("manage", subject("Folder", folder))).toBe(true);
+    });
+
+    it("should apply module permissions for page access", async () => {
+      const userId = "user-1";
+      const userRoles = ["editor"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+
+      // Mock role permissions with module permissions
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "view:User" },
+        },
+        {
+          roleId,
+          permission: { name: "view:Department" },
+        },
+        {
+          roleId,
+          permission: { name: "view:Kpi" },
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Should have access to User page
+      expect(ability.can("view", "User")).toBe(true);
+      // Should have access to Department page
+      expect(ability.can("view", "Department")).toBe(true);
+      // Should have access to Kpi page
+      expect(ability.can("view", "Kpi")).toBe(true);
+      // Should NOT have access to Maintenance page (not granted)
+      expect(ability.can("view", "Maintenance")).toBe(false);
+      // Should NOT have access to Permission page (not granted)
+      expect(ability.can("view", "Permission")).toBe(false);
+    });
+
+    it("should handle invalid module permission format", async () => {
+      const userId = "user-1";
+      const userRoles = ["editor"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+
+      // Mock role permissions with invalid format
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "invalid:format:too:many:parts" },
+        },
+        {
+          roleId,
+          permission: { name: "invalidModule" },
+        },
+        {
+          roleId,
+          permission: { name: "view:InvalidModule" },
+        },
+        {
+          roleId,
+          permission: { name: "view:User" }, // Valid one
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Only valid permission should be applied
+      expect(ability.can("view", "User")).toBe(true);
+      expect(ability.can("view", "Department")).toBe(false);
+    });
+
+    it("should grant admin access to all module pages", async () => {
+      const userId = "user-1";
+      const userRoles = ["admin"];
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Admin should have access to all module pages via manage:all
+      expect(ability.can("view", "User")).toBe(true);
+      expect(ability.can("view", "Department")).toBe(true);
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("view", "Maintenance")).toBe(true);
+      expect(ability.can("view", "Permission")).toBe(true);
+      expect(ability.can("manage", "User")).toBe(true);
+    });
+
+    it("should grant boss read-only access to all module pages", async () => {
+      const userId = "user-1";
+      const userRoles = ["boss"];
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Boss should have view access to all module pages
+      expect(ability.can("view", "User")).toBe(true);
+      expect(ability.can("view", "Department")).toBe(true);
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("view", "Maintenance")).toBe(true);
+      expect(ability.can("view", "Permission")).toBe(true);
+      // But not manage access
+      expect(ability.can("manage", "User")).toBe(false);
     });
   });
 });

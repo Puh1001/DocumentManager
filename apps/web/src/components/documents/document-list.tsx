@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { formatFileSize, formatDate, getFileIcon } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, History, ExternalLink } from "lucide-react";
+import { useAbility } from "@/hooks/use-ability";
+import { Document as DocumentType } from "@/lib/types/ability.types";
 
 interface Document {
   id: string;
@@ -12,18 +14,22 @@ interface Document {
   fileType: string;
   fileSize: number;
   updatedAt: string;
+  folderId?: string;
 }
 
 interface DocumentListProps {
   documents: Document[];
   onDocumentClick?: (doc: Document) => void;
+  folderId?: string | null;
 }
 
 export function DocumentList({
   documents,
   onDocumentClick,
+  folderId,
 }: DocumentListProps) {
   const t = useTranslations("documents.list");
+  const { ability } = useAbility();
 
   if (documents.length === 0) {
     return (
@@ -89,30 +95,54 @@ export function DocumentList({
                   className="flex items-center justify-end gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button variant="ghost" size="icon" title={t("actions.view")}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={t("actions.download")}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={t("actions.openToEdit")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={t("actions.versionHistory")}
-                  >
-                    <History className="h-4 w-4" />
-                  </Button>
+                  {ability?.can("view", {
+                    id: doc.id,
+                    folderId: doc.folderId || folderId || undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.view")}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {ability?.can("download", {
+                    id: doc.id,
+                    folderId: doc.folderId || folderId || undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.download")}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {ability?.can("edit", {
+                    id: doc.id,
+                    folderId: doc.folderId || folderId || undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.openToEdit")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {ability?.can("view", {
+                    id: doc.id,
+                    folderId: doc.folderId || folderId || undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.versionHistory")}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </td>
             </tr>

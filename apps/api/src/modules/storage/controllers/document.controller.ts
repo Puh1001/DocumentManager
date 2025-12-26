@@ -31,6 +31,8 @@ import {
   OpenPathResponse,
 } from "../services/local-edit.service";
 import { AuthenticatedRequest } from "@/common/types/request.types";
+import { PrismaService } from "@/common/prisma/prisma.service";
+import { PrismaClientLike } from "@/common/types/prisma.types";
 
 @ApiTags("Documents")
 @ApiBearerAuth()
@@ -40,7 +42,8 @@ export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
     private readonly versionService: VersionService,
-    private readonly localEditService: LocalEditService
+    private readonly localEditService: LocalEditService,
+    private readonly prisma: PrismaService
   ) {}
 
   @Get("search")
@@ -54,15 +57,68 @@ export class DocumentController {
 
   @Get(":id")
   @ApiOperation({ summary: "Get document by ID" })
-  async findOne(@Param("id") id: string) {
-    return this.documentService.findById(id);
+  async findOne(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
+    const document = await this.documentService.findById(id);
+
+    // Create audit log for document view
+    if (req.user?.id) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId: req.user.id,
+            action: "VIEW",
+            resourceType: "Document",
+            resourceId: id,
+            ipAddress: req.ip,
+            userAgent: req.get("user-agent"),
+            details: {
+              documentName: document.name,
+              fileName: document.fileName,
+            },
+          },
+        });
+      } catch (error) {
+        // Don't fail the request if audit log fails
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
+    return document;
   }
 
   @Get(":id/stream")
   @ApiOperation({ summary: "Stream document content for viewer" })
-  async stream(@Param("id") id: string, @Res() res: Response) {
+  async stream(
+    @Param("id") id: string,
+    @Res() res: Response,
+    @Request() req: AuthenticatedRequest
+  ) {
     const document = await this.documentService.findById(id);
     const stream = await this.documentService.getStream(id);
+
+    // Create audit log for document view (stream)
+    if (req.user?.id) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId: req.user.id,
+            action: "VIEW",
+            resourceType: "Document",
+            resourceId: id,
+            ipAddress: req.ip,
+            userAgent: req.get("user-agent"),
+            details: {
+              documentName: document.name,
+              fileName: document.fileName,
+              action: "stream",
+            },
+          },
+        });
+      } catch (error) {
+        // Don't fail the request if audit log fails
+        console.error("Failed to create audit log:", error);
+      }
+    }
 
     res.setHeader("Content-Type", this.getMimeType(document.fileType));
     res.setHeader("Content-Disposition", "inline");

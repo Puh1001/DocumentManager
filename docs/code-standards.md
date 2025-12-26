@@ -261,6 +261,93 @@ describe('AuthService', () => {
 });
 ```
 
+## Authorization Patterns
+
+### Backend: CASL Ability Usage
+
+```typescript
+// ✅ Good - Use CheckPolicies decorator
+@Controller('documents')
+@UseGuards(JwtAuthGuard, PoliciesGuard)
+export class DocumentController {
+  @Get(':id')
+  @CheckPolicies({ action: 'view', subject: 'Document' })
+  getDocument(@Param('id') id: string) {
+    // Handler logic
+  }
+}
+
+// ✅ Good - Use ability factory in service
+@Injectable()
+export class DocumentService {
+  constructor(
+    private readonly caslAbilityFactory: CaslAbilityFactory
+  ) {}
+
+  async canUserAccess(userId: string, documentId: string) {
+    const user = await this.getUser(userId);
+    const ability = await this.caslAbilityFactory.createForUser(
+      user.id,
+      user.roles.map(r => r.name)
+    );
+    return ability.can('view', { id: documentId, __typename: 'Document' });
+  }
+}
+```
+
+### Frontend: Route Protection
+
+```typescript
+// ✅ Good - Use useCanAccess hook for page protection
+'use client';
+
+import { useCanAccess } from '@/hooks/use-can-access';
+import { AccessDenied } from '@/components/access-denied';
+
+export default function UsersPage() {
+  const canAccess = useCanAccess('view', 'User');
+  
+  if (!canAccess) {
+    return <AccessDenied />;
+  }
+  
+  // Page content
+}
+
+// ✅ Good - Filter navigation based on permissions
+const canViewUsers = useCanAccess('view', 'User');
+const canViewDepartments = useCanAccess('view', 'Department');
+
+const navigation = [
+  { name: 'Users', href: '/dashboard/users', show: canViewUsers },
+  { name: 'Departments', href: '/dashboard/departments', show: canViewDepartments },
+].filter(item => item.show);
+```
+
+### Permission Checks
+
+```typescript
+// ✅ Good - Backend: Explicit permission check
+@CheckPolicies({ action: 'manage', subject: 'all' })
+
+// ✅ Good - Backend: Resource-specific check
+@CheckPolicies({ action: 'view', subject: 'Document' })
+
+// ✅ Good - Frontend: Page-level check
+const canAccess = useCanAccess('view', 'User');
+
+// ❌ Bad - Missing permission check
+@Get(':id')
+getDocument(@Param('id') id: string) {
+  // No permission check
+}
+
+// ❌ Bad - Frontend: No route protection
+export default function UsersPage() {
+  // No permission check - anyone can access
+}
+```
+
 ## Git Conventions
 
 ### Commit Messages

@@ -1,7 +1,7 @@
 # Project Roadmap
 
 **Last Updated:** 2025-01-XX  
-**Current Phase:** Phase 1-3 Complete, Additional Features Added (65%)
+**Current Phase:** Phase 1-4 Complete, Additional Features Added (75%)
 
 ---
 
@@ -20,7 +20,7 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 | 3.6   | KPI Tracking                     | ✅ Complete | 100%     | 3-4 days |
 | 3.7   | Maintenance Notices               | ✅ Complete | 100%     | 1-2 days |
 | 3.8   | Internationalization (i18n)      | ✅ Complete | 100%     | 1-2 days |
-| 4     | Authorization (RBAC + ABAC)      | 🔄 In Progress | 50%   | 3-4 days |
+| 4     | Authorization (RBAC + ABAC)      | ✅ Complete | 100%     | 3-4 days |
 | 5     | Document Viewer & Security       | 🔲 Pending  | 0%       | 2-3 days |
 | 6     | Version Control                  | 🔲 Pending  | 0%       | 2-3 days |
 | 7     | Local Edit Integration           | 🔲 Pending  | 0%       | 2 days   |
@@ -216,29 +216,41 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 ---
 
-## Phase 4: Authorization (RBAC + ABAC) 🔄
+## Phase 4: Authorization (RBAC + ABAC) ✅
 
-**Status:** In Progress  
+**Status:** Complete  
 **Duration:** 3-4 days  
 **Priority:** P1 - High  
-**Progress:** 50%
+**Progress:** 100%
 
 ### Completed Tasks
 
-- [x] CASL ability factory (partial)
+- [x] CASL ability factory (complete)
 - [x] Permission models (FolderPermission, DocumentPermission)
-- [x] PoliciesGuard implementation (partial)
-- [x] Permission management API (partial)
-- [ ] Permission UI in admin panel
-- [ ] Conditional rendering based on permissions
-- [ ] Permission inheritance logic
+- [x] PoliciesGuard implementation (complete)
+- [x] Permission management API (complete)
+- [x] Role-based permissions (RBAC)
+- [x] Folder-level permissions (ABAC)
+- [x] Document-level permissions (ABAC)
+- [x] Page-level permissions (User, Department, KPI, Maintenance, Permission)
+- [x] Permission inheritance logic
+- [x] Boss role implementation (read-only access)
+- [x] Permission management UI (complete)
+- [x] Frontend route protection (`useCanAccess` hook)
+- [x] Sidebar navigation filtering
+- [x] AccessDenied component
+- [x] Conditional rendering based on permissions
 
 ### Deliverables
 
-- RBAC + ABAC system
-- Permission management UI
-- Permission enforcement
-- Audit logging
+- ✅ RBAC + ABAC system (backend + frontend)
+- ✅ Permission management API
+- ✅ Permission management UI
+- ✅ Permission enforcement (PoliciesGuard backend, useCanAccess frontend)
+- ✅ CASL ability factory
+- ✅ Boss role support
+- ✅ Frontend route protection
+- ✅ Navigation filtering
 
 ---
 
@@ -349,12 +361,13 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 Week 1: Phase 1-2 (Foundation) ✅
 Week 2: Phase 3 (Storage & Files) ✅
 Week 2-3: Phase 3.5-3.8 (Additional Features) ✅
-Week 3-4: Phase 4 (Authorization) 🔄
+Week 3-4: Phase 4 (Authorization) ✅ (Backend + Frontend)
 Week 4-5: Phase 5-6 (Document Features) 🔲
 Week 5-6: Phase 7-8 (Integration & QA) 🔲
 ```
 
-**Total Estimated Duration:** ~6 weeks (extended due to additional features)
+**Total Estimated Duration:** ~6 weeks (extended due to additional features)  
+**Current Progress:** 75% complete
 
 ---
 

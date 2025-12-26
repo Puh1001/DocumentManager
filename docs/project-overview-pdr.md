@@ -4,7 +4,7 @@
 **Version:** 1.0.0  
 **Created:** 2024-12-18  
 **Last Updated:** 2025-01-XX  
-**Status:** 🟢 In Development (Phase 1-3 Complete, Additional Features Added - 65%)
+**Status:** 🟢 In Development (Phase 1-4 Complete, Additional Features Added - 75%)
 
 ---
 
@@ -72,12 +72,18 @@ Xây dựng web-based document management system:
 - Dashboard integration (upcoming notices display)
 - Edit and delete functionality
 
-### 2. Authorization (RBAC + ABAC)
+### 2. Authorization (RBAC + ABAC) ✅
 
-- Role-based access control
-- Folder-level permissions
-- Document-level permissions
-- Actions: View, Download, Print, Edit, Delete
+- Role-based access control (CASL implementation)
+- Folder-level permissions with inheritance
+- Document-level permissions (override folder)
+- Page-level permissions (User, Department, KPI, Maintenance, Permission)
+- Actions: View, Download, Print, Edit, Create, Delete, Manage
+- Boss role: Read-only access to all resources
+- Permission management API (backend complete)
+- Permission management UI (frontend complete)
+- Frontend route protection with `useCanAccess` hook
+- Sidebar navigation filtering based on permissions
 
 ### 3. Document Viewer
 
@@ -139,15 +145,15 @@ Xây dựng web-based document management system:
 | ---------------------------- | -------------- | -------------- |
 | Phase 1-2: Foundation        | 1 week         | ✅ Complete    |
 | Phase 3: Storage & Files    | 1.5 weeks      | ✅ Complete    |
-| Additional Features         | Ongoing        | ✅ In Progress |
+| Additional Features         | Ongoing        | ✅ Complete    |
 | - Department Management      | -              | ✅ Complete    |
 | - KPI Tracking               | -              | ✅ Complete    |
 | - Maintenance Notices         | -              | ✅ Complete    |
 | - Internationalization       | -              | ✅ Complete    |
-| Phase 4: Authorization      | 1 week         | 🔄 In Progress |
+| Phase 4: Authorization      | 1 week         | ✅ Complete (Backend + Frontend) |
 | Phase 5-6: Document Features | 1 week         | 🔲 Pending     |
 | Phase 7-8: Integration & QA  | 1 week         | 🔲 Pending     |
-| **Total**                    | **~4.5 weeks** | **65% Done**   |
+| **Total**                    | **~4.5 weeks** | **75% Done**   |
 
 ## Risks & Mitigations
 

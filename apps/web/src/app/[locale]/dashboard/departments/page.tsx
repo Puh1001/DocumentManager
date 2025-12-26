@@ -17,6 +17,8 @@ import {
 import { departmentApi, type Department } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getErrorMessage } from "@/lib/error-handler";
+import { useCanAccess } from "@/hooks/use-can-access";
+import { AccessDenied } from "@/components/access-denied";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function DepartmentsPage() {
@@ -39,6 +41,7 @@ export default function DepartmentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAdmin = user?.roles?.includes("admin") ?? false;
+  const canAccess = useCanAccess("view", "Department");
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -122,6 +125,10 @@ export default function DepartmentsPage() {
       setError(errorMessage);
     }
   };
+
+  if (!canAccess) {
+    return <AccessDenied />;
+  }
 
   if (loading) {
     return (

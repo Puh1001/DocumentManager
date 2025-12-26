@@ -9,6 +9,7 @@ import { PoliciesGuard } from "../guards/policies.guard";
 import { CaslAbilityFactory } from "../factories/casl-ability.factory";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { Reflector } from "@nestjs/core";
+import { AuthenticatedRequest } from "@/common/types/request.types";
 
 describe("PermissionController", () => {
   let controller: PermissionController;
@@ -16,6 +17,10 @@ describe("PermissionController", () => {
 
   const mockPermissionService = {
     findAllPermissions: jest.fn(),
+    findPermissionById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
     getRolePermissions: jest.fn(),
     assignPermissionsToRole: jest.fn(),
     getFolderPermissions: jest.fn(),
@@ -108,6 +113,13 @@ describe("PermissionController", () => {
       const dto: AssignRolePermissionsDto = {
         permissionIds: ["perm-1", "perm-2"],
       };
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
 
       const mockResult = {
         role: { id: roleId, name: "editor" },
@@ -121,12 +133,17 @@ describe("PermissionController", () => {
         mockResult
       );
 
-      const result = await controller.assignPermissionsToRole(roleId, dto);
+      const result = await controller.assignPermissionsToRole(
+        roleId,
+        dto,
+        mockRequest
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.assignPermissionsToRole).toHaveBeenCalledWith(
         roleId,
-        dto.permissionIds
+        dto.permissionIds,
+        "user-1"
       );
     });
   });
@@ -185,14 +202,27 @@ describe("PermissionController", () => {
         ],
       };
 
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
+
       mockPermissionService.setFolderPermissions.mockResolvedValue(mockResult);
 
-      const result = await controller.setFolderPermissions(folderId, dto);
+      const result = await controller.setFolderPermissions(
+        folderId,
+        dto,
+        mockRequest
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.setFolderPermissions).toHaveBeenCalledWith(
         folderId,
-        dto.permissions
+        dto.permissions,
+        "user-1"
       );
     });
   });
@@ -250,16 +280,135 @@ describe("PermissionController", () => {
         ],
       };
 
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
+
       mockPermissionService.setDocumentPermissions.mockResolvedValue(
         mockResult
       );
 
-      const result = await controller.setDocumentPermissions(documentId, dto);
+      const result = await controller.setDocumentPermissions(
+        documentId,
+        dto,
+        mockRequest
+      );
 
       expect(result).toEqual(mockResult);
       expect(service.setDocumentPermissions).toHaveBeenCalledWith(
         documentId,
-        dto.permissions
+        dto.permissions,
+        "user-1"
+      );
+    });
+  });
+
+  describe("findOne", () => {
+    it("should return permission by id", async () => {
+      const permissionId = "perm-1";
+      const mockPermission = {
+        id: permissionId,
+        name: "view",
+        description: "View permission",
+      };
+
+      mockPermissionService.findPermissionById.mockResolvedValue(
+        mockPermission
+      );
+
+      const result = await controller.findOne(permissionId);
+
+      expect(result).toEqual(mockPermission);
+      expect(service.findPermissionById).toHaveBeenCalledWith(permissionId);
+    });
+  });
+
+  describe("create", () => {
+    it("should create a new permission", async () => {
+      const dto = {
+        name: "view:User",
+        description: "View user management page",
+      };
+      const mockPermission = {
+        id: "perm-1",
+        ...dto,
+      };
+
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
+
+      mockPermissionService.create.mockResolvedValue(mockPermission);
+
+      const result = await controller.create(dto, mockRequest);
+
+      expect(result).toEqual(mockPermission);
+      expect(service.create).toHaveBeenCalledWith(dto, mockRequest.user.id);
+    });
+  });
+
+  describe("update", () => {
+    it("should update permission", async () => {
+      const permissionId = "perm-1";
+      const dto = {
+        description: "Updated description",
+      };
+      const mockPermission = {
+        id: permissionId,
+        name: "view",
+        ...dto,
+      };
+
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
+
+      mockPermissionService.update.mockResolvedValue(mockPermission);
+
+      const result = await controller.update(permissionId, dto, mockRequest);
+
+      expect(result).toEqual(mockPermission);
+      expect(service.update).toHaveBeenCalledWith(
+        permissionId,
+        dto,
+        mockRequest.user.id
+      );
+    });
+  });
+
+  describe("remove", () => {
+    it("should delete permission", async () => {
+      const permissionId = "perm-1";
+      const mockResult = { message: "Permission deleted successfully" };
+
+      const mockRequest: AuthenticatedRequest = {
+        user: {
+          id: "user-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      } as AuthenticatedRequest;
+
+      mockPermissionService.delete.mockResolvedValue(mockResult);
+
+      const result = await controller.remove(permissionId, mockRequest);
+
+      expect(result).toEqual(mockResult);
+      expect(service.delete).toHaveBeenCalledWith(
+        permissionId,
+        mockRequest.user.id
       );
     });
   });

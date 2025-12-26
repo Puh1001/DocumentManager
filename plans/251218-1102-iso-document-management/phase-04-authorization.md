@@ -1,6 +1,6 @@
 # Phase 4: Authorization (RBAC + ABAC)
 
-**Status:** 🔴 Pending  
+**Status:** ✅ Completed  
 **Priority:** P1 - High  
 **Estimated Time:** 3-4 days
 
@@ -222,14 +222,17 @@ const canDownload = ability?.can("download", document);
 
 ## Todo List
 
-- [ ] Install @casl/ability and @casl/prisma
-- [ ] Create Permission, FolderPermission, DocumentPermission models
-- [ ] Implement CaslAbilityFactory
-- [ ] Create PoliciesGuard
-- [ ] Add permission decorators
-- [ ] Build permission management API
-- [ ] Create permission UI in admin panel
-- [ ] Implement conditional rendering based on permissions
+- [x] Install @casl/ability and @casl/prisma
+- [x] Create Permission, FolderPermission, DocumentPermission models
+- [x] Implement CaslAbilityFactory
+- [x] Create PoliciesGuard
+- [x] Add permission decorators
+- [x] Build permission management API
+- [x] Create permission UI in admin panel
+- [x] Implement conditional rendering based on permissions
+- [x] Add audit log for permission changes
+- [x] Create useAbility hook for frontend
+- [x] Add abilities endpoint to auth controller
 
 ## Success Criteria
 

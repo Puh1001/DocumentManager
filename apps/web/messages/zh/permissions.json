@@ -1,0 +1,47 @@
+{
+  "title": "权限和角色",
+  "description": "管理系统中的角色及其权限",
+  "addRole": "添加角色",
+  "addPermission": "添加权限",
+  "availablePermissions": "可用权限",
+  "roles": "角色",
+  "noPermissions": "未找到权限",
+  "noRoles": "未找到角色",
+  "searchRoles": "搜索角色...",
+  "searchPermissions": "搜索权限...",
+  "usedBy": "被使用",
+  "folderDocumentPermissions": "文件夹和文档权限",
+  "folderDocumentPermissionsDescription": "文件夹和文档权限管理可以从文档页面访问。选择一个文件夹或文档，然后使用权限按钮来管理访问权限。",
+  "form": {
+    "createRoleTitle": "添加新角色",
+    "updateRoleTitle": "更新角色",
+    "createRoleDescription": "填写信息以创建新角色",
+    "updateRoleDescription": "更新角色信息",
+    "createPermissionTitle": "添加新权限",
+    "updatePermissionTitle": "更新权限",
+    "createPermissionDescription": "填写信息以创建新权限",
+    "updatePermissionDescription": "更新权限信息",
+    "roleName": "角色名称",
+    "roleNamePlaceholder": "输入角色名称",
+    "permissionName": "权限名称",
+    "permissionNamePlaceholder": "输入权限名称（例如：view:User, manage:Department）",
+    "description": "描述",
+    "descriptionPlaceholder": "输入描述（可选）",
+    "processing": "处理中...",
+    "create": "创建",
+    "update": "更新"
+  },
+  "permissions": {
+    "assignTitle": "分配权限",
+    "assignDescription": "选择要分配给此角色的权限"
+  },
+  "errors": {
+    "loadFailed": "加载权限和角色失败",
+    "createFailed": "无法创建角色",
+    "updateFailed": "无法更新角色",
+    "deleteFailed": "无法删除角色",
+    "deleteRoleConfirm": "您确定要删除此角色吗？此操作无法撤销。",
+    "deletePermissionConfirm": "您确定要删除此权限吗？此操作无法撤销。",
+    "deletePermissionInUse": "无法删除权限。它目前被以下角色使用：{roles}"
+  }
+}

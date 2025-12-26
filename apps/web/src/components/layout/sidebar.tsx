@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "../../../i18n/routing";
 import { cn } from "@/lib/utils";
+import { useCanAccess } from "@/hooks/use-can-access";
 import {
   LayoutDashboard,
   FileText,
@@ -20,40 +21,66 @@ export function Sidebar() {
   const pathname = usePathname();
   const locale = useLocale();
 
-  const navigation = [
+  // Permission checks for each navigation item
+  const canViewUsers = useCanAccess("view", "User");
+  const canViewDepartments = useCanAccess("view", "Department");
+  const canViewKpi = useCanAccess("view", "Kpi");
+  const canViewMaintenance = useCanAccess("view", "Maintenance");
+  const canViewPermissions = useCanAccess("view", "Permission");
+
+  const allNavigation = [
     {
       name: t("navigation.dashboard"),
       href: "/dashboard",
       icon: LayoutDashboard,
+      show: true, // Dashboard is always accessible
     },
     {
       name: t("navigation.documents"),
       href: "/dashboard/documents",
       icon: FileText,
+      show: true, // Documents accessible to all authenticated users
     },
-    { name: t("navigation.kpi"), href: "/dashboard/kpi", icon: BarChart2 },
+    {
+      name: t("navigation.kpi"),
+      href: "/dashboard/kpi",
+      icon: BarChart2,
+      show: canViewKpi,
+    },
     {
       name: t("navigation.maintenance"),
       href: "/dashboard/maintenance",
       icon: Wrench,
+      show: canViewMaintenance,
     },
     {
       name: t("navigation.departments"),
       href: "/dashboard/departments",
       icon: FolderOpen,
+      show: canViewDepartments,
     },
-    { name: t("navigation.users"), href: "/dashboard/users", icon: Users },
+    {
+      name: t("navigation.users"),
+      href: "/dashboard/users",
+      icon: Users,
+      show: canViewUsers,
+    },
     {
       name: t("navigation.permissions"),
       href: "/dashboard/permissions",
       icon: Shield,
+      show: canViewPermissions,
     },
     {
       name: t("navigation.settings"),
       href: "/dashboard/settings",
       icon: Settings,
+      show: true, // Settings accessible to all authenticated users
     },
   ];
+
+  // Filter navigation based on permissions
+  const navigation = allNavigation.filter((item) => item.show);
 
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">

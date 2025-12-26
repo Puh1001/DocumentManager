@@ -23,6 +23,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
     errors,
     kpi,
     maintenance,
+    boss,
+    users,
+    permissions,
   ] = await Promise.all([
     import(`../messages/${locale}/common.json`),
     import(`../messages/${locale}/auth.json`),
@@ -32,6 +35,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`../messages/${locale}/errors.json`),
     import(`../messages/${locale}/kpi.json`),
     import(`../messages/${locale}/maintenance.json`),
+    import(`../messages/${locale}/boss.json`),
+    import(`../messages/${locale}/users.json`),
+    import(`../messages/${locale}/permissions.json`),
   ]);
 
   return {
@@ -45,6 +51,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
       errors: errors.default,
       kpi: kpi.default,
       maintenance: maintenance.default,
+      boss: boss.default,
+      users: users.default,
+      permissions: permissions.default,
     },
   };
 });

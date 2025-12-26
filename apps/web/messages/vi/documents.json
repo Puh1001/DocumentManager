@@ -9,9 +9,17 @@
     "refresh": "Làm mới",
     "openFolder": "Mở thư mục",
     "upload": "Upload",
+    "assignDepartment": "Gắn phòng ban",
     "location": "Vị trí",
     "pathCopied": "Đường dẫn đã được sao chép:\n{path}\n\nDán vào Windows Explorer (Win+E) để mở thư mục.",
     "pathCopiedTitle": "Đường dẫn đã được sao chép"
+  },
+  "assignDepartment": {
+    "title": "Gắn phòng ban cho {folder}",
+    "description": "Liên kết thư mục này với một phòng ban để BOSS có thể xem tài liệu.",
+    "department": "Phòng ban",
+    "selectDepartment": "Chọn phòng ban",
+    "none": "Không (Bỏ gắn)"
   },
   "list": {
     "empty": "Không có tài liệu trong thư mục này",

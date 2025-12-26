@@ -8,13 +8,16 @@ import {
   Param,
   Query,
   UseGuards,
-  HttpException,
-  HttpStatus,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
-import { FolderService, FolderTreeNode } from "../services/folder.service";
+import {
+  FolderService,
+  FolderTreeNode,
+  FolderTreeNodeWithDocuments,
+} from "../services/folder.service";
 import { FolderSyncService } from "../services/folder-sync.service";
+import { FolderSyncGateway } from "../gateways/folder-sync.gateway";
 import {
   LocalEditService,
   OpenPathResponse,
@@ -30,19 +33,33 @@ export class FolderController {
   constructor(
     private readonly folderService: FolderService,
     private readonly folderSyncService: FolderSyncService,
+    private readonly folderSyncGateway: FolderSyncGateway,
     private readonly localEditService: LocalEditService
   ) {}
 
   @Get()
   @ApiOperation({ summary: "List folders" })
-  async findAll(@Query("parentId") parentId?: string) {
-    return this.folderService.findAll(parentId);
+  async findAll(
+    @Query("parentId") parentId?: string,
+    @Query("departmentId") departmentId?: string
+  ) {
+    return this.folderService.findAll(parentId, departmentId);
   }
 
   @Get("tree")
   @ApiOperation({ summary: "Get folder tree structure" })
-  async getTree(): Promise<FolderTreeNode[]> {
-    return this.folderService.getTree();
+  async getTree(
+    @Query("departmentId") departmentId?: string
+  ): Promise<FolderTreeNode[]> {
+    return this.folderService.getTree(departmentId);
+  }
+
+  @Get("tree/with-documents")
+  @ApiOperation({ summary: "Get folder tree structure with documents" })
+  async getTreeWithDocuments(
+    @Query("departmentId") departmentId?: string
+  ): Promise<FolderTreeNodeWithDocuments[]> {
+    return this.folderService.getTreeWithDocuments(departmentId);
   }
 
   @Get(":id")
@@ -79,20 +96,28 @@ export class FolderController {
   @Post("sync")
   @ApiOperation({ summary: "Sync folders with file system" })
   async sync() {
-    try {
-      await this.folderSyncService.syncWithFileSystem();
-      return { message: "Sync completed" };
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: `Sync failed: ${errorMessage}`,
-          error: "Internal Server Error",
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+    // Return immediately and run sync in background
+    // Frontend will listen to WebSocket events for completion
+    this.folderSyncService
+      .syncWithFileSystem()
+      .then(() => {
+        // Emit success event via WebSocket
+        this.folderSyncGateway.broadcastSyncEvent({
+          type: "sync_completed",
+          data: { success: true },
+        });
+      })
+      .catch((error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        // Emit error event via WebSocket
+        this.folderSyncGateway.broadcastSyncEvent({
+          type: "sync_completed",
+          data: { success: false, error: errorMessage },
+        });
+      });
+
+    // Return immediately - don't wait for sync to complete
+    return { message: "Sync started", status: "processing" };
   }
 }

@@ -9,9 +9,17 @@
     "refresh": "Refresh",
     "openFolder": "Open folder",
     "upload": "Upload",
+    "assignDepartment": "Assign Department",
     "location": "Location",
     "pathCopied": "Path copied:\n{path}\n\nPaste into Windows Explorer (Win+E) to open folder.",
     "pathCopiedTitle": "Path copied"
+  },
+  "assignDepartment": {
+    "title": "Assign Department to {folder}",
+    "description": "Link this folder to a department so BOSS can view its documents.",
+    "department": "Department",
+    "selectDepartment": "Select a department",
+    "none": "None (Unassign)"
   },
   "list": {
     "empty": "No documents in this folder",

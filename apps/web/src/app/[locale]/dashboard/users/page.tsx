@@ -1,42 +1,694 @@
 "use client";
 
+import React, { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldQuestion } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  userApi,
+  roleApi,
+  type User,
+  type Role,
+  type CreateUserDto,
+  type UpdateUserDto,
+} from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { getErrorMessage } from "@/lib/error-handler";
+import { useCanAccess } from "@/hooks/use-can-access";
+import { AccessDenied } from "@/components/access-denied";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Shield,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-export default function UsersPagePlaceholder() {
-  const t = useTranslations("common");
+export default function UsersPage() {
+  const t = useTranslations();
+  const tUsers = useTranslations("users");
+  const tCommon = useTranslations("common");
+  const { user } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedUserForRoles, setSelectedUserForRoles] = useState<User | null>(
+    null
+  );
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    fullName: "",
+    department: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
+
+  const isAdmin = user?.roles?.includes("admin") ?? false;
+  const canAccess = useCanAccess("view", "User");
+
+  const loadUsers = useCallback(
+    async (page = 1) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await userApi.getAll({
+          page,
+          limit,
+          search: searchTerm || undefined,
+        });
+        setUsers(response.data);
+        setTotalPages(response.totalPages);
+        setTotal(response.total);
+        setCurrentPage(page);
+      } catch (err) {
+        console.error(err);
+        setError(getErrorMessage(err, (key: string) => t(key)));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchTerm, t]
+  );
+
+  const loadRoles = useCallback(async () => {
+    try {
+      const response = await roleApi.getAll({ limit: 100 });
+      setRoles(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUsers(1);
+  }, [loadUsers]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadRoles();
+    }
+  }, [isAdmin, loadRoles]);
+
+  const handleOpenUserDialog = (user?: User) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        username: user.username,
+        email: user.email,
+        password: "",
+        fullName: user.fullName,
+        department: user.department || "",
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
+        fullName: "",
+        department: "",
+      });
+    }
+    setIsUserDialogOpen(true);
+  };
+
+  const handleCloseUserDialog = () => {
+    setIsUserDialogOpen(false);
+    setEditingUser(null);
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+      fullName: "",
+      department: "",
+    });
+  };
+
+  const handleOpenRoleDialog = async (user: User) => {
+    try {
+      // Refresh user data to get latest roles
+      const updatedUser = await userApi.getById(user.id);
+      setSelectedUserForRoles(updatedUser);
+      setIsRoleDialogOpen(true);
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err, (key: string) => t(key)));
+    }
+  };
+
+  const handleCloseRoleDialog = () => {
+    setIsRoleDialogOpen(false);
+    setSelectedUserForRoles(null);
+  };
+
+  const handleSubmitUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (editingUser) {
+        const updateData: UpdateUserDto = {
+          email: formData.email,
+          fullName: formData.fullName,
+          department: formData.department || undefined,
+        };
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+        await userApi.update(editingUser.id, updateData);
+      } else {
+        const createData: CreateUserDto = {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          department: formData.department || undefined,
+        };
+        await userApi.create(createData);
+      }
+      await loadUsers(currentPage);
+      handleCloseUserDialog();
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err, (key: string) => t(key)));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm(tUsers("errors.deleteConfirm"))) {
+      return;
+    }
+
+    try {
+      await userApi.delete(id);
+      await loadUsers(currentPage);
+    } catch (err) {
+      console.error(err);
+      const errorMessage =
+        err instanceof Error ? err.message : t("errors.deleteFailed");
+      setError(errorMessage);
+    }
+  };
+
+  const handleAssignRole = async (roleId: string) => {
+    if (!selectedUserForRoles) return;
+
+    try {
+      await userApi.assignRole(selectedUserForRoles.id, roleId);
+      // Refresh user data to get updated roles
+      const updatedUser = await userApi.getById(selectedUserForRoles.id);
+      setSelectedUserForRoles(updatedUser);
+      await loadUsers(currentPage);
+      await loadRoles();
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err, (key: string) => t(key)));
+    }
+  };
+
+  const handleRemoveRole = async (roleId: string) => {
+    if (!selectedUserForRoles) return;
+
+    try {
+      await userApi.removeRole(selectedUserForRoles.id, roleId);
+      // Refresh user data to get updated roles
+      const updatedUser = await userApi.getById(selectedUserForRoles.id);
+      setSelectedUserForRoles(updatedUser);
+      await loadUsers(currentPage);
+      await loadRoles();
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err, (key: string) => t(key)));
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadUsers(1);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+    loadUsers(1);
+  };
+
+  if (!canAccess) {
+    return <AccessDenied />;
+  }
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {t("navigation.users")}
-        </h1>
-        <p className="text-muted-foreground">
-          User management screen is not available yet. Please use existing
-          modules while this page is being completed.
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{tUsers("title")}</h1>
+          <p className="text-muted-foreground mt-1">{tUsers("description")}</p>
+        </div>
+        {isAdmin && (
+          <Button onClick={() => handleOpenUserDialog()}>
+            <Plus className="mr-2 h-4 w-4" />
+            {tUsers("add")}
+          </Button>
+        )}
       </div>
 
+      {error && (
+        <Card className="p-4 bg-destructive/10 border-destructive">
+          <p className="text-destructive">{error}</p>
+        </Card>
+      )}
+
       <Card>
-        <CardHeader className="flex flex-row items-center gap-3">
-          <ShieldQuestion className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>Coming soon</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            We are finishing access control flows. If you expect this feature in
-            production, please contact an administrator to confirm the release
-            plan.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            In the meantime, you can continue working with Documents and
-            Departments modules.
-          </p>
-        </CardContent>
+        <div className="p-6">
+          <form onSubmit={handleSearch} className="mb-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder={tUsers("searchPlaceholder")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+              <Button type="submit" variant="outline">
+                {tCommon("actions.search")}
+              </Button>
+            </div>
+          </form>
+
+          {users.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {tUsers("empty")}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.username")}
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.fullName")}
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.email")}
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.department")}
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.roles")}
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      {tUsers("table.status")}
+                    </th>
+                    {isAdmin && (
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                        {tUsers("table.actions")}
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4">{user.username}</td>
+                      <td className="py-3 px-4">{user.fullName}</td>
+                      <td className="py-3 px-4">{user.email}</td>
+                      <td className="py-3 px-4">{user.department || "-"}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.map((role) => (
+                            <span
+                              key={role.id}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {role.name}
+                            </span>
+                          ))}
+                          {user.roles.length === 0 && (
+                            <span className="text-muted-foreground text-xs">
+                              -
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            user.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {user.isActive
+                            ? tUsers("status.active")
+                            : tUsers("status.inactive")}
+                        </span>
+                      </td>
+                      {isAdmin && (
+                        <td className="py-3 px-4">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenUserDialog(user)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenRoleDialog(user)}
+                            >
+                              <Shield className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(user.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                {tUsers("pagination.showing", {
+                  from: (currentPage - 1) * limit + 1,
+                  to: Math.min(currentPage * limit, total),
+                  total,
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadUsers(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                    )
+                    .map((page, index, array) => (
+                      <React.Fragment key={page}>
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <span className="px-2">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => loadUsers(page)}
+                        >
+                          {page}
+                        </Button>
+                      </React.Fragment>
+                    ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadUsers(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </Card>
+
+      {/* User Create/Edit Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleSubmitUser}>
+            <DialogHeader>
+              <DialogTitle>
+                {editingUser
+                  ? tUsers("form.updateTitle")
+                  : tUsers("form.createTitle")}
+              </DialogTitle>
+              <DialogDescription>
+                {editingUser
+                  ? tUsers("form.updateDescription")
+                  : tUsers("form.createDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {!editingUser && (
+                <div className="grid gap-2">
+                  <Label htmlFor="username">{tUsers("form.username")}</Label>
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) =>
+                      setFormData({ ...formData, username: e.target.value })
+                    }
+                    placeholder={tUsers("form.usernamePlaceholder")}
+                    required
+                  />
+                </div>
+              )}
+              <div className="grid gap-2">
+                <Label htmlFor="email">{tUsers("form.email")}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder={tUsers("form.emailPlaceholder")}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">
+                  {tUsers("form.password")}
+                  {editingUser && (
+                    <span className="text-muted-foreground text-xs ml-2">
+                      ({tUsers("form.passwordOptional")})
+                    </span>
+                  )}
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder={tUsers("form.passwordPlaceholder")}
+                  required={!editingUser}
+                  minLength={6}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="fullName">{tUsers("form.fullName")}</Label>
+                <Input
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
+                  placeholder={tUsers("form.fullNamePlaceholder")}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="department">{tUsers("form.department")}</Label>
+                <Input
+                  id="department"
+                  value={formData.department}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department: e.target.value })
+                  }
+                  placeholder={tUsers("form.departmentPlaceholder")}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseUserDialog}
+                disabled={isSubmitting}
+              >
+                {tCommon("actions.cancel")}
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? tUsers("form.processing")
+                  : editingUser
+                    ? tUsers("form.update")
+                    : tUsers("form.create")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Assignment Dialog */}
+      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tUsers("roles.title")}</DialogTitle>
+            <DialogDescription>
+              {selectedUserForRoles &&
+                tUsers("roles.description", {
+                  name: selectedUserForRoles.fullName,
+                })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {selectedUserForRoles && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">
+                    {tUsers("roles.currentRoles")}
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedUserForRoles.roles.length === 0 ? (
+                      <span className="text-muted-foreground text-sm">
+                        {tUsers("roles.noRoles")}
+                      </span>
+                    ) : (
+                      selectedUserForRoles.roles.map((role) => (
+                        <div
+                          key={role.id}
+                          className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        >
+                          <span>{role.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRole(role.id)}
+                            className="hover:text-blue-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="mb-2 block">
+                    {tUsers("roles.assignRole")}
+                  </Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {roles
+                      .filter(
+                        (role) =>
+                          !selectedUserForRoles.roles.some(
+                            (ur) => ur.id === role.id
+                          )
+                      )
+                      .map((role) => (
+                        <div
+                          key={role.id}
+                          className="flex items-center justify-between p-2 border rounded hover:bg-muted cursor-pointer"
+                          onClick={() => handleAssignRole(role.id)}
+                        >
+                          <div>
+                            <div className="font-medium">{role.name}</div>
+                            {role.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {role.description}
+                              </div>
+                            )}
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    {roles.filter(
+                      (role) =>
+                        !selectedUserForRoles.roles.some(
+                          (ur) => ur.id === role.id
+                        )
+                    ).length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm py-4">
+                        {tUsers("roles.allRolesAssigned")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseRoleDialog}
+            >
+              {tCommon("actions.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

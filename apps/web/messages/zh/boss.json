@@ -1,0 +1,80 @@
+{
+  "title": "BOSS 仪表板",
+  "description": "查看所有部门、KPI、维护和文档",
+  "comingSoon": "BOSS UI 正在实施中...",
+  "viewType": {
+    "kpi": "KPI",
+    "maintenance": "维护",
+    "documents": "文档"
+  },
+  "actions": {
+    "back": "返回"
+  },
+  "detail": "详情",
+  "inactive": "未激活",
+  "viewDescriptions": {
+    "kpi": "查看 KPI 记录",
+    "maintenance": "查看维护通知",
+    "documents": "查看文档"
+  },
+  "months": {
+    "jan": "1月",
+    "feb": "2月",
+    "mar": "3月",
+    "apr": "4月",
+    "may": "5月",
+    "jun": "6月",
+    "jul": "7月",
+    "aug": "8月",
+    "sep": "9月",
+    "oct": "10月",
+    "nov": "11月",
+    "dec": "12月"
+  },
+  "chart": {
+    "efficiency": "效率 (%)"
+  },
+  "notFound": {
+    "kpi": "未找到 KPI 记录",
+    "maintenance": "未找到维护通知",
+    "document": "未找到文档"
+  },
+  "kpi": {
+    "untitled": "未命名 KPI",
+    "target": "目标",
+    "kpiTitle": "KPI 标题",
+    "efficiency": "效率 (%)",
+    "chartTitle": "KPI / 效率 (%)"
+  },
+  "empty": {
+    "noDepartments": "未找到部门",
+    "noDepartmentsDescription": "没有可显示的部门。",
+    "noKpi": "未找到 KPI 记录",
+    "noKpiDescription": "此部门没有 KPI 记录。",
+    "noMaintenance": "未找到维护通知",
+    "noMaintenanceDescription": "此部门没有维护通知。",
+    "noDocuments": "未找到文档",
+    "noDocumentsDescription": "此部门文件夹中没有文档。",
+    "noFolder": "未找到部门文件夹",
+    "noFolderDescription": "系统中未找到部门 {department} 的文件夹。"
+  },
+  "error": {
+    "loadFailed": "加载部门失败",
+    "loadKpiFailed": "加载 KPI 记录失败",
+    "loadMaintenanceFailed": "加载维护通知失败",
+    "loadDocumentsFailed": "加载文档失败"
+  },
+  "maintenance": {
+    "description": "描述",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "department": "部门",
+    "createdBy": "创建者",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间"
+  },
+  "document": {
+    "print": "打印",
+    "download": "下载"
+  }
+}

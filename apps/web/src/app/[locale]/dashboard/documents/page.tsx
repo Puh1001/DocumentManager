@@ -15,6 +15,12 @@ interface Folder {
   name: string;
   path: string;
   physicalLocation: string | null;
+  departmentId?: string | null;
+  department?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
   children: Folder[];
   documents?: Document[];
 }
@@ -95,12 +101,30 @@ export default function DocumentsPage() {
       documentId?: string;
       data?: unknown;
     }) => {
+      // Handle sync_completed event specifically
+      if (event.type === "sync_completed") {
+        const data = event.data as
+          | { success?: boolean; error?: string }
+          | undefined;
+        if (data?.success === false) {
+          console.error("Sync failed:", data.error);
+          // Could show error notification here
+        } else {
+          console.log("Sync completed successfully");
+        }
+        // Always refresh on sync_completed
+        loadFolderTree();
+        if (selectedFolderId) {
+          loadFolderContents(selectedFolderId);
+        }
+        return;
+      }
+
       // Refresh folder tree on any sync event
       if (
         event.type === "folder_added" ||
         event.type === "folder_updated" ||
-        event.type === "folder_deleted" ||
-        event.type === "sync_completed"
+        event.type === "folder_deleted"
       ) {
         loadFolderTree();
       }
@@ -189,15 +213,13 @@ export default function DocumentsPage() {
 
   const handleSync = async () => {
     try {
+      // Start sync - it will return immediately
+      // We'll listen to sync_completed event via WebSocket to refresh UI
       await api.post("/storage/folders/sync");
-      // Refresh folder tree after sync
-      await loadFolderTree();
-      // If a folder was selected, refresh its contents too
-      if (selectedFolderId) {
-        await loadFolderContents(selectedFolderId);
-      }
+      // Don't refresh here - wait for sync_completed event
+      // The handleSyncEvent callback will handle refresh when sync_completed is received
     } catch (error) {
-      console.error("Sync failed:", error);
+      console.error("Failed to start sync:", error);
       throw error; // Re-throw to let toolbar handle loading state
     }
   };
@@ -243,6 +265,7 @@ export default function DocumentsPage() {
             {selectedFolderId ? (
               <DocumentList
                 documents={documents}
+                folderId={selectedFolderId}
                 onDocumentClick={(doc) => {
                   // Open document viewer
                   window.open(`/dashboard/documents/${doc.id}/view`, "_blank");

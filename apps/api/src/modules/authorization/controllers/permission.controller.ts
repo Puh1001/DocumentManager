@@ -2,11 +2,14 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -21,6 +24,9 @@ import { PermissionService } from "../services/permission.service";
 import { AssignRolePermissionsDto } from "../dto/assign-role-permissions.dto";
 import { SetFolderPermissionsDto } from "../dto/set-folder-permissions.dto";
 import { SetDocumentPermissionsDto } from "../dto/set-document-permissions.dto";
+import { CreatePermissionDto } from "../dto/create-permission.dto";
+import { UpdatePermissionDto } from "../dto/update-permission.dto";
+import { AuthenticatedRequest } from "@/common/types/request.types";
 
 @ApiTags("Permissions")
 @Controller("permissions")
@@ -36,26 +42,66 @@ export class PermissionController {
     return this.permissionService.findAllPermissions();
   }
 
-  @Get("roles/:id")
-  @ApiOperation({ summary: "Get permissions for a role" })
-  @ApiParam({ name: "id", description: "Role ID" })
+  @Get(":id")
+  @ApiOperation({ summary: "Get permission by ID" })
+  @ApiParam({ name: "id", description: "Permission ID" })
   @CheckPolicies({ action: "manage", subject: "all" })
-  getRolePermissions(@Param("id") roleId: string) {
+  findOne(@Param("id") id: string) {
+    return this.permissionService.findPermissionById(id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: "Create a new permission (admin-only)" })
+  @CheckPolicies({ action: "manage", subject: "all" })
+  create(
+    @Body() createPermissionDto: CreatePermissionDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.permissionService.create(createPermissionDto, req.user.id);
+  }
+
+  @Patch(":id")
+  @ApiOperation({ summary: "Update permission (admin-only)" })
+  @ApiParam({ name: "id", description: "Permission ID" })
+  @CheckPolicies({ action: "manage", subject: "all" })
+  update(
+    @Param("id") id: string,
+    @Body() updatePermissionDto: UpdatePermissionDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.permissionService.update(id, updatePermissionDto, req.user.id);
+  }
+
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete permission if not in use (admin-only)" })
+  @ApiParam({ name: "id", description: "Permission ID" })
+  @CheckPolicies({ action: "manage", subject: "all" })
+  remove(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
+    return this.permissionService.delete(id, req.user.id);
+  }
+
+  @Get("roles/:roleId")
+  @ApiOperation({ summary: "Get permissions for a role" })
+  @ApiParam({ name: "roleId", description: "Role ID" })
+  @CheckPolicies({ action: "manage", subject: "all" })
+  getRolePermissions(@Param("roleId") roleId: string) {
     return this.permissionService.getRolePermissions(roleId);
   }
 
-  @Post("roles/:id")
+  @Post("roles/:roleId")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Assign permissions to a role" })
-  @ApiParam({ name: "id", description: "Role ID" })
+  @ApiParam({ name: "roleId", description: "Role ID" })
   @CheckPolicies({ action: "manage", subject: "all" })
   assignPermissionsToRole(
-    @Param("id") roleId: string,
-    @Body() dto: AssignRolePermissionsDto
+    @Param("roleId") roleId: string,
+    @Body() dto: AssignRolePermissionsDto,
+    @Request() req: AuthenticatedRequest
   ) {
     return this.permissionService.assignPermissionsToRole(
       roleId,
-      dto.permissionIds
+      dto.permissionIds,
+      req.user.id
     );
   }
 
@@ -74,11 +120,13 @@ export class PermissionController {
   @CheckPolicies({ action: "manage", subject: "Folder" })
   setFolderPermissions(
     @Param("id") folderId: string,
-    @Body() dto: SetFolderPermissionsDto
+    @Body() dto: SetFolderPermissionsDto,
+    @Request() req: AuthenticatedRequest
   ) {
     return this.permissionService.setFolderPermissions(
       folderId,
-      dto.permissions
+      dto.permissions,
+      req.user.id
     );
   }
 
@@ -97,11 +145,13 @@ export class PermissionController {
   @CheckPolicies({ action: "manage", subject: "Document" })
   setDocumentPermissions(
     @Param("id") documentId: string,
-    @Body() dto: SetDocumentPermissionsDto
+    @Body() dto: SetDocumentPermissionsDto,
+    @Request() req: AuthenticatedRequest
   ) {
     return this.permissionService.setDocumentPermissions(
       documentId,
-      dto.permissions
+      dto.permissions,
+      req.user.id
     );
   }
 }

@@ -16,5 +16,10 @@ export class CreateFolderDto {
   @IsString()
   @IsOptional()
   physicalLocation?: string;
+
+  @ApiPropertyOptional({ description: 'Department ID to link folder to department' })
+  @IsString()
+  @IsOptional()
+  departmentId?: string;
 }
 

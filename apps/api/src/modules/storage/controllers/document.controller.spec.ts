@@ -93,8 +93,13 @@ describe("DocumentController", () => {
   describe("findOne", () => {
     it("should return document by id", async () => {
       documentService.findById = jest.fn().mockResolvedValue(mockDocument);
+      const mockRequest = {
+        user: { id: "user-1" },
+        ip: "127.0.0.1",
+        get: () => "Mozilla",
+      } as unknown as AuthenticatedRequest;
 
-      const result = await controller.findOne("doc-1");
+      const result = await controller.findOne("doc-1", mockRequest);
 
       expect(result).toEqual(mockDocument);
       expect(documentService.findById).toHaveBeenCalledWith("doc-1");
@@ -114,8 +119,17 @@ describe("DocumentController", () => {
 
       documentService.findById = jest.fn().mockResolvedValue(mockDocument);
       documentService.getStream = jest.fn().mockResolvedValue(mockStream);
+      const mockRequest = {
+        user: { id: "user-1" },
+        ip: "127.0.0.1",
+        get: () => "Mozilla",
+      } as unknown as AuthenticatedRequest;
 
-      await controller.stream("doc-1", mockResponse as unknown as Response);
+      await controller.stream(
+        "doc-1",
+        mockResponse as unknown as Response,
+        mockRequest
+      );
 
       expect(documentService.findById).toHaveBeenCalledWith("doc-1");
       expect(documentService.getStream).toHaveBeenCalledWith("doc-1");

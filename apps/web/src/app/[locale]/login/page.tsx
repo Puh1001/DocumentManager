@@ -35,7 +35,23 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      router.push(`/${locale}/dashboard`);
+
+      // Get user from localStorage to check roles
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        const isBoss = user?.roles?.includes("boss");
+
+        // Redirect based on role
+        if (isBoss) {
+          router.push(`/${locale}/dashboard/boss`);
+        } else {
+          router.push(`/${locale}/dashboard`);
+        }
+      } else {
+        // Fallback to default dashboard if user not found
+        router.push(`/${locale}/dashboard`);
+      }
     } catch (err) {
       setError(getErrorMessage(err, (key: string) => t(key)));
     } finally {

@@ -1,0 +1,59 @@
+{
+  "title": "用户管理",
+  "description": "管理系统中的用户、角色和权限",
+  "add": "添加用户",
+  "empty": "未找到用户",
+  "searchPlaceholder": "按用户名、电子邮件或姓名搜索...",
+  "table": {
+    "username": "用户名",
+    "fullName": "全名",
+    "email": "电子邮件",
+    "department": "部门",
+    "roles": "角色",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "status": {
+    "active": "活跃",
+    "inactive": "非活跃"
+  },
+  "form": {
+    "createTitle": "添加新用户",
+    "updateTitle": "更新用户",
+    "createDescription": "填写信息以创建新用户",
+    "updateDescription": "更新用户信息",
+    "username": "用户名",
+    "usernamePlaceholder": "输入用户名",
+    "email": "电子邮件",
+    "emailPlaceholder": "输入电子邮件地址",
+    "password": "密码",
+    "passwordPlaceholder": "输入密码（最少6个字符）",
+    "passwordOptional": "留空以保持当前密码",
+    "fullName": "全名",
+    "fullNamePlaceholder": "输入全名",
+    "department": "部门",
+    "departmentPlaceholder": "输入部门名称",
+    "processing": "处理中...",
+    "create": "创建",
+    "update": "更新"
+  },
+  "roles": {
+    "title": "管理用户角色",
+    "description": "为 {name} 分配或删除角色",
+    "currentRoles": "当前角色",
+    "assignRole": "可用角色",
+    "noRoles": "未分配角色",
+    "allRolesAssigned": "所有可用角色已分配"
+  },
+  "pagination": {
+    "showing": "显示 {from} 到 {to}，共 {total} 个用户"
+  },
+  "errors": {
+    "loadFailed": "加载用户列表失败",
+    "createFailed": "无法创建用户",
+    "updateFailed": "无法更新用户",
+    "deleteFailed": "无法删除用户",
+    "deleteConfirm": "您确定要停用此用户吗？"
+  }
+}
+

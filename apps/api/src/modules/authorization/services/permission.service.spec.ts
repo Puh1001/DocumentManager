@@ -11,6 +11,9 @@ describe("PermissionService", () => {
     permission: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
     role: {
       findUnique: jest.fn(),
@@ -18,6 +21,7 @@ describe("PermissionService", () => {
     rolePermission: {
       deleteMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     folder: {
       findUnique: jest.fn(),
@@ -25,6 +29,7 @@ describe("PermissionService", () => {
     folderPermission: {
       deleteMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     document: {
       findUnique: jest.fn(),
@@ -32,9 +37,13 @@ describe("PermissionService", () => {
     documentPermission: {
       deleteMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -164,10 +173,12 @@ describe("PermissionService", () => {
       });
       mockPrismaService.rolePermission.create.mockResolvedValue({});
       // Prisma $transaction accepts an array of operations (promises)
-      mockPrismaService.$transaction.mockImplementation(async (operations) => {
-        // Execute all operations and return results
-        return Promise.all(operations);
-      });
+      mockPrismaService.$transaction.mockImplementation(
+        async (operations: Array<Promise<unknown>>) => {
+          // Execute all operations and return results
+          return Promise.all(operations);
+        }
+      );
 
       mockPrismaService.role.findUnique
         .mockResolvedValueOnce(mockRole)
@@ -284,18 +295,20 @@ describe("PermissionService", () => {
       });
       mockPrismaService.folderPermission.create.mockResolvedValue({});
       // Prisma $transaction accepts an array of operations (promises)
-      mockPrismaService.$transaction.mockImplementation(async (operations) => {
-        // Execute all operations
-        const results = [];
-        for (const op of operations) {
-          if (op && typeof op.then === "function") {
-            results.push(await op);
-          } else {
-            results.push(op);
+      mockPrismaService.$transaction.mockImplementation(
+        async (operations: Array<Promise<unknown>>) => {
+          // Execute all operations
+          const results: unknown[] = [];
+          for (const op of operations) {
+            if (op && typeof op.then === "function") {
+              results.push(await op);
+            } else {
+              results.push(op);
+            }
           }
+          return results;
         }
-        return results;
-      });
+      );
 
       mockPrismaService.folder.findUnique
         .mockResolvedValueOnce(mockFolder)
@@ -448,9 +461,11 @@ describe("PermissionService", () => {
       });
       mockPrismaService.documentPermission.create.mockResolvedValue({});
       // Prisma $transaction accepts an array of operations (promises)
-      mockPrismaService.$transaction.mockImplementation(async (operations) => {
-        return Promise.all(operations);
-      });
+      mockPrismaService.$transaction.mockImplementation(
+        async (operations: Array<Promise<unknown>>) => {
+          return Promise.all(operations);
+        }
+      );
 
       mockPrismaService.document.findUnique
         .mockResolvedValueOnce(mockDocument)
@@ -495,6 +510,136 @@ describe("PermissionService", () => {
       await expect(
         service.setDocumentPermissions(documentId, permissions)
       ).rejects.toThrow(CustomException);
+    });
+  });
+
+  describe("create", () => {
+    it("should create a new permission", async () => {
+      const dto = {
+        name: "view:User",
+        description: "View user management page",
+      };
+      const mockPermission = {
+        id: "perm-1",
+        ...dto,
+      };
+
+      mockPrismaService.permission.findUnique.mockResolvedValue(null);
+      mockPrismaService.permission.create.mockResolvedValue(mockPermission);
+      mockPrismaService.auditLog.create.mockResolvedValue({});
+
+      const result = await service.create(dto, "user-1");
+
+      expect(result).toEqual(mockPermission);
+      expect(mockPrismaService.permission.findUnique).toHaveBeenCalledWith({
+        where: { name: dto.name },
+      });
+    });
+
+    it("should throw ConflictException when permission name exists", async () => {
+      const dto = {
+        name: "existing-perm",
+        description: "Description",
+      };
+
+      mockPrismaService.permission.findUnique.mockResolvedValue({
+        id: "perm-1",
+        name: dto.name,
+      });
+
+      await expect(service.create(dto)).rejects.toThrow(CustomException);
+    });
+  });
+
+  describe("update", () => {
+    it("should update permission", async () => {
+      const permissionId = "perm-1";
+      const existingPermission = {
+        id: permissionId,
+        name: "old-name",
+        description: "Old description",
+      };
+      const dto = {
+        name: "new-name",
+        description: "New description",
+      };
+      const updatedPermission = {
+        ...existingPermission,
+        ...dto,
+      };
+
+      mockPrismaService.permission.findUnique
+        .mockResolvedValueOnce(existingPermission)
+        .mockResolvedValueOnce(null);
+      mockPrismaService.permission.update.mockResolvedValue(updatedPermission);
+      mockPrismaService.auditLog.create.mockResolvedValue({});
+
+      const result = await service.update(permissionId, dto, "user-1");
+
+      expect(result).toEqual(updatedPermission);
+    });
+
+    it("should throw ConflictException when new name exists", async () => {
+      const permissionId = "perm-1";
+      const existingPermission = {
+        id: permissionId,
+        name: "old-name",
+        description: "Old description",
+      };
+      const dto = {
+        name: "existing-name",
+      };
+
+      mockPrismaService.permission.findUnique
+        .mockResolvedValueOnce(existingPermission)
+        .mockResolvedValueOnce({ id: "other-perm", name: "existing-name" });
+
+      await expect(service.update(permissionId, dto)).rejects.toThrow(
+        CustomException
+      );
+    });
+  });
+
+  describe("delete", () => {
+    it("should delete permission when not in use", async () => {
+      const permissionId = "perm-1";
+      const mockPermission = {
+        id: permissionId,
+        name: "custom-perm",
+        description: "Custom permission",
+      };
+
+      mockPrismaService.permission.findUnique.mockResolvedValue(mockPermission);
+      mockPrismaService.rolePermission.count.mockResolvedValue(0);
+      mockPrismaService.folderPermission.count.mockResolvedValue(0);
+      mockPrismaService.documentPermission.count.mockResolvedValue(0);
+      mockPrismaService.permission.delete.mockResolvedValue(mockPermission);
+      mockPrismaService.auditLog.create.mockResolvedValue({});
+
+      const result = await service.delete(permissionId, "user-1");
+
+      expect(result.message).toBe("Permission deleted successfully");
+      expect(mockPrismaService.permission.delete).toHaveBeenCalledWith({
+        where: { id: permissionId },
+      });
+    });
+
+    it("should throw BadRequestException when permission is in use", async () => {
+      const permissionId = "perm-1";
+      const mockPermission = {
+        id: permissionId,
+        name: "in-use-perm",
+        description: "Permission in use",
+      };
+
+      mockPrismaService.permission.findUnique.mockResolvedValue(mockPermission);
+      mockPrismaService.rolePermission.count.mockResolvedValue(2);
+      mockPrismaService.folderPermission.count.mockResolvedValue(1);
+      mockPrismaService.documentPermission.count.mockResolvedValue(0);
+
+      await expect(service.delete(permissionId)).rejects.toThrow(
+        CustomException
+      );
     });
   });
 });

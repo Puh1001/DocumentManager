@@ -1,0 +1,59 @@
+{
+  "title": "Quản lý Người dùng",
+  "description": "Quản lý người dùng, vai trò và quyền trong hệ thống",
+  "add": "Thêm người dùng",
+  "empty": "Không tìm thấy người dùng nào",
+  "searchPlaceholder": "Tìm kiếm theo tên đăng nhập, email hoặc tên...",
+  "table": {
+    "username": "Tên đăng nhập",
+    "fullName": "Họ và tên",
+    "email": "Email",
+    "department": "Phòng ban",
+    "roles": "Vai trò",
+    "status": "Trạng thái",
+    "actions": "Thao tác"
+  },
+  "status": {
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động"
+  },
+  "form": {
+    "createTitle": "Thêm người dùng mới",
+    "updateTitle": "Cập nhật người dùng",
+    "createDescription": "Điền thông tin để tạo người dùng mới",
+    "updateDescription": "Cập nhật thông tin người dùng",
+    "username": "Tên đăng nhập",
+    "usernamePlaceholder": "Nhập tên đăng nhập",
+    "email": "Email",
+    "emailPlaceholder": "Nhập địa chỉ email",
+    "password": "Mật khẩu",
+    "passwordPlaceholder": "Nhập mật khẩu (tối thiểu 6 ký tự)",
+    "passwordOptional": "Để trống để giữ nguyên mật khẩu hiện tại",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Nhập họ và tên",
+    "department": "Phòng ban",
+    "departmentPlaceholder": "Nhập tên phòng ban",
+    "processing": "Đang xử lý...",
+    "create": "Tạo mới",
+    "update": "Cập nhật"
+  },
+  "roles": {
+    "title": "Quản lý Vai trò Người dùng",
+    "description": "Gán hoặc xóa vai trò cho {name}",
+    "currentRoles": "Vai trò hiện tại",
+    "assignRole": "Vai trò có sẵn",
+    "noRoles": "Chưa có vai trò nào",
+    "allRolesAssigned": "Tất cả các vai trò đã được gán"
+  },
+  "pagination": {
+    "showing": "Hiển thị {from} đến {to} trong tổng số {total} người dùng"
+  },
+  "errors": {
+    "loadFailed": "Không tải được danh sách người dùng",
+    "createFailed": "Không thể tạo người dùng",
+    "updateFailed": "Không thể cập nhật người dùng",
+    "deleteFailed": "Không thể xóa người dùng",
+    "deleteConfirm": "Bạn có chắc chắn muốn vô hiệu hóa người dùng này?"
+  }
+}
+

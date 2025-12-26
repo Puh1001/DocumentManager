@@ -1,0 +1,80 @@
+{
+  "title": "BOSS Dashboard",
+  "description": "View all departments, KPIs, maintenance, and documents",
+  "comingSoon": "BOSS UI is being implemented...",
+  "viewType": {
+    "kpi": "KPI",
+    "maintenance": "Maintenance",
+    "documents": "Documents"
+  },
+  "actions": {
+    "back": "Back"
+  },
+  "detail": "Detail",
+  "inactive": "Inactive",
+  "viewDescriptions": {
+    "kpi": "View KPI records",
+    "maintenance": "View maintenance notices",
+    "documents": "View documents"
+  },
+  "months": {
+    "jan": "Jan",
+    "feb": "Feb",
+    "mar": "Mar",
+    "apr": "Apr",
+    "may": "May",
+    "jun": "Jun",
+    "jul": "Jul",
+    "aug": "Aug",
+    "sep": "Sep",
+    "oct": "Oct",
+    "nov": "Nov",
+    "dec": "Dec"
+  },
+  "chart": {
+    "efficiency": "Efficiency (%)"
+  },
+  "notFound": {
+    "kpi": "KPI record not found",
+    "maintenance": "Maintenance notice not found",
+    "document": "Document not found"
+  },
+  "kpi": {
+    "untitled": "Untitled KPI",
+    "target": "Target",
+    "kpiTitle": "KPI Title",
+    "efficiency": "Efficiency (%)",
+    "chartTitle": "KPI / Efficiency (%)"
+  },
+  "empty": {
+    "noDepartments": "No departments found",
+    "noDepartmentsDescription": "There are no departments available to display.",
+    "noKpi": "No KPI records found",
+    "noKpiDescription": "There are no KPI records for this department.",
+    "noMaintenance": "No maintenance notices found",
+    "noMaintenanceDescription": "There are no maintenance notices for this department.",
+    "noDocuments": "No documents found",
+    "noDocumentsDescription": "There are no documents in this department folder.",
+    "noFolder": "Department folder not found",
+    "noFolderDescription": "Folder for department {department} not found in the system."
+  },
+  "error": {
+    "loadFailed": "Failed to load departments",
+    "loadKpiFailed": "Failed to load KPI records",
+    "loadMaintenanceFailed": "Failed to load maintenance notices",
+    "loadDocumentsFailed": "Failed to load documents"
+  },
+  "maintenance": {
+    "description": "Description",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "department": "Department",
+    "createdBy": "Created By",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "document": {
+    "print": "Print",
+    "download": "Download"
+  }
+}

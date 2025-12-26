@@ -35,7 +35,13 @@ src/
     ├── users/             # User management
     ├── department/        # Department management
     ├── kpi/               # KPI tracking and metrics
-    ├── authorization/     # RBAC + ABAC permissions
+    ├── maintenance/       # Maintenance notices
+    ├── authorization/     # RBAC + ABAC permissions (CASL)
+    │   ├── factories/     # CASL ability factory
+    │   ├── guards/        # Policies guard
+    │   ├── services/      # Permission service
+    │   ├── controllers/   # Permission API
+    │   └── decorators/     # CheckPolicies decorator
     └── storage/           # File/folder management
         ├── controllers/
         │   ├── folder.controller.ts
@@ -75,8 +81,11 @@ src/
 │   ├── ui/                # ShadcnUI components
 │   ├── layout/            # Sidebar, Header
 │   ├── documents/         # Document components
+│   ├── access-denied.tsx  # Access denied component
 │   └── viewers/           # PDF/DOCX viewers
 ├── hooks/
+│   ├── use-ability.ts           # CASL ability hook
+│   ├── use-can-access.ts         # Permission check hook
 │   ├── use-copy-protection.ts
 │   └── use-maintenance-notices.ts
 └── lib/
@@ -159,14 +168,22 @@ src/
 - Version history with user tracking
 - Restore previous versions
 
-### 4. Permissions (RBAC + ABAC)
+### 4. Permissions (RBAC + ABAC) ✅
 
-- Roles: admin, manager, editor, viewer
+- Roles: admin, boss, manager, editor, viewer
 - Actions: view, download, print, edit, create, delete, manage
+- Subjects: Document, Folder, User, Department, Kpi, Maintenance, Permission, "all"
 - Folder-level permissions with inheritance
 - Document-level permissions (override folder)
-- CASL-based authorization system
-- Policy-based access control
+- Page-level permissions (control access to dashboard pages)
+- CASL-based authorization system (MongoAbility)
+- Policy-based access control via PoliciesGuard (backend)
+- Frontend route protection via `useCanAccess` hook
+- Sidebar navigation filtering based on permissions
+- Boss role: Read-only access to all resources
+- Permission management API endpoints (backend)
+- Permission management UI (frontend)
+- Ability factory for dynamic permission loading
 
 ### 5. Document Viewer
 
@@ -263,3 +280,13 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Maintenance Notices**: Create and manage maintenance notices with department filtering
 - **Internationalization**: Multi-language support with next-intl (English, Vietnamese, Chinese)
 - **Enhanced Dashboard**: Statistics cards, upcoming maintenance notices, activity tracking
+- **Authorization Module**: Complete RBAC + ABAC implementation with CASL
+  - Permission management API (role, folder, document permissions)
+  - CASL ability factory for dynamic permission evaluation
+  - PoliciesGuard for route-level permission enforcement (backend)
+  - Frontend route protection with `useCanAccess` hook
+  - Permission management UI (role, permission CRUD)
+  - Sidebar navigation filtering based on permissions
+  - Page-level permissions (User, Department, KPI, Maintenance, Permission)
+  - Boss role with read-only access to all resources
+  - Permission inheritance for folders

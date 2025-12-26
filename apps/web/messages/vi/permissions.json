@@ -1,0 +1,47 @@
+{
+  "title": "Quyền & Vai trò",
+  "description": "Quản lý vai trò và quyền của chúng trong hệ thống",
+  "addRole": "Thêm vai trò",
+  "addPermission": "Thêm quyền",
+  "availablePermissions": "Quyền có sẵn",
+  "roles": "Vai trò",
+  "noPermissions": "Không tìm thấy quyền nào",
+  "noRoles": "Không tìm thấy vai trò nào",
+  "searchRoles": "Tìm kiếm vai trò...",
+  "searchPermissions": "Tìm kiếm quyền...",
+  "usedBy": "Được sử dụng bởi",
+  "folderDocumentPermissions": "Quyền Thư mục & Tài liệu",
+  "folderDocumentPermissionsDescription": "Quản lý quyền thư mục và tài liệu có thể được truy cập từ trang Tài liệu. Chọn một thư mục hoặc tài liệu và sử dụng nút quyền để quản lý quyền truy cập.",
+  "form": {
+    "createRoleTitle": "Thêm vai trò mới",
+    "updateRoleTitle": "Cập nhật vai trò",
+    "createRoleDescription": "Điền thông tin để tạo vai trò mới",
+    "updateRoleDescription": "Cập nhật thông tin vai trò",
+    "createPermissionTitle": "Thêm quyền mới",
+    "updatePermissionTitle": "Cập nhật quyền",
+    "createPermissionDescription": "Điền thông tin để tạo quyền mới",
+    "updatePermissionDescription": "Cập nhật thông tin quyền",
+    "roleName": "Tên vai trò",
+    "roleNamePlaceholder": "Nhập tên vai trò",
+    "permissionName": "Tên quyền",
+    "permissionNamePlaceholder": "Nhập tên quyền (ví dụ: view:User, manage:Department)",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Nhập mô tả (tùy chọn)",
+    "processing": "Đang xử lý...",
+    "create": "Tạo mới",
+    "update": "Cập nhật"
+  },
+  "permissions": {
+    "assignTitle": "Gán quyền",
+    "assignDescription": "Chọn các quyền để gán cho vai trò này"
+  },
+  "errors": {
+    "loadFailed": "Không tải được quyền và vai trò",
+    "createFailed": "Không thể tạo vai trò",
+    "updateFailed": "Không thể cập nhật vai trò",
+    "deleteFailed": "Không thể xóa vai trò",
+    "deleteRoleConfirm": "Bạn có chắc chắn muốn xóa vai trò này? Hành động này không thể hoàn tác.",
+    "deletePermissionConfirm": "Bạn có chắc chắn muốn xóa quyền này? Hành động này không thể hoàn tác.",
+    "deletePermissionInUse": "Không thể xóa quyền. Quyền này đang được sử dụng bởi các vai trò sau: {roles}"
+  }
+}

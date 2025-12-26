@@ -87,9 +87,16 @@ class ApiClient {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
-          // Optionally redirect to login page
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
+
+          // Extract locale from current pathname or use default
+          const pathname = window.location.pathname;
+          const localeMatch = pathname.match(/^\/(en|vi|zh)/);
+          const locale = localeMatch ? localeMatch[1] : "en"; // Default to 'en'
+
+          // Redirect to locale-aware login page
+          const loginPath = `/${locale}/login`;
+          if (!pathname.includes("/login")) {
+            window.location.href = loginPath;
           }
         }
         throw new Error("Refresh token expired or invalid");
@@ -488,4 +495,149 @@ export const maintenanceApi = {
   update: (id: string, data: UpdateMaintenanceNoticeDto) =>
     api.patch<MaintenanceNotice>(`/maintenance/${id}`, data),
   delete: (id: string) => api.delete(`/maintenance/${id}`),
+};
+
+// User types and API methods
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  department: string | null;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+  roles: Role[];
+}
+
+export interface PaginatedUsersResponse {
+  data: User[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateUserDto {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  department?: string;
+}
+
+export interface UpdateUserDto {
+  email?: string;
+  password?: string;
+  fullName?: string;
+  department?: string;
+  isActive?: boolean;
+}
+
+export interface QueryUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  department?: string;
+  isActive?: boolean;
+}
+
+export const userApi = {
+  getAll: (params?: QueryUsersParams) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.department) queryParams.append("department", params.department);
+    if (params?.isActive !== undefined)
+      queryParams.append("isActive", params.isActive.toString());
+    const query = queryParams.toString();
+    return api.get<PaginatedUsersResponse>(`/users${query ? `?${query}` : ""}`);
+  },
+  getById: (id: string) => api.get<User>(`/users/${id}`),
+  create: (data: CreateUserDto) => api.post<User>("/users", data),
+  update: (id: string, data: UpdateUserDto) =>
+    api.patch<User>(`/users/${id}`, data),
+  delete: (id: string) => api.delete(`/users/${id}`),
+  assignRole: (userId: string, roleId: string) =>
+    api.post(`/users/${userId}/roles/${roleId}`, {}),
+  removeRole: (userId: string, roleId: string) =>
+    api.delete(`/users/${userId}/roles/${roleId}`),
+};
+
+// Role types and API methods
+export interface PaginatedRolesResponse {
+  data: Role[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateRoleDto {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateRoleDto {
+  name?: string;
+  description?: string;
+}
+
+export interface QueryRolesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export const roleApi = {
+  getAll: (params?: QueryRolesParams) => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.search) queryParams.append("search", params.search);
+    const query = queryParams.toString();
+    return api.get<PaginatedRolesResponse>(`/roles${query ? `?${query}` : ""}`);
+  },
+  getById: (id: string) => api.get<Role>(`/roles/${id}`),
+  create: (data: CreateRoleDto) => api.post<Role>("/roles", data),
+  update: (id: string, data: UpdateRoleDto) =>
+    api.patch<Role>(`/roles/${id}`, data),
+  delete: (id: string) => api.delete(`/roles/${id}`),
+};
+
+// Permission types and API methods
+export interface Permission {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export interface RoleWithPermissions extends Role {
+  permissions: Permission[];
+}
+
+export interface AssignRolePermissionsDto {
+  permissionIds: string[];
+}
+
+export const permissionApi = {
+  getAll: () => api.get<Permission[]>("/permissions"),
+  getById: (id: string) => api.get<Permission>(`/permissions/${id}`),
+  create: (data: { name: string; description?: string }) =>
+    api.post<Permission>("/permissions", data),
+  update: (id: string, data: { name?: string; description?: string }) =>
+    api.patch<Permission>(`/permissions/${id}`, data),
+  delete: (id: string) => api.delete(`/permissions/${id}`),
+  getRolePermissions: (roleId: string) =>
+    api.get<RoleWithPermissions>(`/permissions/roles/${roleId}`),
+  assignRolePermissions: (roleId: string, data: AssignRolePermissionsDto) =>
+    api.post<RoleWithPermissions>(`/permissions/roles/${roleId}`, data),
 };

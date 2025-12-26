@@ -1,0 +1,80 @@
+{
+  "title": "Bảng điều khiển BOSS",
+  "description": "Xem tất cả phòng ban, KPI, bảo trì và tài liệu",
+  "comingSoon": "Giao diện BOSS đang được triển khai...",
+  "viewType": {
+    "kpi": "KPI",
+    "maintenance": "Bảo trì",
+    "documents": "Tài liệu"
+  },
+  "actions": {
+    "back": "Quay lại"
+  },
+  "detail": "Chi tiết",
+  "inactive": "Không hoạt động",
+  "viewDescriptions": {
+    "kpi": "Xem bản ghi KPI",
+    "maintenance": "Xem thông báo bảo trì",
+    "documents": "Xem tài liệu"
+  },
+  "months": {
+    "jan": "T1",
+    "feb": "T2",
+    "mar": "T3",
+    "apr": "T4",
+    "may": "T5",
+    "jun": "T6",
+    "jul": "T7",
+    "aug": "T8",
+    "sep": "T9",
+    "oct": "T10",
+    "nov": "T11",
+    "dec": "T12"
+  },
+  "chart": {
+    "efficiency": "Hiệu quả (%)"
+  },
+  "notFound": {
+    "kpi": "Không tìm thấy bản ghi KPI",
+    "maintenance": "Không tìm thấy thông báo bảo trì",
+    "document": "Không tìm thấy tài liệu"
+  },
+  "kpi": {
+    "untitled": "KPI chưa có tiêu đề",
+    "target": "Mục tiêu",
+    "kpiTitle": "Tiêu đề KPI",
+    "efficiency": "Hiệu quả (%)",
+    "chartTitle": "KPI / Hiệu quả (%)"
+  },
+  "empty": {
+    "noDepartments": "Không có phòng ban",
+    "noDepartmentsDescription": "Không có phòng ban nào để hiển thị.",
+    "noKpi": "Không có bản ghi KPI",
+    "noKpiDescription": "Không có bản ghi KPI cho phòng ban này.",
+    "noMaintenance": "Không có thông báo bảo trì",
+    "noMaintenanceDescription": "Không có thông báo bảo trì cho phòng ban này.",
+    "noDocuments": "Không có tài liệu",
+    "noDocumentsDescription": "Không có tài liệu trong thư mục phòng ban này.",
+    "noFolder": "Không tìm thấy thư mục phòng ban",
+    "noFolderDescription": "Không tìm thấy thư mục cho phòng ban {department} trong hệ thống."
+  },
+  "error": {
+    "loadFailed": "Không thể tải danh sách phòng ban",
+    "loadKpiFailed": "Không thể tải bản ghi KPI",
+    "loadMaintenanceFailed": "Không thể tải thông báo bảo trì",
+    "loadDocumentsFailed": "Không thể tải tài liệu"
+  },
+  "maintenance": {
+    "description": "Mô tả",
+    "startDate": "Ngày bắt đầu",
+    "endDate": "Ngày kết thúc",
+    "department": "Phòng ban",
+    "createdBy": "Người tạo",
+    "createdAt": "Ngày tạo",
+    "updatedAt": "Ngày cập nhật"
+  },
+  "document": {
+    "print": "In",
+    "download": "Tải xuống"
+  }
+}

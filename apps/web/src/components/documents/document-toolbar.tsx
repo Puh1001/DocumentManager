@@ -3,13 +3,27 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Upload, RefreshCw, FolderOpen, MapPin, RotateCw } from "lucide-react";
+import {
+  Upload,
+  RefreshCw,
+  FolderOpen,
+  MapPin,
+  RotateCw,
+  Building2,
+} from "lucide-react";
+import { AssignDepartmentDialog } from "./assign-department-dialog";
 
 interface Folder {
   id: string;
   name: string;
   path: string;
   physicalLocation: string | null;
+  departmentId?: string | null;
+  department?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
 }
 
 interface DocumentToolbarProps {
@@ -28,6 +42,7 @@ export function DocumentToolbar({
   const t = useTranslations("documents.toolbar");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,6 +120,15 @@ export function DocumentToolbar({
 
         {folder && (
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAssignDialogOpen(true)}
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              {t("assignDepartment")}
+            </Button>
+
             <Button variant="outline" size="sm" onClick={handleOpenFolder}>
               <FolderOpen className="h-4 w-4 mr-2" />
               {t("openFolder")}
@@ -124,6 +148,17 @@ export function DocumentToolbar({
           </>
         )}
       </div>
+
+      {folder && (
+        <AssignDepartmentDialog
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          folderId={folder.id}
+          folderName={folder.name}
+          currentDepartmentId={folder.departmentId}
+          onSuccess={onRefresh}
+        />
+      )}
     </div>
   );
 }

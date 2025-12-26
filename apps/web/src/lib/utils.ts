@@ -15,11 +15,37 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('vi-VN', {
+export function formatDate(date: string | Date, locale?: string): string {
+  return new Intl.DateTimeFormat(locale || 'vi-VN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date));
+}
+
+export function formatDateShort(date: string | Date, locale?: string): string {
+  return new Intl.DateTimeFormat(locale || 'vi-VN', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(date));
+}
+
+export function formatDateLong(date: string | Date, locale?: string): string {
+  return new Intl.DateTimeFormat(locale || 'vi-VN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(date));
+}
+
+export function formatDateTime(date: string | Date, locale?: string): string {
+  return new Intl.DateTimeFormat(locale || 'vi-VN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(date));

@@ -1,8 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
-import { SubjectType } from "@prisma/client";
+import { SubjectType, Prisma } from "@prisma/client";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
+import { PrismaClientLike } from "@/common/types/prisma.types";
+import { CreatePermissionDto } from "../dto/create-permission.dto";
+import { UpdatePermissionDto } from "../dto/update-permission.dto";
 
 @Injectable()
 export class PermissionService {
@@ -60,7 +63,11 @@ export class PermissionService {
     };
   }
 
-  async assignPermissionsToRole(roleId: string, permissionIds: string[]) {
+  async assignPermissionsToRole(
+    roleId: string,
+    permissionIds: string[],
+    userId?: string
+  ) {
     // Verify role exists
     const role = await this.prisma.role.findUnique({
       where: { id: roleId },
@@ -96,6 +103,26 @@ export class PermissionService {
         })
       ),
     ]);
+
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "PERMISSION_CHANGE",
+            resourceType: "Role",
+            resourceId: roleId,
+            details: {
+              type: "role_permissions",
+              permissionIds,
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
 
     return this.getRolePermissions(roleId);
   }
@@ -141,7 +168,8 @@ export class PermissionService {
       subjectId: string;
       permissionId: string;
       inherit?: boolean;
-    }>
+    }>,
+    userId?: string
   ) {
     // Verify folder exists
     const folder = await this.prisma.folder.findUnique({
@@ -209,6 +237,31 @@ export class PermissionService {
       ),
     ]);
 
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "PERMISSION_CHANGE",
+            resourceType: "Folder",
+            resourceId: folderId,
+            details: {
+              type: "folder_permissions",
+              permissions: permissions.map((p) => ({
+                subjectType: p.subjectType,
+                subjectId: p.subjectId,
+                permissionId: p.permissionId,
+                inherit: p.inherit,
+              })),
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
     return this.getFolderPermissions(folderId);
   }
 
@@ -251,7 +304,8 @@ export class PermissionService {
       subjectType: SubjectType;
       subjectId: string;
       permissionId: string;
-    }>
+    }>,
+    userId?: string
   ) {
     // Verify document exists
     const document = await this.prisma.document.findUnique({
@@ -317,6 +371,174 @@ export class PermissionService {
       ),
     ]);
 
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "PERMISSION_CHANGE",
+            resourceType: "Document",
+            resourceId: documentId,
+            details: {
+              type: "document_permissions",
+              permissions: permissions.map((p) => ({
+                subjectType: p.subjectType,
+                subjectId: p.subjectId,
+                permissionId: p.permissionId,
+              })),
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
     return this.getDocumentPermissions(documentId);
+  }
+
+  async create(dto: CreatePermissionDto, userId?: string) {
+    // Check if permission name exists
+    const existing = await this.findPermissionByName(dto.name);
+
+    if (existing) {
+      throw CustomException.conflict(
+        ErrorCodes.PERMISSION.NAME_EXISTS,
+        `Permission with name ${dto.name} already exists`
+      );
+    }
+
+    const permission = await (
+      this.prisma as PrismaClientLike
+    ).permission.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+      },
+    });
+
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "CREATE",
+            resourceType: "Permission",
+            resourceId: permission.id,
+            details: {
+              name: permission.name,
+              description: permission.description,
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
+    return permission;
+  }
+
+  async update(id: string, dto: UpdatePermissionDto, userId?: string) {
+    const permission = await this.findPermissionById(id);
+
+    // Check if new name conflicts
+    if (dto.name && dto.name !== permission.name) {
+      const existing = await this.findPermissionByName(dto.name);
+
+      if (existing) {
+        throw CustomException.conflict(
+          ErrorCodes.PERMISSION.NAME_EXISTS,
+          `Permission with name ${dto.name} already exists`
+        );
+      }
+    }
+
+    const updated = await (this.prisma as PrismaClientLike).permission.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+      },
+    });
+
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "UPDATE",
+            resourceType: "Permission",
+            resourceId: id,
+            details: {
+              changes: dto,
+              previous: {
+                name: permission.name,
+                description: permission.description,
+              },
+            } as unknown as Prisma.InputJsonValue,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
+    return updated;
+  }
+
+  async delete(id: string, userId?: string) {
+    const permission = await this.findPermissionById(id);
+
+    // Check if permission is in use
+    const [rolePerms, folderPerms, docPerms] = await Promise.all([
+      (this.prisma as PrismaClientLike).rolePermission.count({
+        where: { permissionId: id },
+      }),
+      (this.prisma as PrismaClientLike).folderPermission.count({
+        where: { permissionId: id },
+      }),
+      (this.prisma as PrismaClientLike).documentPermission.count({
+        where: { permissionId: id },
+      }),
+    ]);
+
+    const totalUsage = rolePerms + folderPerms + docPerms;
+
+    if (totalUsage > 0) {
+      throw CustomException.badRequest(
+        ErrorCodes.PERMISSION.IN_USE,
+        `Cannot delete permission: ${permission.name} is used by ${rolePerms} roles, ${folderPerms} folders, and ${docPerms} documents`
+      );
+    }
+
+    await (this.prisma as PrismaClientLike).permission.delete({
+      where: { id },
+    });
+
+    // Audit log
+    if (userId) {
+      try {
+        await (this.prisma as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: "DELETE",
+            resourceType: "Permission",
+            resourceId: id,
+            details: {
+              name: permission.name,
+              description: permission.description,
+            },
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create audit log:", error);
+      }
+    }
+
+    return { message: "Permission deleted successfully" };
   }
 }

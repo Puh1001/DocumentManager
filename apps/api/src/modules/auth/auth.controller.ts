@@ -17,6 +17,7 @@ import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import { UserWithRoles } from "@/common/types/prisma.types";
+import { CaslAbilityFactory } from "../authorization/factories/casl-ability.factory";
 
 // Request type for login endpoint - user comes from LocalStrategy as UserWithRoles
 interface LoginRequest extends ExpressRequest {
@@ -26,7 +27,10 @@ interface LoginRequest extends ExpressRequest {
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly caslAbilityFactory: CaslAbilityFactory
+  ) {}
 
   @Post("login")
   @UseGuards(LocalAuthGuard)
@@ -59,5 +63,18 @@ export class AuthController {
   @ApiOperation({ summary: "Get current user info" })
   async me(@Request() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.id);
+  }
+
+  @Get("abilities")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get current user abilities (CASL rules)" })
+  async getAbilities(@Request() req: AuthenticatedRequest) {
+    const ability = await this.caslAbilityFactory.createForUser(
+      req.user.id,
+      req.user.roles || []
+    );
+    // Return rules in a format that can be used by CASL on the frontend
+    return { rules: ability.rules };
   }
 }

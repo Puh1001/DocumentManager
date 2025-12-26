@@ -26,15 +26,33 @@ export interface Maintenance {
   id: string;
 }
 
+export interface Department {
+  id: string;
+}
+
+export interface Kpi {
+  id: string;
+}
+
+export interface Permission {
+  id: string;
+}
+
 export type Subjects =
   | Document
   | Folder
   | User
   | Maintenance
+  | Department
+  | Kpi
+  | Permission
   | "Document"
   | "Folder"
   | "User"
   | "Maintenance"
+  | "Department"
+  | "Kpi"
+  | "Permission"
   | "all";
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>;

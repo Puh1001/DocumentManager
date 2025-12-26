@@ -11,7 +11,8 @@
     "users": "用户",
     "permissions": "权限",
     "settings": "设置",
-    "maintenance": "维护"
+    "maintenance": "维护",
+    "boss": "BOSS 仪表板"
   },
   "actions": {
     "view": "查看",
@@ -35,5 +36,10 @@
     "noData": "无数据"
   },
   "searchPlaceholder": "搜索文档...",
-  "admin": "管理员"
+  "admin": "管理员",
+  "accessDenied": {
+    "title": "访问被拒绝",
+    "description": "您没有权限访问此页面。如果您认为这是错误，请联系管理员。",
+    "backToDashboard": "返回仪表板"
+  }
 }

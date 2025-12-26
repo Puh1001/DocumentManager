@@ -163,6 +163,13 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 | POST   | /departments                    | Create department      |
 | GET    | /kpi/records                    | List KPI records      |
 | GET    | /kpi/records/:id/export         | Export KPI to Excel   |
+| GET    | /permissions                    | List all permissions  |
+| GET    | /permissions/roles/:id          | Get role permissions  |
+| POST   | /permissions/roles/:id          | Assign role permissions |
+| GET    | /permissions/folders/:id        | Get folder permissions |
+| POST   | /permissions/folders/:id        | Set folder permissions |
+| GET    | /permissions/documents/:id      | Get document permissions |
+| POST   | /permissions/documents/:id      | Set document permissions |
 
 ### Users
 
@@ -178,6 +185,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 ### Roles
 
 - **Admin**: Full system access
+- **Boss**: Read-only access to all resources (view, download, print)
 - **Manager**: CRUD on assigned folders
 - **Editor**: Create/edit documents
 - **Viewer**: View only
@@ -214,7 +222,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 
 ## 📊 Current Status
 
-**Phase 1-3 + Additional Features Complete (65%)**
+**Phase 1-4 + Additional Features Complete (75%)**
 
 - ✅ Project setup & infrastructure
 - ✅ Authentication & user management
@@ -243,7 +251,19 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 - ✅ Internationalization (i18n)
   - ✅ Multi-language support (EN, VI, ZH)
   - ✅ Locale-based routing
-- 🔄 Authorization (RBAC + ABAC) - In Progress (50%)
+- ✅ Authorization (RBAC + ABAC) - Complete
+  - ✅ CASL ability factory (backend)
+  - ✅ Policies guard (backend)
+  - ✅ Permission service & API (backend)
+  - ✅ Role-based permissions
+  - ✅ Folder-level permissions
+  - ✅ Document-level permissions
+  - ✅ Page-level permissions (User, Department, KPI, Maintenance, Permission)
+  - ✅ Boss role (read-only access to all resources)
+  - ✅ Permission management UI (frontend)
+  - ✅ Frontend route protection (useCanAccess hook)
+  - ✅ Sidebar navigation filtering
+  - ✅ AccessDenied component
 - 🔲 Document viewer & security
 - 🔲 Version control
 - 🔲 Local edit integration

@@ -17,6 +17,19 @@ export interface FolderTreeNode {
   children: FolderTreeNode[];
 }
 
+// Extended interface for tree with documents
+export interface FolderTreeNodeWithDocuments extends FolderTreeNode {
+  documents?: Array<{
+    id: string;
+    name: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    updatedAt: Date;
+  }>;
+  children: FolderTreeNodeWithDocuments[];
+}
+
 @Injectable()
 export class FolderService {
   constructor(
@@ -24,17 +37,33 @@ export class FolderService {
     private readonly smbService: SmbService
   ) {}
 
-  async findAll(parentId?: string | null) {
+  async findAll(parentId?: string | null, departmentId?: string) {
+    const where: Prisma.FolderWhereInput = {
+      deletedAt: null, // Only active folders
+    };
+
+    if (parentId !== undefined) {
+      where.parentId = parentId || null;
+    }
+
+    if (departmentId) {
+      where.departmentId = departmentId;
+    }
+
     return (this.prisma as PrismaClientLike).folder.findMany({
-      where: {
-        parentId: parentId || null,
-        deletedAt: null, // Only active folders
-      },
+      where,
       include: {
         _count: {
           select: {
             children: true,
             documents: true,
+          },
+        },
+        department: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
           },
         },
       },
@@ -47,6 +76,13 @@ export class FolderService {
       where: { id },
       include: {
         parent: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         children: {
           where: { deletedAt: null }, // Only active children
           orderBy: { name: "asc" },
@@ -100,6 +136,7 @@ export class FolderService {
         path: folderPath,
         parentId: dto.parentId,
         physicalLocation: dto.physicalLocation,
+        departmentId: dto.departmentId,
       },
     });
   }
@@ -131,6 +168,15 @@ export class FolderService {
 
     if (dto.physicalLocation !== undefined) {
       data.physicalLocation = dto.physicalLocation;
+    }
+
+    if (dto.departmentId !== undefined) {
+      // Use Prisma's connect/disconnect pattern for relations
+      if (dto.departmentId === null || dto.departmentId === "") {
+        data.department = { disconnect: true };
+      } else {
+        data.department = { connect: { id: dto.departmentId } };
+      }
     }
 
     return (this.prisma as PrismaClientLike).folder.update({
@@ -167,11 +213,20 @@ export class FolderService {
     return (this.prisma as PrismaClientLike).folder.delete({ where: { id } });
   }
 
-  async getTree() {
+  async getTree(departmentId?: string) {
     try {
+      // Build where clause
+      const where: Prisma.FolderWhereInput = {
+        deletedAt: null, // Only active folders
+      };
+
+      if (departmentId) {
+        where.departmentId = departmentId;
+      }
+
       // Get all active folders
       const folders = await (this.prisma as PrismaClientLike).folder.findMany({
-        where: { deletedAt: null }, // Only active folders
+        where,
         orderBy: { path: "asc" },
         include: {
           _count: {
@@ -203,6 +258,78 @@ export class FolderService {
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree",
+        error
+      );
+    }
+  }
+
+  async getTreeWithDocuments(departmentId?: string) {
+    try {
+      // Build where clause
+      const where: Prisma.FolderWhereInput = {
+        deletedAt: null, // Only active folders
+      };
+
+      if (departmentId) {
+        where.departmentId = departmentId;
+      }
+
+      // Get all active folders with documents
+      const folders = await (this.prisma as PrismaClientLike).folder.findMany({
+        where,
+        orderBy: { path: "asc" },
+        include: {
+          _count: {
+            select: { documents: true },
+          },
+          documents: {
+            where: { status: "ACTIVE" },
+            orderBy: { name: "asc" },
+            select: {
+              id: true,
+              name: true,
+              fileName: true,
+              fileType: true,
+              fileSize: true,
+              updatedAt: true,
+            },
+          },
+        },
+      });
+
+      // Build tree structure with documents
+      const buildTree = (
+        parentId: string | null = null
+      ): FolderTreeNodeWithDocuments[] => {
+        return folders
+          .filter((f: (typeof folders)[0]) => f.parentId === parentId)
+          .map((f: (typeof folders)[0]) => ({
+            id: f.id,
+            name: f.name,
+            path: f.path,
+            physicalLocation: f.physicalLocation,
+            documentCount: f._count.documents,
+            documents: f.documents.map((doc) => ({
+              id: doc.id,
+              name: doc.name,
+              fileName: doc.fileName,
+              fileType: doc.fileType,
+              fileSize: doc.fileSize,
+              updatedAt: doc.updatedAt,
+            })),
+            children: buildTree(f.id),
+          }));
+      };
+
+      return buildTree();
+    } catch (error) {
+      // Log error for debugging
+      console.error("Error in getTreeWithDocuments():", error);
+
+      // Re-throw as CustomException for proper error handling
+      throw CustomException.internalServerError(
+        ErrorCodes.FOLDER.TREE_FETCH_FAILED,
+        "Failed to fetch folder tree with documents",
         error
       );
     }
