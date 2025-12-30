@@ -24,8 +24,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getErrorMessage } from "@/lib/error-handler";
-import { useCanAccess } from "@/hooks/use-can-access";
-import { AccessDenied } from "@/components/access-denied";
+import { PageGuard } from "@/components/page-guard";
 import {
   Shield,
   Loader2,
@@ -36,6 +35,21 @@ import {
   Search,
   Check,
 } from "lucide-react";
+import type { PageMetadata } from "@/lib/types/page-metadata";
+import { registerPage } from "@/lib/page-registry";
+
+export const pageMetadata: PageMetadata = {
+  path: "/dashboard/permissions",
+  name: "Permission Management",
+  module: "Permission",
+  action: "view",
+  icon: "Shield",
+  order: 9,
+  requiresAuth: true,
+};
+
+// Register page metadata
+registerPage(pageMetadata);
 
 export default function PermissionsPage() {
   const t = useTranslations();
@@ -72,7 +86,6 @@ export default function PermissionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const isAdmin = user?.roles?.includes("admin") ?? false;
-  const canAccess = useCanAccess("view", "Permission");
 
   const loadData = useCallback(async () => {
     try {
@@ -326,10 +339,6 @@ export default function PermissionsPage() {
         .includes(permissionSearchTerm.toLowerCase())
   );
 
-  if (!canAccess) {
-    return <AccessDenied />;
-  }
-
   if (loading && roles.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -339,88 +348,158 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{tPerms("title")}</h1>
-          <p className="text-muted-foreground mt-1">{tPerms("description")}</p>
-        </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Button onClick={() => handleOpenPermissionFormDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              {tPerms("addPermission")}
-            </Button>
-            <Button variant="outline" onClick={() => handleOpenRoleDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              {tPerms("addRole")}
-            </Button>
+    <PageGuard metadata={pageMetadata}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{tPerms("title")}</h1>
+            <p className="text-muted-foreground mt-1">
+              {tPerms("description")}
+            </p>
           </div>
-        )}
-      </div>
-
-      {error && (
-        <Card className="p-4 bg-destructive/10 border-destructive">
-          <p className="text-destructive">{error}</p>
-        </Card>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>{tPerms("availablePermissions")}</CardTitle>
+          {isAdmin && (
+            <div className="flex gap-2">
+              <Button onClick={() => handleOpenPermissionFormDialog()}>
+                <Plus className="mr-2 h-4 w-4" />
+                {tPerms("addPermission")}
+              </Button>
+              <Button variant="outline" onClick={() => handleOpenRoleDialog()}>
+                <Plus className="mr-2 h-4 w-4" />
+                {tPerms("addRole")}
+              </Button>
             </div>
-            {isAdmin && (
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder={tPerms("searchPermissions")}
-                  value={permissionSearchTerm}
-                  onChange={(e) => setPermissionSearchTerm(e.target.value)}
-                  className="pl-8 w-48"
-                />
+          )}
+        </div>
+
+        {error && (
+          <Card className="p-4 bg-destructive/10 border-destructive">
+            <p className="text-destructive">{error}</p>
+          </Card>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>{tPerms("availablePermissions")}</CardTitle>
               </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            {filteredPermissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {tPerms("noPermissions")}
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredPermissions.map((perm) => {
-                  const rolesUsingPermission =
-                    rolesWithPermissions.get(perm.id) || [];
-                  return (
+              {isAdmin && (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder={tPerms("searchPermissions")}
+                    value={permissionSearchTerm}
+                    onChange={(e) => setPermissionSearchTerm(e.target.value)}
+                    className="pl-8 w-48"
+                  />
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              {filteredPermissions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {tPerms("noPermissions")}
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredPermissions.map((perm) => {
+                    const rolesUsingPermission =
+                      rolesWithPermissions.get(perm.id) || [];
+                    return (
+                      <div
+                        key={perm.id}
+                        className="flex items-center justify-between p-3 rounded border hover:bg-muted/50"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{perm.name}</p>
+                          {perm.description && (
+                            <p className="text-xs text-muted-foreground">
+                              {perm.description}
+                            </p>
+                          )}
+                          {rolesUsingPermission.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                {tPerms("usedBy")}:
+                              </span>
+                              {rolesUsingPermission.map((role) => (
+                                <span
+                                  key={role.id}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                >
+                                  {role.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <div className="flex gap-2 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleOpenPermissionFormDialog(perm)
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePermission(perm.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>{tPerms("roles")}</CardTitle>
+              </div>
+              {isAdmin && (
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder={tPerms("searchRoles")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 w-48"
+                  />
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              {filteredRoles.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {tPerms("noRoles")}
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredRoles.map((role) => (
                     <div
-                      key={perm.id}
+                      key={role.id}
                       className="flex items-center justify-between p-3 rounded border hover:bg-muted/50"
                     >
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{perm.name}</p>
-                        {perm.description && (
+                        <p className="font-medium text-sm">{role.name}</p>
+                        {role.description && (
                           <p className="text-xs text-muted-foreground">
-                            {perm.description}
+                            {role.description}
                           </p>
-                        )}
-                        {rolesUsingPermission.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            <span className="text-xs text-muted-foreground">
-                              {tPerms("usedBy")}:
-                            </span>
-                            {rolesUsingPermission.map((role) => (
-                              <span
-                                key={role.id}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                              >
-                                {role.name}
-                              </span>
-                            ))}
-                          </div>
                         )}
                       </div>
                       {isAdmin && (
@@ -428,335 +507,271 @@ export default function PermissionsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenPermissionFormDialog(perm)}
+                            onClick={() => handleOpenPermissionDialog(role)}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenRoleDialog(role)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeletePermission(perm.id)}
+                            onClick={() => handleDeleteRole(role.id)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>{tPerms("roles")}</CardTitle>
-            </div>
-            {isAdmin && (
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder={tPerms("searchRoles")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-48"
-                />
-              </div>
-            )}
+          <CardHeader>
+            <CardTitle>{tPerms("folderDocumentPermissions")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredRoles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {tPerms("noRoles")}
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredRoles.map((role) => (
-                  <div
-                    key={role.id}
-                    className="flex items-center justify-between p-3 rounded border hover:bg-muted/50"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{role.name}</p>
-                      {role.description && (
-                        <p className="text-xs text-muted-foreground">
-                          {role.description}
-                        </p>
-                      )}
-                    </div>
-                    {isAdmin && (
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenPermissionDialog(role)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenRoleDialog(role)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteRole(role.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="text-sm text-muted-foreground">
+              {tPerms("folderDocumentPermissionsDescription")}
+            </p>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{tPerms("folderDocumentPermissions")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {tPerms("folderDocumentPermissionsDescription")}
-          </p>
-        </CardContent>
-      </Card>
+        {/* Role Create/Edit Dialog */}
+        <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+          <DialogContent className="max-w-md">
+            <form onSubmit={handleSubmitRole}>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingRole
+                    ? tPerms("form.updateRoleTitle")
+                    : tPerms("form.createRoleTitle")}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingRole
+                    ? tPerms("form.updateRoleDescription")
+                    : tPerms("form.createRoleDescription")}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">{tPerms("form.roleName")}</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder={tPerms("form.roleNamePlaceholder")}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">
+                    {tPerms("form.description")}
+                  </Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder={tPerms("form.descriptionPlaceholder")}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseRoleDialog}
+                  disabled={isSubmitting}
+                >
+                  {tCommon("actions.cancel")}
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? tPerms("form.processing")
+                    : editingRole
+                      ? tPerms("form.update")
+                      : tPerms("form.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
-      {/* Role Create/Edit Dialog */}
-      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-        <DialogContent className="max-w-md">
-          <form onSubmit={handleSubmitRole}>
+        {/* Permission Assignment Dialog */}
+        <Dialog
+          open={isPermissionDialogOpen}
+          onOpenChange={setIsPermissionDialogOpen}
+        >
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingRole
-                  ? tPerms("form.updateRoleTitle")
-                  : tPerms("form.createRoleTitle")}
+                {tPerms("permissions.assignTitle")}
+                {selectedRole && `: ${selectedRole.name}`}
               </DialogTitle>
               <DialogDescription>
-                {editingRole
-                  ? tPerms("form.updateRoleDescription")
-                  : tPerms("form.createRoleDescription")}
+                {tPerms("permissions.assignDescription")}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">{tPerms("form.roleName")}</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder={tPerms("form.roleNamePlaceholder")}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">
-                  {tPerms("form.description")}
-                </Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder={tPerms("form.descriptionPlaceholder")}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseRoleDialog}
-                disabled={isSubmitting}
-              >
-                {tCommon("actions.cancel")}
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? tPerms("form.processing")
-                  : editingRole
-                    ? tPerms("form.update")
-                    : tPerms("form.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permission Assignment Dialog */}
-      <Dialog
-        open={isPermissionDialogOpen}
-        onOpenChange={setIsPermissionDialogOpen}
-      >
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {tPerms("permissions.assignTitle")}
-              {selectedRole && `: ${selectedRole.name}`}
-            </DialogTitle>
-            <DialogDescription>
-              {tPerms("permissions.assignDescription")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {permissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {tPerms("noPermissions")}
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {permissions.map((permission) => {
-                  const isSelected = rolePermissions.some(
-                    (p) => p.id === permission.id
-                  );
-                  return (
-                    <div
-                      key={permission.id}
-                      className={`flex items-center justify-between p-3 rounded border cursor-pointer transition-colors ${
-                        isSelected
-                          ? "bg-primary/10 border-primary"
-                          : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => handleTogglePermission(permission.id)}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <div
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            isSelected
-                              ? "bg-primary border-primary"
-                              : "border-muted-foreground"
-                          }`}
-                        >
-                          {isSelected && (
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">
-                            {permission.name}
-                          </p>
-                          {permission.description && (
-                            <p className="text-xs text-muted-foreground">
-                              {permission.description}
+            <div className="py-4">
+              {permissions.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {tPerms("noPermissions")}
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {permissions.map((permission) => {
+                    const isSelected = rolePermissions.some(
+                      (p) => p.id === permission.id
+                    );
+                    return (
+                      <div
+                        key={permission.id}
+                        className={`flex items-center justify-between p-3 rounded border cursor-pointer transition-colors ${
+                          isSelected
+                            ? "bg-primary/10 border-primary"
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() => handleTogglePermission(permission.id)}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected
+                                ? "bg-primary border-primary"
+                                : "border-muted-foreground"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="h-3 w-3 text-primary-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">
+                              {permission.name}
                             </p>
-                          )}
+                            {permission.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {permission.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClosePermissionDialog}
-              disabled={isSubmitting}
-            >
-              {tCommon("actions.cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSavePermissions}
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? tPerms("form.processing")
-                : tCommon("actions.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permission Create/Edit Dialog */}
-      <Dialog
-        open={isPermissionFormDialogOpen}
-        onOpenChange={setIsPermissionFormDialogOpen}
-      >
-        <DialogContent className="max-w-md">
-          <form onSubmit={handleSubmitPermission}>
-            <DialogHeader>
-              <DialogTitle>
-                {editingPermission
-                  ? tPerms("form.updatePermissionTitle")
-                  : tPerms("form.createPermissionTitle")}
-              </DialogTitle>
-              <DialogDescription>
-                {editingPermission
-                  ? tPerms("form.updatePermissionDescription")
-                  : tPerms("form.createPermissionDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="permission-name">
-                  {tPerms("form.permissionName")}
-                </Label>
-                <Input
-                  id="permission-name"
-                  value={permissionFormData.name}
-                  onChange={(e) =>
-                    setPermissionFormData({
-                      ...permissionFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  placeholder={tPerms("form.permissionNamePlaceholder")}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="permission-description">
-                  {tPerms("form.description")}
-                </Label>
-                <Input
-                  id="permission-description"
-                  value={permissionFormData.description}
-                  onChange={(e) =>
-                    setPermissionFormData({
-                      ...permissionFormData,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder={tPerms("form.descriptionPlaceholder")}
-                />
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleClosePermissionFormDialog}
+                onClick={handleClosePermissionDialog}
                 disabled={isSubmitting}
               >
                 {tCommon("actions.cancel")}
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="button"
+                onClick={handleSavePermissions}
+                disabled={isSubmitting}
+              >
                 {isSubmitting
                   ? tPerms("form.processing")
-                  : editingPermission
-                    ? tPerms("form.update")
-                    : tPerms("form.create")}
+                  : tCommon("actions.save")}
               </Button>
             </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Permission Create/Edit Dialog */}
+        <Dialog
+          open={isPermissionFormDialogOpen}
+          onOpenChange={setIsPermissionFormDialogOpen}
+        >
+          <DialogContent className="max-w-md">
+            <form onSubmit={handleSubmitPermission}>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingPermission
+                    ? tPerms("form.updatePermissionTitle")
+                    : tPerms("form.createPermissionTitle")}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingPermission
+                    ? tPerms("form.updatePermissionDescription")
+                    : tPerms("form.createPermissionDescription")}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="permission-name">
+                    {tPerms("form.permissionName")}
+                  </Label>
+                  <Input
+                    id="permission-name"
+                    value={permissionFormData.name}
+                    onChange={(e) =>
+                      setPermissionFormData({
+                        ...permissionFormData,
+                        name: e.target.value,
+                      })
+                    }
+                    placeholder={tPerms("form.permissionNamePlaceholder")}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="permission-description">
+                    {tPerms("form.description")}
+                  </Label>
+                  <Input
+                    id="permission-description"
+                    value={permissionFormData.description}
+                    onChange={(e) =>
+                      setPermissionFormData({
+                        ...permissionFormData,
+                        description: e.target.value,
+                      })
+                    }
+                    placeholder={tPerms("form.descriptionPlaceholder")}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClosePermissionFormDialog}
+                  disabled={isSubmitting}
+                >
+                  {tCommon("actions.cancel")}
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? tPerms("form.processing")
+                    : editingPermission
+                      ? tPerms("form.update")
+                      : tPerms("form.create")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PageGuard>
   );
 }

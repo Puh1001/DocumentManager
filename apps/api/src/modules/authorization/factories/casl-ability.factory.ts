@@ -48,8 +48,19 @@ export class CaslAbilityFactory {
     // Load user roles
     const roleIds = await this.loadRoleIds(userRoles);
 
-    // Load module permissions (for page access control)
-    const modulePerms = await this.loadModulePermissions(userId, roleIds);
+    // Load active modules from database for dynamic validation (load once, reuse)
+    const activeModules = await this.prisma.module.findMany({
+      where: { isActive: true },
+      select: { name: true },
+    });
+    const moduleNames = new Set(activeModules.map((m) => m.name));
+
+    // Load module permissions (for page access control) - pass moduleNames to avoid duplicate query
+    const modulePerms = await this.loadModulePermissions(
+      userId,
+      roleIds,
+      moduleNames
+    );
 
     // Load folder permissions (both user and role-based)
     const folderPerms = await this.loadFolderPermissions(userId, roleIds);
@@ -59,8 +70,13 @@ export class CaslAbilityFactory {
 
     // Apply module permissions (for page access)
     for (const perm of modulePerms) {
-      const moduleSubject = perm.module as "User" | "Department" | "Kpi" | "Maintenance" | "Permission";
-      can(perm.action, moduleSubject);
+      // Validate module exists in database
+      if (moduleNames.has(perm.module)) {
+        // Module name is validated against database, safe to cast to Subjects
+        // Using type assertion because module names are dynamically loaded from DB
+        // @ts-expect-error - Module names are validated at runtime, type system can't know all possible modules
+        can(perm.action, perm.module);
+      }
     }
 
     // Apply folder permissions
@@ -140,7 +156,8 @@ export class CaslAbilityFactory {
 
   private async loadModulePermissions(
     userId: string,
-    roleIds: string[]
+    roleIds: string[],
+    moduleNames: Set<string>
   ): Promise<ModulePermission[]> {
     if (roleIds.length === 0) return [];
 
@@ -155,6 +172,7 @@ export class CaslAbilityFactory {
     });
 
     const modulePerms: ModulePermission[] = [];
+    const validActions = ["view", "manage", "create", "edit", "delete"];
 
     // Parse permissions that match module pattern (e.g., "view:User", "manage:Department")
     for (const rp of rolePermissions) {
@@ -163,13 +181,8 @@ export class CaslAbilityFactory {
 
       if (parts.length === 2) {
         const [action, module] = parts;
-        // Validate action and module
-        if (
-          ["view", "manage", "create", "edit", "delete"].includes(action) &&
-          ["User", "Department", "Kpi", "Maintenance", "Permission"].includes(
-            module
-          )
-        ) {
+        // Validate action and module dynamically from database
+        if (validActions.includes(action) && moduleNames.has(module)) {
           modulePerms.push({
             permissionName: permName,
             action: action as Actions,

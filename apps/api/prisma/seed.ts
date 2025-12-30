@@ -6,6 +6,56 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
+  // Create modules
+  const modules = [
+    {
+      name: "User",
+      displayName: "User Management",
+      description: "User management module",
+    },
+    {
+      name: "Department",
+      displayName: "Department Management",
+      description: "Department management module",
+    },
+    {
+      name: "Kpi",
+      displayName: "KPI Tracking",
+      description: "KPI tracking module",
+    },
+    {
+      name: "Maintenance",
+      displayName: "Maintenance Notices",
+      description: "Maintenance notices module",
+    },
+    {
+      name: "Permission",
+      displayName: "Permission Management",
+      description: "Permission management module",
+    },
+  ];
+
+  let createdModules = 0;
+  let existingModules = 0;
+  for (const module of modules) {
+    const existing = await prisma.module.findUnique({
+      where: { name: module.name },
+    });
+    if (existing) {
+      existingModules++;
+    } else {
+      createdModules++;
+    }
+    await prisma.module.upsert({
+      where: { name: module.name },
+      update: {},
+      create: module,
+    });
+  }
+  console.log(
+    `✅ Modules: ${createdModules} created, ${existingModules} already exist (not modified)`
+  );
+
   // Create permissions
   const permissions = [
     { name: "view", description: "View document content" },

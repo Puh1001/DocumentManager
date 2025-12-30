@@ -145,29 +145,29 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 
 ### Storage
 
-| Method | Endpoint                        | Description           |
-| ------ | ------------------------------- | --------------------- |
-| GET    | /storage/folders                | List folders          |
-| GET    | /storage/folders/tree           | Folder tree           |
-| GET    | /storage/folders/:id            | Folder contents       |
-| POST   | /storage/folders                | Create folder         |
-| PATCH  | /storage/folders/:id            | Update folder         |
-| DELETE | /storage/folders/:id            | Delete folder         |
-| POST   | /storage/folders/sync           | Sync with file system |
-| GET    | /storage/stats                  | Dashboard statistics  |
-| POST   | /storage/documents/upload       | Upload document       |
-| GET    | /storage/documents/:id          | Document info         |
-| GET    | /storage/documents/:id/stream   | Stream for viewer     |
-| GET    | /storage/documents/:id/versions | Version history       |
-| GET    | /departments                    | List departments      |
-| POST   | /departments                    | Create department      |
-| GET    | /kpi/records                    | List KPI records      |
-| GET    | /kpi/records/:id/export         | Export KPI to Excel   |
-| GET    | /permissions                    | List all permissions  |
-| GET    | /permissions/roles/:id          | Get role permissions  |
-| POST   | /permissions/roles/:id          | Assign role permissions |
-| GET    | /permissions/folders/:id        | Get folder permissions |
-| POST   | /permissions/folders/:id        | Set folder permissions |
+| Method | Endpoint                        | Description              |
+| ------ | ------------------------------- | ------------------------ |
+| GET    | /storage/folders                | List folders             |
+| GET    | /storage/folders/tree           | Folder tree              |
+| GET    | /storage/folders/:id            | Folder contents          |
+| POST   | /storage/folders                | Create folder            |
+| PATCH  | /storage/folders/:id            | Update folder            |
+| DELETE | /storage/folders/:id            | Delete folder            |
+| POST   | /storage/folders/sync           | Sync with file system    |
+| GET    | /storage/stats                  | Dashboard statistics     |
+| POST   | /storage/documents/upload       | Upload document          |
+| GET    | /storage/documents/:id          | Document info            |
+| GET    | /storage/documents/:id/stream   | Stream for viewer        |
+| GET    | /storage/documents/:id/versions | Version history          |
+| GET    | /departments                    | List departments         |
+| POST   | /departments                    | Create department        |
+| GET    | /kpi/records                    | List KPI records         |
+| GET    | /kpi/records/:id/export         | Export KPI to Excel      |
+| GET    | /permissions                    | List all permissions     |
+| GET    | /permissions/roles/:id          | Get role permissions     |
+| POST   | /permissions/roles/:id          | Assign role permissions  |
+| GET    | /permissions/folders/:id        | Get folder permissions   |
+| POST   | /permissions/folders/:id        | Set folder permissions   |
 | GET    | /permissions/documents/:id      | Get document permissions |
 | POST   | /permissions/documents/:id      | Set document permissions |
 
@@ -261,9 +261,11 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Page-level permissions (User, Department, KPI, Maintenance, Permission)
   - ✅ Boss role (read-only access to all resources)
   - ✅ Permission management UI (frontend)
-  - ✅ Frontend route protection (useCanAccess hook)
+  - ✅ Frontend route protection (useCanAccess hook, PageGuard component)
   - ✅ Sidebar navigation filtering
   - ✅ AccessDenied component
+  - ✅ Page registry system (metadata-based page discovery)
+  - ✅ Subject validation utilities
 - 🔲 Document viewer & security
 - 🔲 Version control
 - 🔲 Local edit integration

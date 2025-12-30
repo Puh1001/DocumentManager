@@ -63,6 +63,11 @@ export const ErrorCodes = {
     IN_USE: "role.delete.in_use",
     SYSTEM_ROLE: "role.delete.system_role",
   },
+  MODULE: {
+    NOT_FOUND: "module.not_found",
+    NAME_EXISTS: "module.create.name_exists",
+    IN_USE: "module.delete.in_use",
+  },
   NOT_FOUND: "not_found",
   INVALID_INPUT: "invalid_input",
 } as const;

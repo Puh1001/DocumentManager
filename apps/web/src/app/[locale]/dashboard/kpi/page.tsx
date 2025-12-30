@@ -6,8 +6,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { useCanAccess } from "@/hooks/use-can-access";
-import { AccessDenied } from "@/components/access-denied";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -23,6 +21,22 @@ import {
   type ChartData,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import type { PageMetadata } from "@/lib/types/page-metadata";
+import { registerPage } from "@/lib/page-registry";
+import { PageGuard } from "@/components/page-guard";
+
+export const pageMetadata: PageMetadata = {
+  path: "/dashboard/kpi",
+  name: "KPI Tracking",
+  module: "Kpi",
+  action: "view",
+  icon: "TrendingUp",
+  order: 7,
+  requiresAuth: true,
+};
+
+// Register page metadata
+registerPage(pageMetadata);
 
 ChartJS.register(
   CategoryScale,
@@ -98,7 +112,6 @@ export default function KpiPage() {
   const [error, setError] = useState<string | null>(null);
 
   const year = new Date().getFullYear();
-  const canAccess = useCanAccess("view", "Kpi");
 
   useEffect(() => {
     const loadDepartments = async () => {
@@ -572,10 +585,6 @@ export default function KpiPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  if (!canAccess) {
-    return <AccessDenied />;
-  }
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -585,403 +594,409 @@ export default function KpiPage() {
     );
   }
 
-  if (!departments.length) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">KPI</h1>
-        <p className="text-muted-foreground">
-          Không có bộ môn nào. Vui lòng tạo bộ môn trước.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
+    <PageGuard metadata={pageMetadata}>
+      {!departments.length ? (
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold">KPI</h1>
+          <p className="text-muted-foreground">
+            Không có bộ môn nào. Vui lòng tạo bộ môn trước.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            className="border rounded-md px-2 py-1 text-sm"
-            value={selectedDepartmentId}
-            onChange={(e) => setSelectedDepartmentId(e.target.value)}
-          >
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <span className="text-sm text-muted-foreground">
-            {t("year")} {year}
-          </span>
-        </div>
-      </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {t("title")}
+              </h1>
+              <p className="text-muted-foreground">{t("subtitle")}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                className="border rounded-md px-2 py-1 text-sm"
+                value={selectedDepartmentId}
+                onChange={(e) => setSelectedDepartmentId(e.target.value)}
+              >
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-sm text-muted-foreground">
+                {t("year")} {year}
+              </span>
+            </div>
+          </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="space-y-6">
-        {records.map((record) => {
-          // Ensure we always have TARGET and ACTUAL metrics (create empty if missing)
-          let targetMetric = record.metrics.find((m) => m.type === "TARGET");
-          let actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+          <div className="space-y-6">
+            {records.map((record) => {
+              // Ensure we always have TARGET and ACTUAL metrics (create empty if missing)
+              let targetMetric = record.metrics.find(
+                (m) => m.type === "TARGET"
+              );
+              let actualMetric = record.metrics.find(
+                (m) => m.type === "ACTUAL"
+              );
 
-          // Create empty metrics if they don't exist (for rendering)
-          if (!targetMetric) {
-            const emptyValues: Record<string, number | null> = {};
-            MONTH_KEYS.forEach((key) => {
-              emptyValues[key] = null;
-            });
-            targetMetric = {
-              id: `temp-target-${record.id}`,
-              name: "",
-              type: "TARGET",
-              sortOrder: 1,
-              values: emptyValues,
-            };
-          }
+              // Create empty metrics if they don't exist (for rendering)
+              if (!targetMetric) {
+                const emptyValues: Record<string, number | null> = {};
+                MONTH_KEYS.forEach((key) => {
+                  emptyValues[key] = null;
+                });
+                targetMetric = {
+                  id: `temp-target-${record.id}`,
+                  name: "",
+                  type: "TARGET",
+                  sortOrder: 1,
+                  values: emptyValues,
+                };
+              }
 
-          if (!actualMetric) {
-            const emptyValues: Record<string, number | null> = {};
-            MONTH_KEYS.forEach((key) => {
-              emptyValues[key] = null;
-            });
-            actualMetric = {
-              id: `temp-actual-${record.id}`,
-              name: "",
-              type: "ACTUAL",
-              sortOrder: 2,
-              values: emptyValues,
-            };
-          }
+              if (!actualMetric) {
+                const emptyValues: Record<string, number | null> = {};
+                MONTH_KEYS.forEach((key) => {
+                  emptyValues[key] = null;
+                });
+                actualMetric = {
+                  id: `temp-actual-${record.id}`,
+                  name: "",
+                  type: "ACTUAL",
+                  sortOrder: 2,
+                  values: emptyValues,
+                };
+              }
 
-          const efficiencyValues = calculateEfficiency(record);
-          const hasData = efficiencyValues.some((v) => v != null);
-          const targetAverage = calculateMetricAverage(targetMetric);
-          const actualAverage = calculateMetricAverage(actualMetric);
+              const efficiencyValues = calculateEfficiency(record);
+              const hasData = efficiencyValues.some((v) => v != null);
+              const targetAverage = calculateMetricAverage(targetMetric);
+              const actualAverage = calculateMetricAverage(actualMetric);
 
-          return (
-            <div
-              key={record.id}
-              ref={(el) => {
-                recordRefs.current[record.id] = el;
-              }}
-              className="space-y-6"
-            >
-              {/* Table Card */}
-              <Card className="p-4 space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 space-y-2">
-                    <label className="block text-sm font-medium">
-                      {t("kpiTitle")}
-                    </label>
-                    <Input
-                      value={record.title}
-                      onChange={(e) => {
-                        setRecords((prev) =>
-                          prev.map((r) =>
-                            r.id === record.id
-                              ? { ...r, title: e.target.value }
-                              : r
-                          )
-                        );
-                      }}
-                      disabled={!isEditMode}
-                      placeholder={t("kpiTitle")}
-                    />
-                  </div>
-                  <div className="w-56 space-y-2">
-                    <label className="block text-sm font-medium">
-                      {t("target")}
-                    </label>
-                    <Input
-                      value={record.target}
-                      onChange={(e) => {
-                        setRecords((prev) =>
-                          prev.map((r) =>
-                            r.id === record.id
-                              ? { ...r, target: e.target.value }
-                              : r
-                          )
-                        );
-                      }}
-                      disabled={!isEditMode}
-                    />
-                  </div>
-                  {isEditMode && records.length > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteTable(record.id)}
-                      className="text-red-500"
-                    >
-                      Xóa bảng
-                    </Button>
+              return (
+                <div
+                  key={record.id}
+                  ref={(el) => {
+                    recordRefs.current[record.id] = el;
+                  }}
+                  className="space-y-6"
+                >
+                  {/* Table Card */}
+                  <Card className="p-4 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <label className="block text-sm font-medium">
+                          {t("kpiTitle")}
+                        </label>
+                        <Input
+                          value={record.title}
+                          onChange={(e) => {
+                            setRecords((prev) =>
+                              prev.map((r) =>
+                                r.id === record.id
+                                  ? { ...r, title: e.target.value }
+                                  : r
+                              )
+                            );
+                          }}
+                          disabled={!isEditMode}
+                          placeholder={t("kpiTitle")}
+                        />
+                      </div>
+                      <div className="w-56 space-y-2">
+                        <label className="block text-sm font-medium">
+                          {t("target")}
+                        </label>
+                        <Input
+                          value={record.target}
+                          onChange={(e) => {
+                            setRecords((prev) =>
+                              prev.map((r) =>
+                                r.id === record.id
+                                  ? { ...r, target: e.target.value }
+                                  : r
+                              )
+                            );
+                          }}
+                          disabled={!isEditMode}
+                        />
+                      </div>
+                      {isEditMode && records.length > 1 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteTable(record.id)}
+                          className="text-red-500"
+                        >
+                          Xóa bảng
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border border-gray-200 text-xs">
+                        <thead>
+                          <tr className="bg-blue-50 text-[11px]">
+                            <th className="border border-gray-200 px-2 py-1 text-left min-w-[180px]">
+                              {tTable("itemColumn")}
+                            </th>
+                            {MONTH_KEYS.map((monthKey) => (
+                              <th
+                                key={monthKey}
+                                className="border border-gray-200 px-2 py-1 text-center min-w-[80px]"
+                              >
+                                {tTable(`months.${monthKey}`)}
+                              </th>
+                            ))}
+                            <th className="border border-gray-200 px-2 py-1 text-center min-w-[80px]">
+                              {tTable("months.average")}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* TARGET Row - Always render */}
+                          <tr>
+                            <td className="border border-gray-200 px-2 py-1 align-top">
+                              <textarea
+                                className="w-full resize-none bg-transparent text-xs leading-tight"
+                                value={targetMetric.name}
+                                disabled={!isEditMode}
+                                onChange={async (e) => {
+                                  // Create metric if it doesn't exist
+                                  let metricToUse = targetMetric;
+                                  if (targetMetric.id.startsWith("temp-")) {
+                                    const created = await ensureMetricExists(
+                                      record.id,
+                                      "TARGET"
+                                    );
+                                    if (created) metricToUse = created;
+                                  }
+
+                                  setRecords((prev) =>
+                                    prev.map((r) =>
+                                      r.id === record.id
+                                        ? {
+                                            ...r,
+                                            metrics: r.metrics.map((m) =>
+                                              m.id === metricToUse.id
+                                                ? { ...m, name: e.target.value }
+                                                : m
+                                            ),
+                                          }
+                                        : r
+                                    )
+                                  );
+                                }}
+                                placeholder="Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)"
+                                rows={2}
+                              />
+                            </td>
+                            {MONTH_KEYS.map((key) => (
+                              <td
+                                key={key}
+                                className="border border-gray-200 px-1 py-1 text-center"
+                              >
+                                <Input
+                                  type="number"
+                                  value={
+                                    targetMetric.values?.[key] == null
+                                      ? ""
+                                      : targetMetric.values[key]!
+                                  }
+                                  disabled={!isEditMode}
+                                  onChange={async (e) => {
+                                    // Create metric if it doesn't exist
+                                    let metricToUse = targetMetric;
+                                    if (targetMetric.id.startsWith("temp-")) {
+                                      const created = await ensureMetricExists(
+                                        record.id,
+                                        "TARGET"
+                                      );
+                                      if (created) metricToUse = created;
+                                    }
+
+                                    handleChangeMetricValue(
+                                      record.id,
+                                      metricToUse.id,
+                                      key,
+                                      e.target.value
+                                    );
+                                  }}
+                                  className="h-7 w-20 mx-auto text-xs text-center"
+                                />
+                              </td>
+                            ))}
+                            <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
+                              {targetAverage != null
+                                ? targetAverage.toFixed(2)
+                                : ""}
+                            </td>
+                          </tr>
+
+                          {/* ACTUAL Row - Always render */}
+                          <tr>
+                            <td className="border border-gray-200 px-2 py-1 align-top">
+                              <textarea
+                                className="w-full resize-none bg-transparent text-xs leading-tight"
+                                value={actualMetric.name}
+                                disabled={!isEditMode}
+                                onChange={async (e) => {
+                                  // Create metric if it doesn't exist
+                                  let metricToUse = actualMetric;
+                                  if (actualMetric.id.startsWith("temp-")) {
+                                    const created = await ensureMetricExists(
+                                      record.id,
+                                      "ACTUAL"
+                                    );
+                                    if (created) metricToUse = created;
+                                  }
+
+                                  setRecords((prev) =>
+                                    prev.map((r) =>
+                                      r.id === record.id
+                                        ? {
+                                            ...r,
+                                            metrics: r.metrics.map((m) =>
+                                              m.id === metricToUse.id
+                                                ? { ...m, name: e.target.value }
+                                                : m
+                                            ),
+                                          }
+                                        : r
+                                    )
+                                  );
+                                }}
+                                placeholder="Dòng 2: ACTUAL / Thực tế (ví dụ: Số lượng thực hiện)"
+                                rows={2}
+                              />
+                            </td>
+                            {MONTH_KEYS.map((key) => (
+                              <td
+                                key={key}
+                                className="border border-gray-200 px-1 py-1 text-center"
+                              >
+                                <Input
+                                  type="number"
+                                  value={
+                                    actualMetric.values?.[key] == null
+                                      ? ""
+                                      : actualMetric.values[key]!
+                                  }
+                                  disabled={!isEditMode}
+                                  onChange={async (e) => {
+                                    // Create metric if it doesn't exist
+                                    let metricToUse = actualMetric;
+                                    if (actualMetric.id.startsWith("temp-")) {
+                                      const created = await ensureMetricExists(
+                                        record.id,
+                                        "ACTUAL"
+                                      );
+                                      if (created) metricToUse = created;
+                                    }
+
+                                    handleChangeMetricValue(
+                                      record.id,
+                                      metricToUse.id,
+                                      key,
+                                      e.target.value
+                                    );
+                                  }}
+                                  className="h-7 w-20 mx-auto text-xs text-center"
+                                />
+                              </td>
+                            ))}
+                            <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
+                              {actualAverage != null
+                                ? actualAverage.toFixed(2)
+                                : ""}
+                            </td>
+                          </tr>
+
+                          {/* Efficiency Row */}
+                          <tr className="bg-gray-50 font-medium">
+                            <td className="border border-gray-200 px-2 py-1 text-left text-xs">
+                              {t("efficiency")}
+                            </td>
+                            {efficiencyValues.slice(0, 12).map((v, idx) => (
+                              <td
+                                key={MONTH_KEYS[idx]}
+                                className="border border-gray-200 px-1 py-1 text-center text-xs"
+                              >
+                                {v == null ? "" : `${v.toFixed(0)}%`}
+                              </td>
+                            ))}
+                            <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
+                              {efficiencyValues[12] == null
+                                ? ""
+                                : `${efficiencyValues[12]!.toFixed(0)}%`}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddNewTable}
+                        disabled={!isEditMode}
+                      >
+                        {t("addNewTable")}
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExport(record.id)}
+                          disabled={!record}
+                        >
+                          {t("exportExcel")}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditMode((v) => !v)}
+                        >
+                          {isEditMode ? t("cancel") : t("edit")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSave}
+                          disabled={!isEditMode || isSaving}
+                        >
+                          {isSaving ? t("saving") : t("save")}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Chart Card - Only show if has data */}
+                  {hasData && (
+                    <Card className="p-4 flex flex-col">
+                      <h2 className="text-sm font-semibold mb-4">
+                        {t("chartTitle")}
+                      </h2>
+                      <div className="flex-1 min-h-[260px]">
+                        <Bar
+                          options={getChartOptions(
+                            efficiencyValues,
+                            record.targetValue
+                          )}
+                          data={getChartData(record, efficiencyValues)}
+                        />
+                      </div>
+                    </Card>
                   )}
                 </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 text-xs">
-                    <thead>
-                      <tr className="bg-blue-50 text-[11px]">
-                        <th className="border border-gray-200 px-2 py-1 text-left min-w-[180px]">
-                          {tTable("itemColumn")}
-                        </th>
-                        {MONTH_KEYS.map((monthKey) => (
-                          <th
-                            key={monthKey}
-                            className="border border-gray-200 px-2 py-1 text-center min-w-[80px]"
-                          >
-                            {tTable(`months.${monthKey}`)}
-                          </th>
-                        ))}
-                        <th className="border border-gray-200 px-2 py-1 text-center min-w-[80px]">
-                          {tTable("months.average")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* TARGET Row - Always render */}
-                      <tr>
-                        <td className="border border-gray-200 px-2 py-1 align-top">
-                          <textarea
-                            className="w-full resize-none bg-transparent text-xs leading-tight"
-                            value={targetMetric.name}
-                            disabled={!isEditMode}
-                            onChange={async (e) => {
-                              // Create metric if it doesn't exist
-                              let metricToUse = targetMetric;
-                              if (targetMetric.id.startsWith("temp-")) {
-                                const created = await ensureMetricExists(
-                                  record.id,
-                                  "TARGET"
-                                );
-                                if (created) metricToUse = created;
-                              }
-
-                              setRecords((prev) =>
-                                prev.map((r) =>
-                                  r.id === record.id
-                                    ? {
-                                        ...r,
-                                        metrics: r.metrics.map((m) =>
-                                          m.id === metricToUse.id
-                                            ? { ...m, name: e.target.value }
-                                            : m
-                                        ),
-                                      }
-                                    : r
-                                )
-                              );
-                            }}
-                            placeholder="Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)"
-                            rows={2}
-                          />
-                        </td>
-                        {MONTH_KEYS.map((key) => (
-                          <td
-                            key={key}
-                            className="border border-gray-200 px-1 py-1 text-center"
-                          >
-                            <Input
-                              type="number"
-                              value={
-                                targetMetric.values?.[key] == null
-                                  ? ""
-                                  : targetMetric.values[key]!
-                              }
-                              disabled={!isEditMode}
-                              onChange={async (e) => {
-                                // Create metric if it doesn't exist
-                                let metricToUse = targetMetric;
-                                if (targetMetric.id.startsWith("temp-")) {
-                                  const created = await ensureMetricExists(
-                                    record.id,
-                                    "TARGET"
-                                  );
-                                  if (created) metricToUse = created;
-                                }
-
-                                handleChangeMetricValue(
-                                  record.id,
-                                  metricToUse.id,
-                                  key,
-                                  e.target.value
-                                );
-                              }}
-                              className="h-7 w-20 mx-auto text-xs text-center"
-                            />
-                          </td>
-                        ))}
-                        <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
-                          {targetAverage != null
-                            ? targetAverage.toFixed(2)
-                            : ""}
-                        </td>
-                      </tr>
-
-                      {/* ACTUAL Row - Always render */}
-                      <tr>
-                        <td className="border border-gray-200 px-2 py-1 align-top">
-                          <textarea
-                            className="w-full resize-none bg-transparent text-xs leading-tight"
-                            value={actualMetric.name}
-                            disabled={!isEditMode}
-                            onChange={async (e) => {
-                              // Create metric if it doesn't exist
-                              let metricToUse = actualMetric;
-                              if (actualMetric.id.startsWith("temp-")) {
-                                const created = await ensureMetricExists(
-                                  record.id,
-                                  "ACTUAL"
-                                );
-                                if (created) metricToUse = created;
-                              }
-
-                              setRecords((prev) =>
-                                prev.map((r) =>
-                                  r.id === record.id
-                                    ? {
-                                        ...r,
-                                        metrics: r.metrics.map((m) =>
-                                          m.id === metricToUse.id
-                                            ? { ...m, name: e.target.value }
-                                            : m
-                                        ),
-                                      }
-                                    : r
-                                )
-                              );
-                            }}
-                            placeholder="Dòng 2: ACTUAL / Thực tế (ví dụ: Số lượng thực hiện)"
-                            rows={2}
-                          />
-                        </td>
-                        {MONTH_KEYS.map((key) => (
-                          <td
-                            key={key}
-                            className="border border-gray-200 px-1 py-1 text-center"
-                          >
-                            <Input
-                              type="number"
-                              value={
-                                actualMetric.values?.[key] == null
-                                  ? ""
-                                  : actualMetric.values[key]!
-                              }
-                              disabled={!isEditMode}
-                              onChange={async (e) => {
-                                // Create metric if it doesn't exist
-                                let metricToUse = actualMetric;
-                                if (actualMetric.id.startsWith("temp-")) {
-                                  const created = await ensureMetricExists(
-                                    record.id,
-                                    "ACTUAL"
-                                  );
-                                  if (created) metricToUse = created;
-                                }
-
-                                handleChangeMetricValue(
-                                  record.id,
-                                  metricToUse.id,
-                                  key,
-                                  e.target.value
-                                );
-                              }}
-                              className="h-7 w-20 mx-auto text-xs text-center"
-                            />
-                          </td>
-                        ))}
-                        <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
-                          {actualAverage != null
-                            ? actualAverage.toFixed(2)
-                            : ""}
-                        </td>
-                      </tr>
-
-                      {/* Efficiency Row */}
-                      <tr className="bg-gray-50 font-medium">
-                        <td className="border border-gray-200 px-2 py-1 text-left text-xs">
-                          {t("efficiency")}
-                        </td>
-                        {efficiencyValues.slice(0, 12).map((v, idx) => (
-                          <td
-                            key={MONTH_KEYS[idx]}
-                            className="border border-gray-200 px-1 py-1 text-center text-xs"
-                          >
-                            {v == null ? "" : `${v.toFixed(0)}%`}
-                          </td>
-                        ))}
-                        <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
-                          {efficiencyValues[12] == null
-                            ? ""
-                            : `${efficiencyValues[12]!.toFixed(0)}%`}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddNewTable}
-                    disabled={!isEditMode}
-                  >
-                    {t("addNewTable")}
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExport(record.id)}
-                      disabled={!record}
-                    >
-                      {t("exportExcel")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditMode((v) => !v)}
-                    >
-                      {isEditMode ? t("cancel") : t("edit")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={!isEditMode || isSaving}
-                    >
-                      {isSaving ? t("saving") : t("save")}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Chart Card - Only show if has data */}
-              {hasData && (
-                <Card className="p-4 flex flex-col">
-                  <h2 className="text-sm font-semibold mb-4">
-                    {t("chartTitle")}
-                  </h2>
-                  <div className="flex-1 min-h-[260px]">
-                    <Bar
-                      options={getChartOptions(
-                        efficiencyValues,
-                        record.targetValue
-                      )}
-                      data={getChartData(record, efficiencyValues)}
-                    />
-                  </div>
-                </Card>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </PageGuard>
   );
 }

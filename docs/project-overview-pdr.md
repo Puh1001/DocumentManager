@@ -141,19 +141,19 @@ Xây dựng web-based document management system:
 
 ## Timeline
 
-| Phase                        | Duration       | Status         |
-| ---------------------------- | -------------- | -------------- |
-| Phase 1-2: Foundation        | 1 week         | ✅ Complete    |
-| Phase 3: Storage & Files    | 1.5 weeks      | ✅ Complete    |
-| Additional Features         | Ongoing        | ✅ Complete    |
-| - Department Management      | -              | ✅ Complete    |
-| - KPI Tracking               | -              | ✅ Complete    |
-| - Maintenance Notices         | -              | ✅ Complete    |
-| - Internationalization       | -              | ✅ Complete    |
-| Phase 4: Authorization      | 1 week         | ✅ Complete (Backend + Frontend) |
-| Phase 5-6: Document Features | 1 week         | 🔲 Pending     |
-| Phase 7-8: Integration & QA  | 1 week         | 🔲 Pending     |
-| **Total**                    | **~4.5 weeks** | **75% Done**   |
+| Phase                        | Duration       | Status                           |
+| ---------------------------- | -------------- | -------------------------------- |
+| Phase 1-2: Foundation        | 1 week         | ✅ Complete                      |
+| Phase 3: Storage & Files     | 1.5 weeks      | ✅ Complete                      |
+| Additional Features          | Ongoing        | ✅ Complete                      |
+| - Department Management      | -              | ✅ Complete                      |
+| - KPI Tracking               | -              | ✅ Complete                      |
+| - Maintenance Notices        | -              | ✅ Complete                      |
+| - Internationalization       | -              | ✅ Complete                      |
+| Phase 4: Authorization       | 1 week         | ✅ Complete (Backend + Frontend) |
+| Phase 5-6: Document Features | 1 week         | 🔲 Pending                       |
+| Phase 7-8: Integration & QA  | 1 week         | 🔲 Pending                       |
+| **Total**                    | **~4.5 weeks** | **75% Done**                     |
 
 ## Risks & Mitigations
 

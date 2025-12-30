@@ -18,7 +18,7 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 | 3     | Storage & File Management        | ✅ Complete | 100%     | 3-4 days |
 | 3.5   | Department Management            | ✅ Complete | 100%     | 1-2 days |
 | 3.6   | KPI Tracking                     | ✅ Complete | 100%     | 3-4 days |
-| 3.7   | Maintenance Notices               | ✅ Complete | 100%     | 1-2 days |
+| 3.7   | Maintenance Notices              | ✅ Complete | 100%     | 1-2 days |
 | 3.8   | Internationalization (i18n)      | ✅ Complete | 100%     | 1-2 days |
 | 4     | Authorization (RBAC + ABAC)      | ✅ Complete | 100%     | 3-4 days |
 | 5     | Document Viewer & Security       | 🔲 Pending  | 0%       | 2-3 days |

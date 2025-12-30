@@ -81,13 +81,21 @@ src/
 │   ├── ui/                # ShadcnUI components
 │   ├── layout/            # Sidebar, Header
 │   ├── documents/         # Document components
+│   ├── boss/              # Boss role components
 │   ├── access-denied.tsx  # Access denied component
+│   ├── page-guard.tsx     # Automatic page permission guard
 │   └── viewers/           # PDF/DOCX viewers
 ├── hooks/
 │   ├── use-ability.ts           # CASL ability hook
 │   ├── use-can-access.ts         # Permission check hook
+│   ├── use-pages.ts              # Page registry hook
 │   ├── use-copy-protection.ts
 │   └── use-maintenance-notices.ts
+├── lib/
+│   ├── page-registry.ts         # Page metadata registry
+│   ├── page-registry-init.ts     # Page registration initialization
+│   └── utils/
+│       └── subject-validation.ts  # Subject name validation
 └── lib/
     ├── auth-context.tsx   # Auth state
     ├── api.ts             # API client
@@ -290,3 +298,9 @@ docker-compose -f docker-compose.prod.yml up -d
   - Page-level permissions (User, Department, KPI, Maintenance, Permission)
   - Boss role with read-only access to all resources
   - Permission inheritance for folders
+- **Page Registry System**: Metadata-based page discovery
+  - Page metadata type system for auto-discovery
+  - Page registry for collecting page metadata
+  - PageGuard component for automatic permission checks
+  - Subject validation utilities
+  - Dynamic sidebar generation from page registry

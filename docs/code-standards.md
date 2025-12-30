@@ -49,14 +49,14 @@ src/modules/{feature}/
 ### Controllers
 
 ```typescript
-@Controller('users')
-@ApiTags('Users')
+@Controller("users")
+@ApiTags("Users")
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all users' })
+  @ApiOperation({ summary: "List all users" })
   findAll(@Query() query: QueryUsersDto) {
     return this.usersService.findAll(query);
   }
@@ -79,16 +79,16 @@ export class UsersService {
 ### DTOs
 
 ```typescript
-import { IsString, IsEmail, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsEmail, MinLength } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'john.doe' })
+  @ApiProperty({ example: "john.doe" })
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({ example: 'john@example.com' })
+  @ApiProperty({ example: "john@example.com" })
   @IsEmail()
   email: string;
 }
@@ -111,10 +111,10 @@ src/
 ### Component Structure
 
 ```tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface MyComponentProps {
   title: string;
@@ -143,7 +143,8 @@ export function useDocument(id: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/documents/${id}`)
+    api
+      .get(`/documents/${id}`)
       .then(setDocument)
       .finally(() => setLoading(false));
   }, [id]);
@@ -224,11 +225,11 @@ DELETE /api/users/:id      # Delete
 export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    
+
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
-    
+
     return user;
   }
 }
@@ -238,9 +239,9 @@ export class UsersService {
 
 ```typescript
 try {
-  const user = await api.get('/users/123');
+  const user = await api.get("/users/123");
 } catch (error) {
-  if (error.message === 'User not found') {
+  if (error.message === "User not found") {
     // Handle not found
   }
   // Show error toast
@@ -252,11 +253,11 @@ try {
 ### Unit Tests
 
 ```typescript
-describe('AuthService', () => {
-  it('should validate user with correct password', async () => {
-    const user = await service.validateUser('admin', 'admin123');
+describe("AuthService", () => {
+  it("should validate user with correct password", async () => {
+    const user = await service.validateUser("admin", "admin123");
     expect(user).toBeDefined();
-    expect(user.username).toBe('admin');
+    expect(user.username).toBe("admin");
   });
 });
 ```
@@ -267,12 +268,12 @@ describe('AuthService', () => {
 
 ```typescript
 // ✅ Good - Use CheckPolicies decorator
-@Controller('documents')
+@Controller("documents")
 @UseGuards(JwtAuthGuard, PoliciesGuard)
 export class DocumentController {
-  @Get(':id')
-  @CheckPolicies({ action: 'view', subject: 'Document' })
-  getDocument(@Param('id') id: string) {
+  @Get(":id")
+  @CheckPolicies({ action: "view", subject: "Document" })
+  getDocument(@Param("id") id: string) {
     // Handler logic
   }
 }
@@ -280,17 +281,15 @@ export class DocumentController {
 // ✅ Good - Use ability factory in service
 @Injectable()
 export class DocumentService {
-  constructor(
-    private readonly caslAbilityFactory: CaslAbilityFactory
-  ) {}
+  constructor(private readonly caslAbilityFactory: CaslAbilityFactory) {}
 
   async canUserAccess(userId: string, documentId: string) {
     const user = await this.getUser(userId);
     const ability = await this.caslAbilityFactory.createForUser(
       user.id,
-      user.roles.map(r => r.name)
+      user.roles.map((r) => r.name)
     );
-    return ability.can('view', { id: documentId, __typename: 'Document' });
+    return ability.can("view", { id: documentId, __typename: "Document" });
   }
 }
 ```
@@ -298,19 +297,42 @@ export class DocumentService {
 ### Frontend: Route Protection
 
 ```typescript
-// ✅ Good - Use useCanAccess hook for page protection
+// ✅ Good - Use PageGuard component with page metadata
 'use client';
 
+import { PageGuard } from '@/components/page-guard';
+import { pageMetadata } from './page';
+
+export default function UsersPage() {
+  return (
+    <PageGuard metadata={pageMetadata}>
+      {/* Page content */}
+    </PageGuard>
+  );
+}
+
+// ✅ Good - Export page metadata for auto-discovery
+export const pageMetadata: PageMetadata = {
+  path: '/dashboard/users',
+  name: 'User Management',
+  module: 'User',
+  action: 'view',
+  icon: 'Users',
+  order: 5,
+  requiresAuth: true,
+};
+
+// ✅ Good - Use useCanAccess hook for conditional rendering
 import { useCanAccess } from '@/hooks/use-can-access';
 import { AccessDenied } from '@/components/access-denied';
 
 export default function UsersPage() {
   const canAccess = useCanAccess('view', 'User');
-  
+
   if (!canAccess) {
     return <AccessDenied />;
   }
-  
+
   // Page content
 }
 
@@ -346,6 +368,43 @@ getDocument(@Param('id') id: string) {
 export default function UsersPage() {
   // No permission check - anyone can access
 }
+
+// ❌ Bad - Missing page metadata
+export default function UsersPage() {
+  // No pageMetadata export - page won't be auto-discovered
+}
+```
+
+### Page Metadata Pattern
+
+```typescript
+// ✅ Good - Export page metadata for auto-discovery
+import type { PageMetadata } from '@/lib/types/page-metadata';
+
+export const pageMetadata: PageMetadata = {
+  path: '/dashboard/users',
+  name: 'User Management',
+  module: 'User', // Must match Module.name in database
+  action: 'view', // Optional, defaults to 'view'
+  icon: 'Users', // Optional, Lucide icon name
+  order: 5, // Optional, navigation order
+  requiresAuth: true, // Optional, defaults to true
+};
+
+// ✅ Good - Register page in page-registry-init.ts
+import '@/app/[locale]/dashboard/users/page';
+
+// ✅ Good - Use PageGuard with metadata
+import { PageGuard } from '@/components/page-guard';
+import { pageMetadata } from './page';
+
+export default function UsersPage() {
+  return (
+    <PageGuard metadata={pageMetadata}>
+      {/* Page content */}
+    </PageGuard>
+  );
+}
 ```
 
 ## Git Conventions
@@ -368,4 +427,3 @@ feature/document-viewer
 fix/permission-bypass
 refactor/storage-module
 ```
-

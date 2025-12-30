@@ -69,14 +69,17 @@ apps/web/
 ├── Client Components
 │   ├── Layout (Sidebar, Header)
 │   ├── Documents (Tree, List, Toolbar)
+│   ├── Boss (Boss role UI components)
 │   ├── AccessDenied (Permission denied UI)
+│   ├── PageGuard (Automatic page permission guard)
 │   └── Viewers (PDF, DOCX, Watermark)
 │
 └── Shared
     ├── Auth Context (JWT management)
     ├── API Client (REST calls)
-    ├── Hooks (useAbility, useCanAccess)
-    └── Utils (formatting, helpers)
+    ├── Hooks (useAbility, useCanAccess, usePages)
+    ├── Page Registry (Metadata-based page discovery)
+    └── Utils (formatting, helpers, subject validation)
 ```
 
 ### Backend (NestJS 10)
@@ -290,9 +293,16 @@ Folder ──┬── Folder (self-reference for hierarchy)
 - **Boss Role**: Read-only access (view, download, print) to all resources
 - **Implementation**: CASL MongoAbility with dynamic ability factory
 - **Backend Enforcement**: PoliciesGuard with CheckPolicies decorator
-- **Frontend Enforcement**: `useCanAccess` hook with route-level checks
+- **Frontend Enforcement**: 
+  - `useCanAccess` hook with route-level checks
+  - `PageGuard` component for automatic permission checks from page metadata
 - **Navigation Filtering**: Sidebar items filtered based on permissions
 - **Page Protection**: All dashboard pages protected by permission checks
+- **Page Registry System**: Metadata-based page discovery and auto-registration
+  - Pages export metadata (path, module, action, icon, order)
+  - Page registry collects all page metadata
+  - Dynamic sidebar generation from registry
+  - Subject validation for type-safe permission checks
 
 ### Data Protection
 
@@ -395,7 +405,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 | Frontend | Next.js      | 14.0.4   | React framework with App Router |
 | Frontend | Tailwind CSS | 3.4.0    | Utility-first CSS               |
 | Frontend | ShadcnUI     | Latest   | Component library               |
-| Frontend | next-intl    | Latest   | Internationalization           |
+| Frontend | next-intl    | Latest   | Internationalization            |
 | Frontend | Chart.js     | Latest   | Chart visualization             |
 | Backend  | NestJS       | 10.3.0   | Node.js framework               |
 | Backend  | Prisma       | 5.7.1    | ORM for PostgreSQL              |
@@ -403,7 +413,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 | Cache    | Redis        | 7        | Rate limiting, sessions         |
 | Auth     | Passport     | 0.7.0    | Authentication middleware       |
 | Auth     | JWT          | 10.2.0   | Token-based auth                |
-| Auth     | CASL         | Latest   | Authorization (RBAC + ABAC)    |
+| Auth     | CASL         | Latest   | Authorization (RBAC + ABAC)     |
 | Storage  | Node.js fs   | Built-in | SMB file access                 |
 | Viewer   | mammoth.js   | Latest   | DOCX to HTML                    |
 | Export   | ExcelJS      | Latest   | Excel export (KPI)              |

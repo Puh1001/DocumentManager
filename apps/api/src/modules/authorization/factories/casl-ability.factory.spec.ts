@@ -12,6 +12,9 @@ describe("CaslAbilityFactory", () => {
     role: {
       findMany: jest.fn(),
     },
+    module: {
+      findMany: jest.fn(),
+    },
     rolePermission: {
       findMany: jest.fn(),
     },
@@ -60,6 +63,10 @@ describe("CaslAbilityFactory", () => {
       const documentId = "doc-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "User" },
+        { name: "Department" },
+      ]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -102,6 +109,7 @@ describe("CaslAbilityFactory", () => {
     it("should handle empty roles array", async () => {
       const userId = "user-1";
       const userRoles: string[] = [];
+      mockPrismaService.module.findMany.mockResolvedValue([]);
 
       mockPrismaService.role.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
@@ -121,6 +129,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -151,6 +160,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -180,6 +190,7 @@ describe("CaslAbilityFactory", () => {
       const documentId = "doc-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -213,6 +224,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([]);
+      mockPrismaService.module.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -240,6 +252,7 @@ describe("CaslAbilityFactory", () => {
       const folderId = "folder-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([]);
       mockPrismaService.rolePermission.findMany.mockResolvedValue([]);
 
       mockPrismaService.folderPermission.findMany.mockResolvedValue([
@@ -267,6 +280,13 @@ describe("CaslAbilityFactory", () => {
       const roleId = "role-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "User" },
+        { name: "Department" },
+        { name: "Kpi" },
+        { name: "Maintenance" },
+        { name: "Permission" },
+      ]);
 
       // Mock role permissions with module permissions
       mockPrismaService.rolePermission.findMany.mockResolvedValue([
@@ -307,6 +327,10 @@ describe("CaslAbilityFactory", () => {
       const roleId = "role-1";
 
       mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "User" },
+        { name: "Department" },
+      ]);
 
       // Mock role permissions with invalid format
       mockPrismaService.rolePermission.findMany.mockResolvedValue([

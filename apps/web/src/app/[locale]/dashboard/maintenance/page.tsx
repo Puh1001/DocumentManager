@@ -17,8 +17,22 @@ import {
 } from "@/components/ui/dialog";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
 import { api, type Department, type MaintenanceNotice } from "@/lib/api";
-import { useCanAccess } from "@/hooks/use-can-access";
-import { AccessDenied } from "@/components/access-denied";
+import type { PageMetadata } from "@/lib/types/page-metadata";
+import { registerPage } from "@/lib/page-registry";
+import { PageGuard } from "@/components/page-guard";
+
+export const pageMetadata: PageMetadata = {
+  path: "/dashboard/maintenance",
+  name: "Maintenance Notices",
+  module: "Maintenance",
+  action: "view",
+  icon: "Wrench",
+  order: 8,
+  requiresAuth: true,
+};
+
+// Register page metadata
+registerPage(pageMetadata);
 
 interface FormState {
   title: string;
@@ -73,7 +87,6 @@ export default function MaintenancePage() {
     () => [...notices].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [notices]
   );
-  const canAccess = useCanAccess("view", "Maintenance");
 
   const getDepartmentName = (notice: MaintenanceNotice) => {
     if (notice.department) {
@@ -150,236 +163,247 @@ export default function MaintenancePage() {
     }
   };
 
-  if (!canAccess) {
-    return <AccessDenied />;
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">{t("pageTitle")}</h1>
-        <p className="text-muted-foreground">{t("pageDescription")}</p>
-      </div>
+    <PageGuard metadata={pageMetadata}>
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("pageTitle")}
+          </h1>
+          <p className="text-muted-foreground">{t("pageDescription")}</p>
+        </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3">
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Megaphone className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle>{t("form.sectionTitle")}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t("form.helper")}
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="title">{t("form.titleLabel")}</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  placeholder={t("form.titleLabel")}
-                  value={form.title}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                  required
-                />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2 text-primary">
+                <Megaphone className="h-5 w-5" />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="departmentId">
-                  {t("form.departmentLabel")}
-                </Label>
-                <select
-                  id="departmentId"
-                  name="departmentId"
-                  value={form.departmentId}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      departmentId: e.target.value,
-                    }))
-                  }
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  disabled={loadingDepartments}
-                >
-                  <option value="">{t("form.allDepartments")}</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+              <div>
+                <CardTitle>{t("form.sectionTitle")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t("form.helper")}
+                </p>
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">{t("form.startLabel")}</Label>
+                  <Label htmlFor="title">{t("form.titleLabel")}</Label>
                   <Input
-                    id="startDate"
-                    name="startDate"
-                    type="date"
-                    value={form.startDate}
+                    id="title"
+                    name="title"
+                    placeholder={t("form.titleLabel")}
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="departmentId">
+                    {t("form.departmentLabel")}
+                  </Label>
+                  <select
+                    id="departmentId"
+                    name="departmentId"
+                    value={form.departmentId}
                     onChange={(e) =>
                       setForm((prev) => ({
                         ...prev,
-                        startDate: e.target.value,
+                        departmentId: e.target.value,
                       }))
                     }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">{t("form.endLabel")}</Label>
-                  <Input
-                    id="endDate"
-                    name="endDate"
-                    type="date"
-                    value={form.endDate}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, endDate: e.target.value }))
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">{t("form.detailsLabel")}</Label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder={t("form.detailsLabel")}
-                />
-              </div>
-
-              {formError ? (
-                <p className="text-sm text-destructive">{formError}</p>
-              ) : null}
-
-              <div className="flex justify-end gap-2">
-                {editingId ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                    disabled={loading}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={loadingDepartments}
                   >
-                    {t("actions.cancel")}
-                  </Button>
-                ) : null}
-                <Button type="submit" disabled={loading}>
-                  {editingId ? t("actions.save") : t("form.submit")}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3">
-            <div className="rounded-full bg-slate-100 p-2 text-slate-700">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle>{t("list.sectionTitle")}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t("pageDescription")}
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loading ? (
-              <p className="text-sm text-muted-foreground">
-                {commonT("status.loading")}
-              </p>
-            ) : sortedNotices.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("list.empty")}</p>
-            ) : (
-              sortedNotices.map((notice) => (
-                <div
-                  key={notice.id}
-                  className="rounded-lg border border-border p-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-semibold">{notice.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("list.department")}: {getDepartmentName(notice)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("list.windowLabel")}: {formatDate(notice.startDate)}{" "}
-                        - {formatDate(notice.endDate)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {new Date(notice.createdAt).toLocaleDateString()}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(notice)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteConfirmId(notice.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  {notice.description ? (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {notice.description}
-                    </p>
-                  ) : null}
+                    <option value="">{t("form.allDepartments")}</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
-      <Dialog
-        open={deleteConfirmId !== null}
-        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("deleteConfirm.title")}</DialogTitle>
-            <DialogDescription>{t("deleteConfirm.message")}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
-              {t("deleteConfirm.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-            >
-              {t("deleteConfirm.confirm")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">{t("form.startLabel")}</Label>
+                    <Input
+                      id="startDate"
+                      name="startDate"
+                      type="date"
+                      value={form.startDate}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          startDate: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">{t("form.endLabel")}</Label>
+                    <Input
+                      id="endDate"
+                      name="endDate"
+                      type="date"
+                      value={form.endDate}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          endDate: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">{t("form.detailsLabel")}</Label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder={t("form.detailsLabel")}
+                  />
+                </div>
+
+                {formError ? (
+                  <p className="text-sm text-destructive">{formError}</p>
+                ) : null}
+
+                <div className="flex justify-end gap-2">
+                  {editingId ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                      disabled={loading}
+                    >
+                      {t("actions.cancel")}
+                    </Button>
+                  ) : null}
+                  <Button type="submit" disabled={loading}>
+                    {editingId ? t("actions.save") : t("form.submit")}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="rounded-full bg-slate-100 p-2 text-slate-700">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle>{t("list.sectionTitle")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t("pageDescription")}
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loading ? (
+                <p className="text-sm text-muted-foreground">
+                  {commonT("status.loading")}
+                </p>
+              ) : sortedNotices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("list.empty")}
+                </p>
+              ) : (
+                sortedNotices.map((notice) => (
+                  <div
+                    key={notice.id}
+                    className="rounded-lg border border-border p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-semibold">{notice.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("list.department")}: {getDepartmentName(notice)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("list.windowLabel")}:{" "}
+                          {formatDate(notice.startDate)} -{" "}
+                          {formatDate(notice.endDate)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          {new Date(notice.createdAt).toLocaleDateString()}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(notice)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteConfirmId(notice.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {notice.description ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {notice.description}
+                      </p>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Dialog
+          open={deleteConfirmId !== null}
+          onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("deleteConfirm.title")}</DialogTitle>
+              <DialogDescription>
+                {t("deleteConfirm.message")}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirmId(null)}
+              >
+                {t("deleteConfirm.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              >
+                {t("deleteConfirm.confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PageGuard>
   );
 }
