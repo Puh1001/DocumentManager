@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { type BossNavigationState } from "./use-boss-navigation";
 
 interface BreadcrumbProps {
@@ -48,30 +47,26 @@ export function Breadcrumb({ state, onNavigate }: BreadcrumbProps) {
   }
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
-      <Button
-        variant="ghost"
-        size="sm"
+    <nav className="flex items-center space-x-3 text-sm font-cyber mb-6">
+      <button
         onClick={() => onNavigate("home")}
-        className="h-auto p-0 font-normal"
+        className="cyber-button px-3 py-1.5 text-xs flex items-center gap-2 text-cyan-300 hover:text-cyan-200"
       >
-        <Home className="h-4 w-4 mr-1" />
-        {items[0].label}
-      </Button>
+        <Home className="h-3.5 w-3.5" />
+        <span>{items[0].label}</span>
+      </button>
       {items.slice(1).map((item, index) => (
-        <div key={index} className="flex items-center space-x-2">
-          <ChevronRight className="h-4 w-4" />
+        <div key={index} className="flex items-center space-x-3">
+          <ChevronRight className="h-4 w-4 text-cyan-400/70" />
           {item.onClick ? (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={item.onClick}
-              className="h-auto p-0 font-normal"
+              className="cyber-button px-3 py-1.5 text-xs text-cyan-300 hover:text-cyan-200 transition-colors"
             >
               {item.label}
-            </Button>
+            </button>
           ) : (
-            <span>{item.label}</span>
+            <span className="text-cyan-200 font-semibold">{item.label}</span>
           )}
         </div>
       ))}

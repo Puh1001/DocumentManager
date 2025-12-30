@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useCopyProtection } from "@/hooks/use-copy-protection";
@@ -67,7 +65,13 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-fuchsia-500/30 border-t-fuchsia-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -75,16 +79,16 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
   if (error || !document) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
-        <Card className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-semibold">{t("error.loadDocumentsFailed")}</p>
-            <p className="text-sm mt-1">{error || t("notFound.document")}</p>
+        </button>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center text-fuchsia-400 cyber-text-glow">
+            <p className="font-cyber font-semibold text-lg">{t("error.loadDocumentsFailed")}</p>
+            <p className="text-sm mt-2 text-cyan-300/90">{error || t("notFound.document")}</p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -92,41 +96,47 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
   const fileUrl = `/api/storage/documents/${documentId}/stream`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
+        </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {canPrint && (
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-2" />
+            <button
+              className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+              onClick={() => window.print()}
+            >
+              <Printer className="h-4 w-4" />
               {t("document.print")}
-            </Button>
+            </button>
           )}
 
           {canDownload && (
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
+            <button
+              className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4" />
               {t("document.download")}
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
       {/* Document Info */}
-      <Card className="p-4">
+      <div className="cyber-card cyber-corner p-5">
         <div>
-          <h2 className="font-semibold text-lg">{document.name}</h2>
-          <p className="text-sm text-muted-foreground">{document.fileName}</p>
+          <h2 className="font-cyber font-bold text-xl mb-2 cyber-neon-cyan">{document.name}</h2>
+          <p className="text-sm font-cyber text-cyan-300/80">{document.fileName}</p>
         </div>
-      </Card>
+      </div>
 
       {/* Viewer */}
       <div
-        className={`relative overflow-hidden border rounded-lg bg-gray-100 min-h-[600px] ${
+        className={`relative overflow-hidden cyber-border rounded-lg bg-[#0a0a15] min-h-[600px] ${
           !canDownload ? "viewer-protected" : ""
         }`}
       >

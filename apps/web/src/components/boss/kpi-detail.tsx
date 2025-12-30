@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations, useLocale } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { ArrowLeft, BarChart2 } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
@@ -137,9 +135,10 @@ function getChartData(
       {
         label: t("chart.efficiency"),
         data: efficiencyValues.slice(0, 12),
-        backgroundColor: "rgba(59, 130, 246, 0.5)",
-        borderColor: "rgba(59, 130, 246, 1)",
-        borderWidth: 1,
+        backgroundColor: "rgba(77, 208, 225, 0.4)",
+        borderColor: "rgba(77, 208, 225, 1)",
+        borderWidth: 2,
+        borderRadius: 4,
       },
     ],
   };
@@ -162,6 +161,12 @@ function getChartOptions(
         display: false,
       },
       tooltip: {
+        backgroundColor: "rgba(20, 20, 40, 0.95)",
+        titleColor: "#4dd0e1",
+        bodyColor: "#4dd0e1",
+        borderColor: "rgba(77, 208, 225, 0.5)",
+        borderWidth: 1,
+        padding: 12,
         callbacks: {
           label: (context: { parsed: { y: number | null } }) => {
             const value = context.parsed.y;
@@ -171,16 +176,36 @@ function getChartOptions(
       },
     },
     scales: {
+      x: {
+        ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
+        },
+      },
       y: {
         beginAtZero: true,
         max: Math.ceil(maxValue / 10) * 10,
         ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
           callback: (value: string | number) => {
             if (typeof value === "number") {
               return `${value}%`;
             }
             return value;
           },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
         },
       },
     },
@@ -189,10 +214,8 @@ function getChartOptions(
 
 export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   const t = useTranslations("boss");
-  const tKpi = useTranslations("kpi");
   const tTable = useTranslations("kpi.table");
   const tCommon = useTranslations("common");
-  const locale = useLocale();
   const [record, setRecord] = useState<KpiRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,7 +241,13 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-fuchsia-500/30 border-t-fuchsia-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -226,16 +255,23 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   if (error || !record) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
-        <Card className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-semibold">{t("error.loadKpiFailed")}</p>
-            <p className="text-sm mt-1">{error || t("notFound.kpi")}</p>
+        </button>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center text-fuchsia-400 cyber-text-glow">
+            <p className="font-cyber font-semibold text-lg">
+              {t("error.loadKpiFailed")}
+            </p>
+            <p className="text-sm mt-2 text-cyan-300/90">
+              {error || t("notFound.kpi")}
+            </p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -278,56 +314,61 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   const actualAverage = calculateMetricAverage(actualMetric);
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="space-y-6">
+      <button
+        onClick={onBack}
+        className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
         {t("actions.back")}
-      </Button>
+      </button>
 
       <div className="space-y-6">
         {/* Table Card */}
-        <Card className="p-4 space-y-4">
+        <div className="cyber-card cyber-corner p-6 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 space-y-2">
-              <label className="block text-sm font-medium">
+              <label className="block text-sm font-cyber text-cyan-300/80">
                 {t("kpi.kpiTitle")}
               </label>
-              <div className="text-base font-semibold">
+              <div className="text-lg font-cyber font-bold cyber-neon-cyan">
                 {record.title || "-"}
               </div>
             </div>
             <div className="w-56 space-y-2">
-              <label className="block text-sm font-medium">
+              <label className="block text-sm font-cyber text-cyan-300/80">
                 {t("kpi.target")}
               </label>
-              <div className="text-base">{record.target || "-"}</div>
+              <div className="text-base font-cyber text-cyan-300">
+                {record.target || "-"}
+              </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-200 text-xs">
+            <table className="min-w-full border border-cyan-500/30 text-xs font-cyber">
               <thead>
-                <tr className="bg-blue-50 text-[11px]">
-                  <th className="border border-gray-200 px-2 py-1 text-left min-w-[180px]">
+                <tr className="bg-cyan-500/10 text-[11px]">
+                  <th className="border border-cyan-500/30 px-3 py-2 text-left min-w-[180px] text-cyan-300 font-semibold">
                     {tTable("itemColumn")}
                   </th>
                   {MONTH_KEYS.map((monthKey) => (
                     <th
                       key={monthKey}
-                      className="border border-gray-200 px-2 py-1 text-center min-w-[80px]"
+                      className="border border-cyan-500/30 px-2 py-2 text-center min-w-[80px] text-cyan-300 font-semibold"
                     >
                       {tTable(`months.${monthKey}`)}
                     </th>
                   ))}
-                  <th className="border border-gray-200 px-2 py-1 text-center min-w-[80px]">
+                  <th className="border border-cyan-500/30 px-2 py-2 text-center min-w-[80px] text-cyan-300 font-semibold">
                     {tTable("months.average")}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {/* TARGET Row */}
-                <tr>
-                  <td className="border border-gray-200 px-2 py-1 align-top">
+                <tr className="hover:bg-cyan-500/5 transition-colors">
+                  <td className="border border-cyan-500/20 px-3 py-2 align-top text-cyan-200">
                     <div className="text-xs leading-tight whitespace-pre-wrap">
                       {targetMetric.name || "-"}
                     </div>
@@ -335,21 +376,21 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                   {MONTH_KEYS.map((key) => (
                     <td
                       key={key}
-                      className="border border-gray-200 px-1 py-1 text-center"
+                      className="border border-cyan-500/20 px-2 py-2 text-center text-cyan-300"
                     >
                       {targetMetric.values?.[key] == null
                         ? "-"
                         : targetMetric.values[key]}
                     </td>
                   ))}
-                  <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
+                  <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
                     {targetAverage != null ? targetAverage.toFixed(2) : "-"}
                   </td>
                 </tr>
 
                 {/* ACTUAL Row */}
-                <tr>
-                  <td className="border border-gray-200 px-2 py-1 align-top">
+                <tr className="hover:bg-cyan-500/5 transition-colors">
+                  <td className="border border-cyan-500/20 px-3 py-2 align-top text-cyan-200">
                     <div className="text-xs leading-tight whitespace-pre-wrap">
                       {actualMetric.name || "-"}
                     </div>
@@ -357,32 +398,32 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                   {MONTH_KEYS.map((key) => (
                     <td
                       key={key}
-                      className="border border-gray-200 px-1 py-1 text-center"
+                      className="border border-cyan-500/20 px-2 py-2 text-center text-cyan-300"
                     >
                       {actualMetric.values?.[key] == null
                         ? "-"
                         : actualMetric.values[key]}
                     </td>
                   ))}
-                  <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
+                  <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
                     {actualAverage != null ? actualAverage.toFixed(2) : "-"}
                   </td>
                 </tr>
 
                 {/* Efficiency Row */}
-                <tr className="bg-gray-50 font-medium">
-                  <td className="border border-gray-200 px-2 py-1 text-left text-xs">
+                <tr className="bg-cyan-500/10 font-medium hover:bg-cyan-500/15 transition-colors">
+                  <td className="border border-cyan-500/30 px-3 py-2 text-left text-xs text-cyan-300 font-bold">
                     {t("kpi.efficiency")}
                   </td>
                   {efficiencyValues.slice(0, 12).map((v, idx) => (
                     <td
                       key={MONTH_KEYS[idx]}
-                      className="border border-gray-200 px-1 py-1 text-center text-xs"
+                      className="border border-cyan-500/30 px-2 py-2 text-center text-xs text-cyan-200 font-semibold"
                     >
                       {v == null ? "-" : `${v.toFixed(0)}%`}
                     </td>
                   ))}
-                  <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
+                  <td className="border border-cyan-500/30 px-2 py-2 text-center text-xs font-bold text-cyan-300 cyber-text-glow">
                     {efficiencyValues[12] == null
                       ? "-"
                       : `${efficiencyValues[12]!.toFixed(0)}%`}
@@ -391,13 +432,13 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
 
         {/* Chart Card - Only show if has data */}
         {hasData && (
-          <Card className="p-4 flex flex-col">
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
-              <BarChart2 className="h-4 w-4" />
+          <div className="cyber-card cyber-corner p-6 flex flex-col">
+            <h2 className="text-base font-cyber font-bold mb-4 flex items-center gap-2 cyber-neon-cyan">
+              <BarChart2 className="h-5 w-5" />
               {t("kpi.chartTitle")}
             </h2>
             <div className="flex-1 min-h-[260px]">
@@ -406,7 +447,7 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                 data={getChartData(record, efficiencyValues, t)}
               />
             </div>
-          </Card>
+          </div>
         )}
       </div>
     </div>

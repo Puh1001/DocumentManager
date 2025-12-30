@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { maintenanceApi, type MaintenanceNotice } from "@/lib/api";
 import { ArrowLeft, Wrench, Calendar } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
@@ -68,7 +66,13 @@ export function MaintenanceList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-fuchsia-500/30 border-t-fuchsia-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -76,63 +80,64 @@ export function MaintenanceList({
   if (error) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
-        <Card className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-semibold">{t("error.loadMaintenanceFailed")}</p>
-            <p className="text-sm mt-1">{error}</p>
+        </button>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center text-fuchsia-400 cyber-text-glow">
+            <p className="font-cyber font-semibold text-lg">{t("error.loadMaintenanceFailed")}</p>
+            <p className="text-sm mt-2 text-cyan-300/90">{error}</p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="space-y-6">
+      <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <ArrowLeft className="h-4 w-4" />
         {t("actions.back")}
-      </Button>
+      </button>
 
       {sortedNotices.length === 0 ? (
-        <Card className="p-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-semibold">{t("empty.noMaintenance")}</p>
-            <p className="text-sm mt-1">
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center py-12">
+            <Wrench className="h-16 w-16 mx-auto mb-4 text-cyan-500/50 cyber-text-glow" />
+            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">{t("empty.noMaintenance")}</p>
+            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">
               {t("empty.noMaintenanceDescription")}
             </p>
           </div>
-        </Card>
+        </div>
       ) : (
         <div className="space-y-3">
-          {sortedNotices.map((notice) => (
-            <Card
+          {sortedNotices.map((notice, index) => (
+            <div
               key={notice.id}
-              className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary active:scale-[0.98]"
+              className="cyber-card cyber-hologram cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cyber-corner"
               onClick={() => onSelectMaintenance(notice.id)}
+              style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <CardContent className="p-4">
+              <div className="p-5 relative z-10">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="p-2 rounded-full bg-primary/10 mt-0.5">
-                      <Wrench className="h-4 w-4 text-primary" />
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="p-3 cyber-border rounded-lg bg-fuchsia-500/10 mt-0.5">
+                      <Wrench className="h-5 w-5 text-fuchsia-400 cyber-text-glow" />
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <h3 className="font-semibold text-base">
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-cyber font-bold text-base cyber-neon-magenta">
                         {notice.title}
                       </h3>
                       {notice.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                        <p className="text-sm font-cyber text-cyan-300/80 line-clamp-2">
                           {notice.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                      <div className="flex items-center gap-3 text-xs font-cyber text-cyan-400/70 mt-3 pt-2 border-t border-cyan-500/20">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" />
                           <span>
                             {formatDate(notice.startDate)} -{" "}
                             {formatDate(notice.endDate)}
@@ -142,8 +147,8 @@ export function MaintenanceList({
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}

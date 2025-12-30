@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { ArrowLeft, BarChart2, Calendar } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
@@ -58,7 +56,13 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-fuchsia-500/30 border-t-fuchsia-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -66,69 +70,70 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   if (error) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
-        <Card className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-semibold">{t("error.loadKpiFailed")}</p>
-            <p className="text-sm mt-1">{error}</p>
+        </button>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center text-fuchsia-400 cyber-text-glow">
+            <p className="font-cyber font-semibold text-lg">{t("error.loadKpiFailed")}</p>
+            <p className="text-sm mt-2 text-cyan-300/90">{error}</p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="space-y-6">
+      <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <ArrowLeft className="h-4 w-4" />
         {t("actions.back")}
-      </Button>
+      </button>
 
       {records.length === 0 ? (
-        <Card className="p-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <BarChart2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-semibold">{t("empty.noKpi")}</p>
-            <p className="text-sm mt-1">{t("empty.noKpiDescription")}</p>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center py-12">
+            <BarChart2 className="h-16 w-16 mx-auto mb-4 text-cyan-500/50 cyber-text-glow" />
+            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">{t("empty.noKpi")}</p>
+            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">{t("empty.noKpiDescription")}</p>
           </div>
-        </Card>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {records.map((record) => (
-            <Card
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {records.map((record, index) => (
+            <div
               key={record.id}
-              className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary active:scale-95"
+              className="cyber-card cyber-hologram cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 cyber-corner"
               onClick={() => onSelectKpi(record.id)}
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <BarChart2 className="h-5 w-5 text-primary" />
+              <div className="p-6 relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 cyber-border rounded-lg bg-cyan-500/10">
+                    <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs font-cyber text-cyan-400/70 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
                     {record.year}
                   </span>
                 </div>
-                <h3 className="font-semibold text-base mb-2 line-clamp-2">
+                <h3 className="font-cyber font-bold text-lg mb-3 line-clamp-2 cyber-neon-cyan">
                   {record.title || t("kpi.untitled")}
                 </h3>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{t("kpi.target")}:</span>{" "}
+                <div className="space-y-2 pt-3 border-t border-cyan-500/20">
+                  <p className="text-sm font-cyber text-cyan-300/90">
+                    <span className="font-semibold text-cyan-400">{t("kpi.target")}:</span>{" "}
                     {record.target || "-"}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
+                  <div className="flex items-center gap-2 text-xs font-cyber text-cyan-400/70">
+                    <Calendar className="h-3.5 w-3.5" />
                     <span>
                       {new Date(record.updatedAt).toLocaleDateString(locale)}
                     </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}

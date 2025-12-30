@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { maintenanceApi, type MaintenanceNotice } from "@/lib/api";
 import { ArrowLeft, Wrench, Calendar, Building2, User } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
@@ -63,7 +61,13 @@ export function MaintenanceDetail({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-fuchsia-500/30 border-t-fuchsia-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -71,122 +75,148 @@ export function MaintenanceDetail({
   if (error || !notice) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
-        </Button>
-        <Card className="p-6">
-          <div className="text-center text-destructive">
-            <p className="font-semibold">{t("error.loadMaintenanceFailed")}</p>
-            <p className="text-sm mt-1">
+        </button>
+        <div className="cyber-card p-6 cyber-corner">
+          <div className="text-center text-fuchsia-400 cyber-text-glow">
+            <p className="font-cyber font-semibold text-lg">
+              {t("error.loadMaintenanceFailed")}
+            </p>
+            <p className="text-sm mt-2 text-cyan-300/90">
               {error || t("notFound.maintenance")}
             </p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="space-y-6">
+      <button
+        onClick={onBack}
+        className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
         {t("actions.back")}
-      </Button>
+      </button>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <Wrench className="h-5 w-5 text-primary" />
+      <div className="cyber-card cyber-corner">
+        <div className="p-6">
+          <div className="flex items-start gap-4 mb-6 pb-4 border-b border-cyan-500/20">
+            <div className="p-3 cyber-border rounded-lg bg-fuchsia-500/10">
+              <Wrench className="h-6 w-6 text-fuchsia-400 cyber-text-glow" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-2xl">{notice.title}</CardTitle>
+              <h1 className="text-3xl font-cyber font-bold cyber-neon-magenta">
+                {notice.title}
+              </h1>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {notice.description && (
-            <div>
-              <h3 className="text-sm font-semibold mb-2">
-                {t("maintenance.description")}
-              </h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {notice.description}
-              </p>
-            </div>
-          )}
+          <div className="space-y-6">
+            {notice.description && (
+              <div>
+                <h3 className="text-sm font-cyber font-semibold mb-3 text-cyan-300/80">
+                  {t("maintenance.description")}
+                </h3>
+                <p className="text-sm font-cyber text-cyan-200/90 whitespace-pre-wrap leading-relaxed">
+                  {notice.description}
+                </p>
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 cyber-corner p-4 bg-cyan-500/5">
+                <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80">
+                  <Calendar className="h-4 w-4" />
+                  <span className="font-semibold">
+                    {t("maintenance.startDate")}
+                  </span>
+                </div>
+                <p className="text-base font-cyber text-cyan-200">
+                  {formatDate(notice.startDate)}
+                </p>
+              </div>
+
+              <div className="space-y-2 cyber-corner p-4 bg-cyan-500/5">
+                <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80">
+                  <Calendar className="h-4 w-4" />
+                  <span className="font-semibold">
+                    {t("maintenance.endDate")}
+                  </span>
+                </div>
+                <p className="text-base font-cyber text-cyan-200">
+                  {formatDate(notice.endDate)}
+                </p>
+              </div>
+
+              {notice.department && (
+                <div className="space-y-2 cyber-corner p-4 bg-cyan-500/5">
+                  <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80">
+                    <Building2 className="h-4 w-4" />
+                    <span className="font-semibold">
+                      {t("maintenance.department")}
+                    </span>
+                  </div>
+                  <p className="text-base font-cyber text-cyan-200">
+                    {notice.department.name}
+                  </p>
+                  <p className="text-sm font-cyber text-cyan-300/70">
+                    {notice.department.code}
+                  </p>
+                </div>
+              )}
+
+              {notice.creator && (
+                <div className="space-y-2 cyber-corner p-4 bg-cyan-500/5">
+                  <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80">
+                    <User className="h-4 w-4" />
+                    <span className="font-semibold">
+                      {t("maintenance.createdBy")}
+                    </span>
+                  </div>
+                  <p className="text-base font-cyber text-cyan-200">
+                    {notice.creator.fullName}
+                  </p>
+                  <p className="text-sm font-cyber text-cyan-300/70">
+                    {notice.creator.username}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-cyan-500/20 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80">
                 <Calendar className="h-4 w-4" />
-                <span className="font-medium">
-                  {t("maintenance.startDate")}
+                <span className="font-semibold">
+                  {t("maintenance.createdAt")}
                 </span>
               </div>
-              <p className="text-base">{formatDate(notice.startDate)}</p>
+              <p className="text-sm font-cyber text-cyan-200">
+                {formatDateTime(notice.createdAt)}
+              </p>
+              {notice.updatedAt !== notice.createdAt && (
+                <>
+                  <div className="flex items-center gap-2 text-sm font-cyber text-cyan-300/80 mt-4">
+                    <Calendar className="h-4 w-4" />
+                    <span className="font-semibold">
+                      {t("maintenance.updatedAt")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-cyber text-cyan-200">
+                    {formatDateTime(notice.updatedAt)}
+                  </p>
+                </>
+              )}
             </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span className="font-medium">{t("maintenance.endDate")}</span>
-              </div>
-              <p className="text-base">{formatDate(notice.endDate)}</p>
-            </div>
-
-            {notice.department && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  <span className="font-medium">
-                    {t("maintenance.department")}
-                  </span>
-                </div>
-                <p className="text-base">{notice.department.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {notice.department.code}
-                </p>
-              </div>
-            )}
-
-            {notice.creator && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">
-                    {t("maintenance.createdBy")}
-                  </span>
-                </div>
-                <p className="text-base">{notice.creator.fullName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {notice.creator.username}
-                </p>
-              </div>
-            )}
           </div>
-
-          <div className="pt-4 border-t space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">{t("maintenance.createdAt")}</span>
-            </div>
-            <p className="text-sm">{formatDateTime(notice.createdAt)}</p>
-            {notice.updatedAt !== notice.createdAt && (
-              <>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-                  <Calendar className="h-4 w-4" />
-                  <span className="font-medium">
-                    {t("maintenance.updatedAt")}
-                  </span>
-                </div>
-                <p className="text-sm">{formatDateTime(notice.updatedAt)}</p>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

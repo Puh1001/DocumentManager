@@ -61,8 +61,14 @@ export default function BossPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex items-center justify-center h-screen cyber-bg cyber-grid">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/30 border-t-cyan-500" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full h-12 w-12 border-2 border-transparent border-r-magenta-500/30 border-t-magenta-500"
+            style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
+          />
+        </div>
       </div>
     );
   }
@@ -104,18 +110,25 @@ export default function BossPage() {
   // Show department grid if no department selected
   if (!navigation.state.selectedDepartment) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("description")}</p>
-        </div>
+      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+        <div className="space-y-8 p-6">
+          <div className="relative">
+            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+              {t("title")}
+            </h1>
+            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
+            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+              {t("description")}
+            </p>
+          </div>
 
-        <DepartmentGrid
-          departments={departments}
-          onSelectDepartment={handleSelectDepartment}
-          loading={loading}
-          error={error}
-        />
+          <DepartmentGrid
+            departments={departments}
+            onSelectDepartment={handleSelectDepartment}
+            loading={loading}
+            error={error}
+          />
+        </div>
       </div>
     );
   }
@@ -123,19 +136,26 @@ export default function BossPage() {
   // Show view selector if department selected but no view type
   if (!navigation.state.viewType) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("description")}</p>
+      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+        <div className="space-y-8 p-6">
+          <div className="relative">
+            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+              {t("title")}
+            </h1>
+            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
+            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+              {t("description")}
+            </p>
+          </div>
+
+          <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+
+          <ViewSelector
+            department={navigation.state.selectedDepartment}
+            onSelectView={handleSelectView}
+            onBack={handleBack}
+          />
         </div>
-
-        <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
-
-        <ViewSelector
-          department={navigation.state.selectedDepartment}
-          onSelectView={handleSelectView}
-          onBack={handleBack}
-        />
       </div>
     );
   }
@@ -143,34 +163,41 @@ export default function BossPage() {
   // Show detail views if item is selected
   if (navigation.state.selectedItemId) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("description")}</p>
+      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+        <div className="space-y-8 p-6">
+          <div className="relative">
+            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+              {t("title")}
+            </h1>
+            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
+            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+              {t("description")}
+            </p>
+          </div>
+
+          <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+
+          {navigation.state.viewType === "kpi" && (
+            <KpiDetail
+              kpiId={navigation.state.selectedItemId}
+              onBack={handleBack}
+            />
+          )}
+
+          {navigation.state.viewType === "maintenance" && (
+            <MaintenanceDetail
+              maintenanceId={navigation.state.selectedItemId}
+              onBack={handleBack}
+            />
+          )}
+
+          {navigation.state.viewType === "documents" && (
+            <DocumentDetail
+              documentId={navigation.state.selectedItemId}
+              onBack={handleBack}
+            />
+          )}
         </div>
-
-        <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
-
-        {navigation.state.viewType === "kpi" && (
-          <KpiDetail
-            kpiId={navigation.state.selectedItemId}
-            onBack={handleBack}
-          />
-        )}
-
-        {navigation.state.viewType === "maintenance" && (
-          <MaintenanceDetail
-            maintenanceId={navigation.state.selectedItemId}
-            onBack={handleBack}
-          />
-        )}
-
-        {navigation.state.viewType === "documents" && (
-          <DocumentDetail
-            documentId={navigation.state.selectedItemId}
-            onBack={handleBack}
-          />
-        )}
       </div>
     );
   }
@@ -184,38 +211,45 @@ export default function BossPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("description")}</p>
+    <div className="cyber-bg cyber-grid cyber-scanline">
+      <div className="space-y-8 p-6">
+        <div className="relative">
+          <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-mono tracking-wider">
+            {t("title")}
+          </h1>
+          <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-500 to-transparent"></div>
+          <p className="text-cyan-400/80 mt-4 text-lg font-mono">
+            {t("description")}
+          </p>
+        </div>
+
+        <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+
+        {navigation.state.viewType === "kpi" && (
+          <KpiList
+            departmentId={department.id}
+            onSelectKpi={handleSelectItem}
+            onBack={handleBack}
+          />
+        )}
+
+        {navigation.state.viewType === "maintenance" && (
+          <MaintenanceList
+            departmentId={department.id}
+            onSelectMaintenance={handleSelectItem}
+            onBack={handleBack}
+          />
+        )}
+
+        {navigation.state.viewType === "documents" && (
+          <DocumentsList
+            departmentId={department.id}
+            departmentName={department.name}
+            onSelectDocument={handleSelectItem}
+            onBack={handleBack}
+          />
+        )}
       </div>
-
-      <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
-
-      {navigation.state.viewType === "kpi" && (
-        <KpiList
-          departmentId={department.id}
-          onSelectKpi={handleSelectItem}
-          onBack={handleBack}
-        />
-      )}
-
-      {navigation.state.viewType === "maintenance" && (
-        <MaintenanceList
-          departmentId={department.id}
-          onSelectMaintenance={handleSelectItem}
-          onBack={handleBack}
-        />
-      )}
-
-      {navigation.state.viewType === "documents" && (
-        <DocumentsList
-          departmentId={department.id}
-          departmentName={department.name}
-          onSelectDocument={handleSelectItem}
-          onBack={handleBack}
-        />
-      )}
     </div>
   );
 }
