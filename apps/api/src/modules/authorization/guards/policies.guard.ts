@@ -65,6 +65,11 @@ export class PoliciesGuard implements CanActivate {
       return ability.can(action, "all");
     }
 
+    // Check manage:all first (admin has full access)
+    if (ability.can("manage", "all")) {
+      return true;
+    }
+
     // Extract resource ID from route params
     const resourceId = request.params?.id;
     if (!resourceId) {
@@ -87,7 +92,17 @@ export class PoliciesGuard implements CanActivate {
       }
       // For folder create, check general create permission
       if (subject === "Folder") {
-        return ability.can(action, "Folder");
+        return (
+          ability.can(action, "Folder") ||
+          ability.can("manage", "Folder")
+        );
+      }
+      // For string subjects (like "Maintenance", "User", etc.), check manage:subject or action:subject
+      if (typeof subject === "string") {
+        return (
+          ability.can(action, subject) ||
+          ability.can("manage", subject)
+        );
       }
       return false;
     }
@@ -124,9 +139,20 @@ export class PoliciesGuard implements CanActivate {
     if (handler.conditions) {
       // For string subjects, check directly
       if (typeof subject === "string") {
-        return ability.can(action, subject);
+        return (
+          ability.can(action, subject) ||
+          ability.can("manage", subject)
+        );
       }
       return false;
+    }
+
+    // Final fallback: check string subjects (for module permissions like "Maintenance", "User", etc.)
+    if (typeof subject === "string") {
+      return (
+        ability.can(action, subject) ||
+        ability.can("manage", subject)
+      );
     }
 
     return false;

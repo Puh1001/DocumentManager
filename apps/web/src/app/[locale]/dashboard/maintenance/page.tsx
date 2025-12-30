@@ -20,6 +20,7 @@ import { api, type Department, type MaintenanceNotice } from "@/lib/api";
 import type { PageMetadata } from "@/lib/types/page-metadata";
 import { registerPage } from "@/lib/page-registry";
 import { PageGuard } from "@/components/page-guard";
+import { getErrorMessage } from "@/lib/error-handler";
 
 export const pageMetadata: PageMetadata = {
   path: "/dashboard/maintenance",
@@ -60,6 +61,7 @@ const formatDate = (date: string) =>
 export default function MaintenancePage() {
   const t = useTranslations("maintenance");
   const commonT = useTranslations("common");
+  const errorT = useTranslations("errors");
   const { notices, addNotice, updateNotice, deleteNotice, loading } =
     useMaintenanceNotices();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -123,7 +125,7 @@ export default function MaintenancePage() {
       setDeleteConfirmId(null);
     } catch (err) {
       console.error("Failed to delete notice", err);
-      setFormError(t("form.validationRequired")); // Use appropriate error message
+      setFormError(getErrorMessage(err, errorT));
     }
   };
 
@@ -131,7 +133,10 @@ export default function MaintenancePage() {
     event.preventDefault();
     setFormError(null);
 
-    if (!form.title || !form.startDate || !form.endDate) {
+    // Trim title to handle whitespace-only input
+    const trimmedTitle = form.title.trim();
+
+    if (!trimmedTitle || !form.startDate || !form.endDate) {
       setFormError(t("form.validationRequired"));
       return;
     }
@@ -142,7 +147,7 @@ export default function MaintenancePage() {
     }
 
     const payload = {
-      title: form.title,
+      title: trimmedTitle,
       description: form.description || undefined,
       startDate: form.startDate,
       endDate: form.endDate,
@@ -159,7 +164,8 @@ export default function MaintenancePage() {
       setForm(initialForm);
     } catch (err) {
       console.error("Failed to save notice", err);
-      setFormError(t("form.validationRequired")); // Use appropriate error message
+      // Use proper error handler to show translated error messages
+      setFormError(getErrorMessage(err, errorT));
     }
   };
 
