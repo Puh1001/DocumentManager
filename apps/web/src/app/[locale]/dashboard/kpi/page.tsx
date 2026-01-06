@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,17 @@ import { Bar } from "react-chartjs-2";
 import type { PageMetadata } from "@/lib/types/page-metadata";
 import { registerPage } from "@/lib/page-registry";
 import { PageGuard } from "@/components/page-guard";
+import { useAuth } from "@/lib/auth-context";
+import {
+  hasFullKpiAccess,
+  getAccessibleDepartments,
+  canCreateKpi,
+  getUserDepartment,
+} from "@/lib/kpi-access-helpers";
+import { useToast } from "@/hooks/use-toast";
+import type { Department } from "@/lib/types/department.types";
+import { handleKpiApiError } from "@/lib/utils/kpi-error-handler";
+import { toApiError } from "@/lib/types/api-error.types";
 
 export const pageMetadata: PageMetadata = {
   path: "/dashboard/kpi",
@@ -50,10 +61,7 @@ ChartJS.register(
   Title
 );
 
-interface Department {
-  id: string;
-  name: string;
-}
+// Department type imported from shared types
 
 type MetricType = "TARGET" | "ACTUAL" | "CALCULATED";
 
@@ -101,38 +109,59 @@ function getAuthHeader() {
 export default function KpiPage() {
   const t = useTranslations("kpi");
   const tTable = useTranslations("kpi.table");
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | "">(
     ""
   );
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [hasAttemptedAutoCreate, setHasAttemptedAutoCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const year = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Filter departments based on user access
+  const departments = useMemo(() => {
+    return getAccessibleDepartments(user, allDepartments);
+  }, [user, allDepartments]);
+
+  // Check if user can create KPIs
+  const canCreate = canCreateKpi(user);
 
   useEffect(() => {
     const loadDepartments = async () => {
       try {
         const data = await api.get<Department[]>("/departments");
-        setDepartments(data);
-        if (data.length && !selectedDepartmentId) {
-          setSelectedDepartmentId(data[0].id);
-        }
-        if (!data.length) {
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Không tải được danh sách bộ môn");
+        setAllDepartments(data);
+        // Filter will happen in useMemo
+      } catch (err: unknown) {
+        handleKpiApiError(err, "tải danh sách bộ môn", {
+          onOther: () => setError("Không tải được danh sách bộ môn"),
+        });
         setLoading(false);
       }
     };
     loadDepartments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
+
+  // Update selected department when filtered departments change
+  useEffect(() => {
+    if (departments.length > 0 && !selectedDepartmentId) {
+      setSelectedDepartmentId(departments[0].id);
+    } else if (departments.length === 0) {
+      setSelectedDepartmentId("");
+      setLoading(false);
+    }
+    // Reset auto-create flag when department or year changes
+    setHasAttemptedAutoCreate(false);
+  }, [departments, selectedDepartmentId, selectedYear]);
 
   useEffect(() => {
     const loadRecords = async () => {
@@ -144,7 +173,7 @@ export default function KpiPage() {
       setError(null);
       try {
         const list = await api.get<KpiRecord[]>(
-          `/kpi/records?departmentId=${selectedDepartmentId}&year=${year}`
+          `/kpi/records?departmentId=${selectedDepartmentId}&year=${selectedYear}`
         );
 
         // Ensure all records have metrics with proper values format
@@ -228,57 +257,79 @@ export default function KpiPage() {
           })
         );
 
-        // If no records, create first one
-        if (recordsWithMetrics.length === 0) {
-          const newRecord = await api.post<KpiRecord>("/kpi/records", {
-            departmentId: selectedDepartmentId,
-            year,
-            title: "",
-            target: "",
-            targetValue: null,
-          });
+        // If no records, create first one (only if user can create and haven't attempted yet)
+        if (
+          recordsWithMetrics.length === 0 &&
+          canCreate &&
+          !hasAttemptedAutoCreate
+        ) {
+          setHasAttemptedAutoCreate(true);
+          try {
+            const newRecord = await api.post<KpiRecord>("/kpi/records", {
+              departmentId: selectedDepartmentId,
+              year: selectedYear,
+              title: "",
+              target: "",
+              targetValue: null,
+            });
 
-          const baseValues: Record<string, number | null> = {};
-          MONTH_KEYS.forEach((key) => {
-            baseValues[key] = null;
-          });
+            const baseValues: Record<string, number | null> = {};
+            MONTH_KEYS.forEach((key) => {
+              baseValues[key] = null;
+            });
 
-          const targetMetric = await api.post<KpiMetric>("/kpi/metrics", {
-            kpiRecordId: newRecord.id,
-            name: "",
-            type: "TARGET",
-            sortOrder: 1,
-            values: JSON.stringify(baseValues),
-          });
+            const targetMetric = await api.post<KpiMetric>("/kpi/metrics", {
+              kpiRecordId: newRecord.id,
+              name: "",
+              type: "TARGET",
+              sortOrder: 1,
+              values: JSON.stringify(baseValues),
+            });
 
-          const actualMetric = await api.post<KpiMetric>("/kpi/metrics", {
-            kpiRecordId: newRecord.id,
-            name: "",
-            type: "ACTUAL",
-            sortOrder: 2,
-            values: JSON.stringify(baseValues),
-          });
+            const actualMetric = await api.post<KpiMetric>("/kpi/metrics", {
+              kpiRecordId: newRecord.id,
+              name: "",
+              type: "ACTUAL",
+              sortOrder: 2,
+              values: JSON.stringify(baseValues),
+            });
 
-          recordsWithMetrics.push({
-            ...newRecord,
-            metrics: [
-              { ...targetMetric, values: baseValues },
-              { ...actualMetric, values: baseValues },
-            ],
-          });
+            recordsWithMetrics.push({
+              ...newRecord,
+              metrics: [
+                { ...targetMetric, values: baseValues },
+                { ...actualMetric, values: baseValues },
+              ],
+            });
+          } catch (err: unknown) {
+            // If auto-create fails due to 403, just show empty list
+            const apiError = toApiError(err);
+            if (apiError.statusCode !== 403) {
+              throw err;
+            }
+            // Silent failure for 403 - user doesn't have permission
+          }
         }
 
         setRecords(recordsWithMetrics);
-      } catch (err) {
-        console.error(err);
-        setError("Không tải được dữ liệu KPI");
+      } catch (err: unknown) {
+        handleKpiApiError(err, "tải dữ liệu KPI", {
+          on403: () => setRecords([]),
+          onOther: () => setError("Không tải được dữ liệu KPI"),
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadRecords();
-  }, [selectedDepartmentId, year]);
+  }, [
+    selectedDepartmentId,
+    selectedYear,
+    toast,
+    canCreate,
+    hasAttemptedAutoCreate,
+  ]);
 
   // Helper function to calculate average for a metric
   const calculateMetricAverage = (metric: KpiMetric | null | undefined) => {
@@ -450,118 +501,172 @@ export default function KpiPage() {
       return existingMetric;
     }
 
-    // Create the metric in database
-    const baseValues: Record<string, number | null> = {};
-    MONTH_KEYS.forEach((key) => {
-      baseValues[key] = null;
-    });
+    try {
+      // Create the metric in database
+      const baseValues: Record<string, number | null> = {};
+      MONTH_KEYS.forEach((key) => {
+        baseValues[key] = null;
+      });
 
-    const newMetric = await api.post<KpiMetric>("/kpi/metrics", {
-      kpiRecordId: recordId,
-      name: "",
-      type: type,
-      sortOrder: type === "TARGET" ? 1 : 2,
-      values: JSON.stringify(baseValues),
-    });
+      const newMetric = await api.post<KpiMetric>("/kpi/metrics", {
+        kpiRecordId: recordId,
+        name: "",
+        type: type,
+        sortOrder: type === "TARGET" ? 1 : 2,
+        values: JSON.stringify(baseValues),
+      });
 
-    // Update records state
-    setRecords((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? {
-              ...r,
-              metrics: [
-                ...r.metrics.filter((m) => !m.id.startsWith(`temp-${type}`)),
-                { ...newMetric, values: baseValues },
-              ],
-            }
-          : r
-      )
-    );
+      // Update records state
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === recordId
+            ? {
+                ...r,
+                metrics: [
+                  ...r.metrics.filter((m) => !m.id.startsWith(`temp-${type}`)),
+                  { ...newMetric, values: baseValues },
+                ],
+              }
+            : r
+        )
+      );
 
-    return { ...newMetric, values: baseValues };
+      return { ...newMetric, values: baseValues };
+    } catch (err: unknown) {
+      handleKpiApiError(err, "tạo metric");
+      return null;
+    }
   };
 
   const recordRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const handleAddNewTable = async () => {
-    if (!selectedDepartmentId) return;
+    if (!selectedDepartmentId || !canCreate || isCreating) return;
 
-    const newRecord = await api.post<KpiRecord>("/kpi/records", {
-      departmentId: selectedDepartmentId,
-      year,
-      title: "",
-      target: "",
-      targetValue: null,
-    });
+    setIsCreating(true);
+    try {
+      const newRecord = await api.post<KpiRecord>("/kpi/records", {
+        departmentId: selectedDepartmentId,
+        year: selectedYear,
+        title: "",
+        target: "",
+        targetValue: null,
+      });
 
-    const baseValues: Record<string, number | null> = {};
-    MONTH_KEYS.forEach((key) => {
-      baseValues[key] = null;
-    });
+      const baseValues: Record<string, number | null> = {};
+      MONTH_KEYS.forEach((key) => {
+        baseValues[key] = null;
+      });
 
-    const targetMetric = await api.post<KpiMetric>("/kpi/metrics", {
-      kpiRecordId: newRecord.id,
-      name: "",
-      type: "TARGET",
-      sortOrder: 1,
-      values: JSON.stringify(baseValues),
-    });
+      const targetMetric = await api.post<KpiMetric>("/kpi/metrics", {
+        kpiRecordId: newRecord.id,
+        name: "",
+        type: "TARGET",
+        sortOrder: 1,
+        values: JSON.stringify(baseValues),
+      });
 
-    const actualMetric = await api.post<KpiMetric>("/kpi/metrics", {
-      kpiRecordId: newRecord.id,
-      name: "",
-      type: "ACTUAL",
-      sortOrder: 2,
-      values: JSON.stringify(baseValues),
-    });
+      const actualMetric = await api.post<KpiMetric>("/kpi/metrics", {
+        kpiRecordId: newRecord.id,
+        name: "",
+        type: "ACTUAL",
+        sortOrder: 2,
+        values: JSON.stringify(baseValues),
+      });
 
-    setRecords((prev) => [
-      ...prev,
-      {
-        ...newRecord,
-        metrics: [
-          { ...targetMetric, values: baseValues },
-          { ...actualMetric, values: baseValues },
-        ],
-      },
-    ]);
+      setRecords((prev) => [
+        ...prev,
+        {
+          ...newRecord,
+          metrics: [
+            { ...targetMetric, values: baseValues },
+            { ...actualMetric, values: baseValues },
+          ],
+        },
+      ]);
 
-    // Scroll to the new table after state update
-    setTimeout(() => {
-      const newRecordElement = recordRefs.current[newRecord.id];
-      if (newRecordElement) {
-        newRecordElement.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }, 100);
+      // Scroll to the new table after state update
+      setTimeout(() => {
+        const newRecordElement = recordRefs.current[newRecord.id];
+        if (newRecordElement) {
+          newRecordElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100);
+    } catch (err: unknown) {
+      handleKpiApiError(err, "tạo KPI mới");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleDeleteTable = async (recordId: string) => {
-    await api.delete(`/kpi/records/${recordId}`);
-    setRecords((prev) => prev.filter((r) => r.id !== recordId));
+    if (isDeleting === recordId) return;
+
+    setIsDeleting(recordId);
+    try {
+      await api.delete(`/kpi/records/${recordId}`);
+      setRecords((prev) => prev.filter((r) => r.id !== recordId));
+    } catch (err: unknown) {
+      handleKpiApiError(err, "xóa KPI");
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       for (const record of records) {
-        await api.patch(`/kpi/records/${record.id}`, {
-          title: record.title,
-          target: record.target,
-          targetValue: record.targetValue,
-        });
+        try {
+          await api.patch(`/kpi/records/${record.id}`, {
+            title: record.title,
+            target: record.target,
+            targetValue: record.targetValue,
+          });
+        } catch (err: unknown) {
+          const apiError = toApiError(err);
+          if (apiError.statusCode === 403) {
+            handleKpiApiError(err, `cập nhật KPI "${record.title}"`);
+            continue;
+          }
+          throw err;
+        }
 
         for (const metric of record.metrics) {
-          await api.patch(`/kpi/metrics/${metric.id}`, {
-            name: metric.name,
-            type: metric.type,
-            sortOrder: metric.sortOrder,
-            values: JSON.stringify(metric.values || {}),
-          });
+          try {
+            await api.patch(`/kpi/metrics/${metric.id}`, {
+              name: metric.name,
+              type: metric.type,
+              sortOrder: metric.sortOrder,
+              values: JSON.stringify(metric.values || {}),
+            });
+          } catch (err: unknown) {
+            const apiError = toApiError(err);
+            if (apiError.statusCode === 403) {
+              handleKpiApiError(err, "cập nhật metric");
+              continue;
+            }
+            throw err;
+          }
         }
+      }
+      toast({
+        title: "Thành công",
+        description: "Đã lưu thay đổi",
+        variant: "success",
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      const apiError = err as { statusCode?: number; message?: string };
+      if (apiError.statusCode !== 403) {
+        toast({
+          title: "Lỗi",
+          description: apiError.message || "Không thể lưu thay đổi",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsSaving(false);
@@ -599,9 +704,20 @@ export default function KpiPage() {
       {!departments.length ? (
         <div className="space-y-4">
           <h1 className="text-2xl font-bold">KPI</h1>
-          <p className="text-muted-foreground">
-            Không có bộ môn nào. Vui lòng tạo bộ môn trước.
-          </p>
+          {!user ? (
+            <p className="text-muted-foreground">
+              Đang tải thông tin người dùng...
+            </p>
+          ) : !getUserDepartment(user) ? (
+            <p className="text-muted-foreground">
+              Bạn chưa được gán vào bộ môn nào. Vui lòng liên hệ quản trị viên
+              để được gán vào bộ môn.
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Không có bộ môn nào. Vui lòng tạo bộ môn trước.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -613,20 +729,36 @@ export default function KpiPage() {
               <p className="text-muted-foreground">{t("subtitle")}</p>
             </div>
             <div className="flex items-center gap-2">
+              {departments.length > 1 || hasFullKpiAccess(user) ? (
+                <select
+                  className="border rounded-md px-2 py-1 text-sm"
+                  value={selectedDepartmentId}
+                  onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                >
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              ) : departments.length === 1 ? (
+                <span className="text-sm font-medium">
+                  {departments[0].name}
+                </span>
+              ) : null}
               <select
                 className="border rounded-md px-2 py-1 text-sm"
-                value={selectedDepartmentId}
-                onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
               >
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
+                {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(
+                  (y) => (
+                    <option key={y} value={y}>
+                      {t("year")} {y}
+                    </option>
+                  )
+                )}
               </select>
-              <span className="text-sm text-muted-foreground">
-                {t("year")} {year}
-              </span>
             </div>
           </div>
 
@@ -729,9 +861,12 @@ export default function KpiPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteTable(record.id)}
+                          disabled={isDeleting === record.id}
                           className="text-red-500"
                         >
-                          Xóa bảng
+                          {isDeleting === record.id
+                            ? "Đang xóa..."
+                            : "Xóa bảng"}
                         </Button>
                       )}
                     </div>
@@ -943,9 +1078,14 @@ export default function KpiPage() {
                         variant="outline"
                         size="sm"
                         onClick={handleAddNewTable}
-                        disabled={!isEditMode}
+                        disabled={!isEditMode || !canCreate || isCreating}
+                        title={
+                          !canCreate
+                            ? "Bạn không có quyền tạo KPI mới"
+                            : undefined
+                        }
                       >
-                        {t("addNewTable")}
+                        {isCreating ? "Đang tạo..." : t("addNewTable")}
                       </Button>
                       <div className="flex items-center gap-2">
                         <Button

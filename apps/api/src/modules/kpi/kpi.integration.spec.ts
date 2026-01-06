@@ -800,5 +800,717 @@ describe("KPI Integration Tests", () => {
         );
       }
     });
+
+    it("should prevent updating metric for KPI record from different department", async () => {
+      // Create a metric for crossDeptRecord (owned by testUser, not otherUser)
+      const createResponse = await request(app.getHttpServer())
+        .post("/api/kpi/metrics")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          kpiRecordId: crossDeptRecord.id,
+          name: "Test Metric for Update",
+          type: "TARGET",
+          sortOrder: 1,
+        })
+        .expect(201);
+
+      const metricId = createResponse.body.id;
+
+      // Other user should not be able to update it
+      const response = await request(app.getHttpServer())
+        .patch(`/api/kpi/metrics/${metricId}`)
+        .set("Authorization", `Bearer ${otherUserToken}`)
+        .send({
+          name: "Unauthorized Update",
+        });
+
+      expect([401, 403, 404]).toContain(response.status);
+      if (response.body.errorCode) {
+        expect(response.body.errorCode).toBe(
+          "kpi.access.denied.different_department"
+        );
+      }
+
+      // Cleanup
+      await prismaService.kpiMetric.delete({
+        where: { id: metricId },
+      }).catch(() => {
+        // Ignore cleanup errors
+      });
+    });
+
+    it("should prevent deleting metric for KPI record from different department", async () => {
+      // Create a metric for crossDeptRecord (owned by testUser, not otherUser)
+      const createResponse = await request(app.getHttpServer())
+        .post("/api/kpi/metrics")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          kpiRecordId: crossDeptRecord.id,
+          name: "Test Metric for Delete",
+          type: "TARGET",
+          sortOrder: 1,
+        })
+        .expect(201);
+
+      const metricId = createResponse.body.id;
+
+      // Other user should not be able to delete it
+      const response = await request(app.getHttpServer())
+        .delete(`/api/kpi/metrics/${metricId}`)
+        .set("Authorization", `Bearer ${otherUserToken}`);
+
+      expect([401, 403, 404]).toContain(response.status);
+      if (response.body.errorCode) {
+        expect(response.body.errorCode).toBe(
+          "kpi.access.denied.different_department"
+        );
+      }
+
+      // Cleanup
+      await prismaService.kpiMetric.delete({
+        where: { id: metricId },
+      }).catch(() => {
+        // Ignore cleanup errors
+      });
+    });
+  });
+
+  describe("Admin and Boss Access", () => {
+    let adminUser: Prisma.UserGetPayload<Record<string, never>>;
+    let adminToken: string;
+    let adminPassword: string;
+    let bossUser: Prisma.UserGetPayload<Record<string, never>>;
+    let bossToken: string;
+    let bossPassword: string;
+
+    beforeAll(async () => {
+      // Create admin role if not exists
+      let adminRole = await prismaService.role.findUnique({
+        where: { name: "admin" },
+      });
+      if (!adminRole) {
+        adminRole = await prismaService.role.create({
+          data: { name: "admin", description: "Admin role" },
+        });
+      }
+
+      // Create boss role if not exists
+      let bossRole = await prismaService.role.findUnique({
+        where: { name: "boss" },
+      });
+      if (!bossRole) {
+        bossRole = await prismaService.role.create({
+          data: { name: "boss", description: "Boss role" },
+        });
+      }
+
+      // Create admin user
+      adminPassword = "AdminPassword123!";
+      const adminPasswordHash = await argon2.hash(adminPassword);
+      adminUser = await prismaService.user.create({
+        data: {
+          username: "kpi_admin",
+          email: "kpi_admin@example.com",
+          passwordHash: adminPasswordHash,
+          fullName: "KPI Admin User",
+          department: "TEST-KPI", // Can be any department
+          isActive: true,
+        },
+      });
+
+      await prismaService.userRole.create({
+        data: {
+          userId: adminUser.id,
+          roleId: adminRole.id,
+        },
+      });
+
+      // Create boss user
+      bossPassword = "BossPassword123!";
+      const bossPasswordHash = await argon2.hash(bossPassword);
+      bossUser = await prismaService.user.create({
+        data: {
+          username: "kpi_boss",
+          email: "kpi_boss@example.com",
+          passwordHash: bossPasswordHash,
+          fullName: "KPI Boss User",
+          department: "OTHER-KPI", // Different department
+          isActive: true,
+        },
+      });
+
+      await prismaService.userRole.create({
+        data: {
+          userId: bossUser.id,
+          roleId: bossRole.id,
+        },
+      });
+
+      // Login to get tokens
+      const adminLoginResponse = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "kpi_admin",
+          password: adminPassword,
+        });
+      adminToken = adminLoginResponse.body.accessToken;
+
+      const bossLoginResponse = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "kpi_boss",
+          password: bossPassword,
+        });
+      bossToken = bossLoginResponse.body.accessToken;
+    });
+
+    afterAll(async () => {
+      // Cleanup admin user
+      if (adminUser) {
+        await prismaService.session.deleteMany({
+          where: { userId: adminUser.id },
+        });
+        await prismaService.auditLog.deleteMany({
+          where: { userId: adminUser.id },
+        });
+        await prismaService.userRole.deleteMany({
+          where: { userId: adminUser.id },
+        });
+        await prismaService.user.delete({
+          where: { id: adminUser.id },
+        });
+      }
+
+      // Cleanup boss user
+      if (bossUser) {
+        await prismaService.session.deleteMany({
+          where: { userId: bossUser.id },
+        });
+        await prismaService.auditLog.deleteMany({
+          where: { userId: bossUser.id },
+        });
+        await prismaService.userRole.deleteMany({
+          where: { userId: bossUser.id },
+        });
+        await prismaService.user.delete({
+          where: { id: bossUser.id },
+        });
+      }
+    });
+
+    describe("Admin User", () => {
+      it("should list all KPI records (no filtering)", async () => {
+        const response = await request(app.getHttpServer())
+          .get("/api/kpi/records")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        // Admin should see records from all departments
+      });
+
+      it("should view any KPI record", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        const response = await request(app.getHttpServer())
+          .get(`/api/kpi/records/${testKpiRecord.id}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(200);
+
+        expect(response.body.id).toBe(testKpiRecord.id);
+      });
+
+      it("should create KPI for any department", async () => {
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "Admin Created KPI",
+          target: "≥90%",
+          targetValue: 90,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(createDto)
+          .expect(201);
+
+        expect(response.body.title).toBe(createDto.title);
+
+        // Cleanup
+        await prismaService.kpiRecord.delete({
+          where: { id: response.body.id },
+        });
+      });
+
+      it("should update any KPI record", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        const updateDto = {
+          title: "Admin Updated Title",
+        };
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/kpi/records/${testKpiRecord.id}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(updateDto)
+          .expect(200);
+
+        expect(response.body.title).toBe(updateDto.title);
+      });
+
+      it("should delete any KPI record", async () => {
+        // Create a record to delete
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "To Be Deleted",
+          target: "≥85%",
+          targetValue: 85,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send(createDto)
+          .expect(201);
+
+        const recordId = createResponse.body.id;
+
+        // Admin should be able to delete it
+        await request(app.getHttpServer())
+          .delete(`/api/kpi/records/${recordId}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(200);
+      });
+
+      it("should manage metrics for any KPI", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        // Create metric
+        const createMetricDto = {
+          kpiRecordId: testKpiRecord.id,
+          name: "Admin Metric",
+          type: "TARGET",
+          sortOrder: 1,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/metrics")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send(createMetricDto)
+          .expect(201);
+
+        const metricId = createResponse.body.id;
+
+        // Update metric
+        await request(app.getHttpServer())
+          .patch(`/api/kpi/metrics/${metricId}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ name: "Updated Admin Metric" })
+          .expect(200);
+
+        // Delete metric
+        await request(app.getHttpServer())
+          .delete(`/api/kpi/metrics/${metricId}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .expect(200);
+      });
+    });
+
+    describe("Boss User", () => {
+      it("should list all KPI records (no filtering)", async () => {
+        const response = await request(app.getHttpServer())
+          .get("/api/kpi/records")
+          .set("Authorization", `Bearer ${bossToken}`)
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+      });
+
+      it("should view any KPI record", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        const response = await request(app.getHttpServer())
+          .get(`/api/kpi/records/${testKpiRecord.id}`)
+          .set("Authorization", `Bearer ${bossToken}`)
+          .expect(200);
+
+        expect(response.body.id).toBe(testKpiRecord.id);
+      });
+
+      it("should create KPI for any department", async () => {
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "Boss Created KPI",
+          target: "≥90%",
+          targetValue: 90,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${bossToken}`)
+          .send(createDto)
+          .expect(201);
+
+        expect(response.body.title).toBe(createDto.title);
+
+        // Cleanup
+        await prismaService.kpiRecord.delete({
+          where: { id: response.body.id },
+        });
+      });
+
+      it("should update any KPI record", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        const updateDto = {
+          title: "Boss Updated Title",
+        };
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/kpi/records/${testKpiRecord.id}`)
+          .set("Authorization", `Bearer ${bossToken}`)
+          .send(updateDto)
+          .expect(200);
+
+        expect(response.body.title).toBe(updateDto.title);
+      });
+
+      it("should delete any KPI record", async () => {
+        // Create a record to delete
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "To Be Deleted by Boss",
+          target: "≥85%",
+          targetValue: 85,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send(createDto)
+          .expect(201);
+
+        const recordId = createResponse.body.id;
+
+        // Boss should be able to delete it
+        await request(app.getHttpServer())
+          .delete(`/api/kpi/records/${recordId}`)
+          .set("Authorization", `Bearer ${bossToken}`)
+          .expect(200);
+      });
+
+      it("should manage metrics for any KPI", async () => {
+        if (!testKpiRecord) {
+          const createDto = {
+            departmentId: testDepartment.id,
+            year: 2025,
+            title: "Test KPI Title",
+            target: "≥85%",
+            targetValue: 85,
+          };
+
+          const createResponse = await request(app.getHttpServer())
+            .post("/api/kpi/records")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .send(createDto)
+            .expect(201);
+
+          testKpiRecord = createResponse.body;
+        }
+
+        // Create metric
+        const createMetricDto = {
+          kpiRecordId: testKpiRecord.id,
+          name: "Boss Metric",
+          type: "TARGET",
+          sortOrder: 1,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/metrics")
+          .set("Authorization", `Bearer ${bossToken}`)
+          .send(createMetricDto)
+          .expect(201);
+
+        const metricId = createResponse.body.id;
+
+        // Update metric
+        await request(app.getHttpServer())
+          .patch(`/api/kpi/metrics/${metricId}`)
+          .set("Authorization", `Bearer ${bossToken}`)
+          .send({ name: "Updated Boss Metric" })
+          .expect(200);
+
+        // Delete metric
+        await request(app.getHttpServer())
+          .delete(`/api/kpi/metrics/${metricId}`)
+          .set("Authorization", `Bearer ${bossToken}`)
+          .expect(200);
+      });
+    });
+  });
+
+  describe("User with No Department", () => {
+    let noDeptUser: Prisma.UserGetPayload<Record<string, never>>;
+    let noDeptToken: string;
+    let noDeptPassword: string;
+
+    beforeAll(async () => {
+      // Create user with no department
+      noDeptPassword = "NoDeptPassword123!";
+      const noDeptPasswordHash = await argon2.hash(noDeptPassword);
+      noDeptUser = await prismaService.user.create({
+        data: {
+          username: "kpi_nodept",
+          email: "kpi_nodept@example.com",
+          passwordHash: noDeptPasswordHash,
+          fullName: "No Department User",
+          department: null, // No department
+          isActive: true,
+        },
+      });
+
+      // Assign role
+      const testRole = await prismaService.role.findUnique({
+        where: { name: "user" },
+      });
+      if (testRole) {
+        await prismaService.userRole.create({
+          data: {
+            userId: noDeptUser.id,
+            roleId: testRole.id,
+          },
+        });
+      }
+
+      // Login to get token
+      const loginResponse = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "kpi_nodept",
+          password: noDeptPassword,
+        });
+
+      noDeptToken = loginResponse.body.accessToken;
+    });
+
+    afterAll(async () => {
+      // Cleanup
+      if (noDeptUser) {
+        await prismaService.session.deleteMany({
+          where: { userId: noDeptUser.id },
+        });
+        await prismaService.auditLog.deleteMany({
+          where: { userId: noDeptUser.id },
+        });
+        await prismaService.userRole.deleteMany({
+          where: { userId: noDeptUser.id },
+        });
+        await prismaService.user.delete({
+          where: { id: noDeptUser.id },
+        });
+      }
+    });
+
+    it("should return empty array when listing KPIs", async () => {
+      const response = await request(app.getHttpServer())
+        .get("/api/kpi/records")
+        .set("Authorization", `Bearer ${noDeptToken}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    it("should return 403 when trying to create KPI", async () => {
+      const createDto = {
+        departmentId: testDepartment.id,
+        year: 2025,
+        title: "Unauthorized KPI",
+        target: "≥85%",
+        targetValue: 85,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post("/api/kpi/records")
+        .set("Authorization", `Bearer ${noDeptToken}`)
+        .send(createDto);
+
+      expect([401, 403]).toContain(response.status);
+      if (response.body.errorCode) {
+        expect(response.body.errorCode).toBe(
+          "kpi.access.denied.no_department"
+        );
+      }
+    });
+
+    it("should return 403 when trying to view any KPI record", async () => {
+      if (!testKpiRecord) {
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "Test KPI Title",
+          target: "≥85%",
+          targetValue: 85,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send(createDto)
+          .expect(201);
+
+        testKpiRecord = createResponse.body;
+      }
+
+      const response = await request(app.getHttpServer())
+        .get(`/api/kpi/records/${testKpiRecord.id}`)
+        .set("Authorization", `Bearer ${noDeptToken}`);
+
+      expect([401, 403]).toContain(response.status);
+      if (response.body.errorCode) {
+        expect([
+          "kpi.access.denied.no_department",
+          "kpi.access.denied.different_department",
+        ]).toContain(response.body.errorCode);
+      }
+    });
+
+    it("should return 403 when trying to update any KPI record", async () => {
+      if (!testKpiRecord) {
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "Test KPI Title",
+          target: "≥85%",
+          targetValue: 85,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send(createDto)
+          .expect(201);
+
+        testKpiRecord = createResponse.body;
+      }
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/kpi/records/${testKpiRecord.id}`)
+        .set("Authorization", `Bearer ${noDeptToken}`)
+        .send({ title: "Unauthorized Update" });
+
+      expect([401, 403]).toContain(response.status);
+    });
+
+    it("should return 403 when trying to delete any KPI record", async () => {
+      if (!testKpiRecord) {
+        const createDto = {
+          departmentId: testDepartment.id,
+          year: 2025,
+          title: "Test KPI Title",
+          target: "≥85%",
+          targetValue: 85,
+        };
+
+        const createResponse = await request(app.getHttpServer())
+          .post("/api/kpi/records")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send(createDto)
+          .expect(201);
+
+        testKpiRecord = createResponse.body;
+      }
+
+      const response = await request(app.getHttpServer())
+        .delete(`/api/kpi/records/${testKpiRecord.id}`)
+        .set("Authorization", `Bearer ${noDeptToken}`);
+
+      expect([401, 403]).toContain(response.status);
+    });
   });
 });

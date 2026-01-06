@@ -21,7 +21,7 @@ export class AuthService {
 
   async validateUser(username: string, password: string) {
     const user = await (this.prisma as PrismaClientLike).user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       include: {
         roles: {
           include: { role: true },

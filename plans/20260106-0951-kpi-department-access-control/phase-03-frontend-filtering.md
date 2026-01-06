@@ -1,7 +1,7 @@
 # Phase 3: Frontend Filtering
 
 **Parent Plan:** [plan.md](./plan.md)  
-**Status:** 🔲 Pending  
+**Status:** ✅ Completed  
 **Priority:** Medium
 
 ---
@@ -39,12 +39,14 @@ Update frontend to filter departments and KPI records based on user's role and d
 ### Component Updates
 
 **KPI Page (`apps/web/src/app/[locale]/dashboard/kpi/page.tsx`):**
+
 - Get current user from auth context
 - Filter departments based on user role
 - Handle 403 errors gracefully
 - Show appropriate empty states
 
 **API Client (`apps/web/src/lib/api.ts`):**
+
 - KPI endpoints already exist, no changes needed
 - Error handling for 403 responses
 
@@ -52,10 +54,13 @@ Update frontend to filter departments and KPI records based on user's role and d
 
 ```typescript
 // Check if user has full KPI access
-function hasFullKpiAccess(user: User): boolean
+function hasFullKpiAccess(user: User): boolean;
 
 // Get accessible departments for user
-function getAccessibleDepartments(user: User, allDepartments: Department[]): Department[]
+function getAccessibleDepartments(
+  user: User,
+  allDepartments: Department[]
+): Department[];
 ```
 
 ## Implementation Steps
@@ -116,4 +121,3 @@ function getAccessibleDepartments(user: User, allDepartments: Department[]): Dep
 ---
 
 **Next:** See phase-04-testing-validation.md
-

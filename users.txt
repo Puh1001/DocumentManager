@@ -1,0 +1,51 @@
+STT	 Họ Tên	MNV	Bộ phận	
+1	Phạm Văn Mạnh	V210889	YDF	Sau nhuộm sợi
+2	Nguyễn Thị Hoa	V191258	TL	Kiểm nghiệm
+3	Đào Thu Trang	V250711	WH	Kho
+4	Lê Thị Thủy	V180374	SHD	Xuất nhập khẩu
+5	Đào Thị Thảo	V200849	PMC	PMC
+6	Cao Thị Hải Yến	V180985 	PUR	Thu mua
+7	Đặng Thị Mỹ Hạnh	V180598	PUR	Thu mua
+8	Nguyễn Thị Thủy	V231080	PW	Trước nhuộm sợi
+9	Nguyễn Thị Ngọc Anh	V201182	SS	Định hình
+10	Nguyễn Thị Nga 	V220142	PT	In Hoa
+11	LIU KUANG BING	B181613	PT	In Hoa
+12	Tan Yi Qiang	V170331	WK	Dệt Ngang
+13	Phạm Thị Huệ 	V180761	WK	Dệt Ngang
+14	Nguyễn Thị Thùy 	V231105	WK	Dệt Ngang
+15	Nguyễn Thị Lệ Quyên	V240755	WK	Dệt Ngang
+16	Vũ Anh Tuân	V230690	EG	Công Trình
+17	Đặng Văn Hung	V170072	EG	Công Trình
+18	Vũ Đức Đạt	V180619	EG	Công Trình
+19	Nguyễn Văn Thặng	V170125	EG	Công Trình
+20	Vũ Lan Anh	V211192	EG	Công Trình
+21	Đào Quỳnh Mai 	V251075	EG	Công Trình
+22	 Phạm Thị Diệu Linh	V240600	SD	Kinh Doanh
+23	Nguyễn Thị Niên	V240440	Qc vải	QC vải
+24	Nguyễn Thị Huyền 	V190047	WA	Dệt Dọc
+25	Nguyễn Kim Anh	V221225	WA	Dệt Dọc
+26	Cao Thị Ngọc Oanh 	V241211	WA	Dệt Dọc
+27	Nguyễn Thị Thoan 	V231067	WA	Dệt Dọc
+28	Lương Thị Thuận	V180375	QA	QA
+29	Thẩm Thị Xuyến	V190428	QC đai	QC đai
+30	Nguyễn Thị KIm Dung	V250648	QC đai	QC đai
+31	Đỗ Thị Minh Anh	V251546	AC	kế Toán
+32	Nhữ Thị Dung	V200977	DH	Nhuộm vải
+33	Phùng Thị Vui 	V170043	WV	Dệt  Đai
+34	Lê Thị Ngọc Thu 	V231026	WV	Dệt  Đai
+35	Đỗ Thị Thoa 	V240766	WV	Dệt  Đai
+36	Trần Thị Trang 	V240826	WV	Dệt  Đai
+37	Nguyễn Văn Đảm	V170174	WS	WS
+38	Cháng Văn Cường	V190986	DF	Nhuộm đai
+39	Trần Thị Quỳnh	V201512	DF	Nhuộm đai
+40	Mai Thị Hòa	V251235	LTB	LTB
+41	Quách Thị Hồng Nhung 	V180913	LTB	LTB
+42	Lại Tư Hoàng 	V180553	Phòng thí nghiệm	Phòng thí nghiệm
+43	Nguyễn Ngọc Cương	V170234	CV	Bọc sợi
+44	Nguyễn Thị Oanh	V190985	CV	Bọc sợi
+45	Hoàng Thị Điền	V231108	WD	Kéo sợi
+46	Nguyễn Thị Lan	V240774	WD	Kéo sợi
+47	Vũ Thị Nhung	V240487	HR	Nhân sự
+48	Bùi Thị Ngoan	V210817	IT	Công nghệ
+49	Lê Văn Sơn	V170192	IT	Công nghệ
+50	郑志芳(Zheng Zhifang)	B250964	HR	Nhân sự

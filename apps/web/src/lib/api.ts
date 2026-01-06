@@ -510,17 +510,8 @@ class ApiClient {
 export const api = new ApiClient();
 
 // Department types and API methods
-export interface Department {
-  id: string;
-  name: string; // Vietnamese name (for backward compatibility)
-  nameEn?: string; // English name
-  nameVi?: string; // Vietnamese name
-  nameZh?: string; // Chinese name
-  code: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Department } from "@/lib/types/department.types";
+export type { Department };
 
 export interface CreateDepartmentDto {
   code: string;
