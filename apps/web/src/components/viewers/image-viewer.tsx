@@ -15,6 +15,9 @@ export function ImageViewer({ fileUrl, alt }: ImageViewerProps) {
 
   useEffect(() => {
     // Fetch image with authentication and create blob URL
+    let currentUrl: string | null = null;
+    let isMounted = true;
+
     const loadImage = async () => {
       try {
         setLoading(true);
@@ -24,6 +27,11 @@ export function ImageViewer({ fileUrl, alt }: ImageViewerProps) {
           ? fileUrl.substring(4)
           : fileUrl;
         const url = await api.fetchFileAsBlobUrl(endpoint);
+        if (!isMounted) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        currentUrl = url;
         setBlobUrl(url);
       } catch (err) {
         console.error("Failed to load image:", err);
@@ -37,8 +45,9 @@ export function ImageViewer({ fileUrl, alt }: ImageViewerProps) {
 
     // Cleanup blob URL on unmount
     return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
+      isMounted = false;
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
       }
     };
   }, [fileUrl]);
