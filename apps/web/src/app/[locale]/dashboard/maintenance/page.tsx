@@ -97,13 +97,20 @@ export default function MaintenancePage() {
   );
 
   const getNoticeDepartmentName = (notice: MaintenanceNotice) => {
+    // When the related department is already loaded on the notice, use its name directly.
+    // The embedded `department` object only includes a subset of fields (id, name, code),
+    // so we avoid passing it to `getDepartmentName` which expects a full `Department` type.
     if (notice.department) {
-      return getDepartmentName(notice.department, locale);
+      return notice.department.name;
     }
+
+    // When we only have departmentId, look it up from the full departments list
+    // and use `getDepartmentName` to respect the current locale.
     if (notice.departmentId) {
       const dept = departments.find((d) => d.id === notice.departmentId);
       return dept ? getDepartmentName(dept, locale) : t("list.allDepartments");
     }
+
     return t("list.allDepartments");
   };
 
