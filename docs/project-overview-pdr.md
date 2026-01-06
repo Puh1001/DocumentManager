@@ -50,6 +50,13 @@ Xây dựng web-based document management system:
 - **Dashboard statistics** API
 - Automatic detection of deleted/renamed/moved files
 
+### 1.1. Authentication
+
+- Username/password login
+- **Case-insensitive username login** (users can login with V210889, v210889, etc.)
+- JWT token-based authentication
+- Session management
+
 ### 1.5. Department Management
 
 - Department CRUD operations
@@ -60,10 +67,12 @@ Xây dựng web-based document management system:
 ### 1.6. KPI Tracking
 
 - KPI record management by department and year
+- **Year selector dropdown** (current year ± 5 years) for viewing/editing historical or future data
 - Monthly metric tracking with auto-calculations
 - Chart visualization (Chart.js)
 - Excel export functionality
 - Real-time data updates
+- Support for data entry for specific years (e.g., 2025)
 
 ### 1.7. Maintenance Notices
 
@@ -84,6 +93,7 @@ Xây dựng web-based document management system:
 - Permission management UI (frontend complete)
 - Frontend route protection with `useCanAccess` hook
 - Sidebar navigation filtering based on permissions
+- **Admin Dept Role**: Department administrators with KPI management permissions
 
 ### 3. Document Viewer
 

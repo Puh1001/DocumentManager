@@ -46,6 +46,7 @@
     "efficiency": "效率 (%)",
     "chartTitle": "KPI / 效率 (%)"
   },
+  "year": "年",
   "empty": {
     "noDepartments": "未找到部门",
     "noDepartmentsDescription": "没有可显示的部门。",

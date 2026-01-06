@@ -1,6 +1,6 @@
 # Project Roadmap
 
-**Last Updated:** 2025-01-XX  
+**Last Updated:** 2026-01-06  
 **Current Phase:** Phase 1-4 Complete, Additional Features Added (75%)
 
 ---
@@ -58,7 +58,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 **Status:** Complete  
 **Duration:** 2-3 days  
-**Completed:** 2024-12-18
+**Completed:** 2024-12-18  
+**Updated:** 2026-01-06
 
 ### Completed Tasks
 
@@ -70,6 +71,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [x] Auth context/provider
 - [x] Protected route wrapper
 - [x] Database seeding
+- [x] **Case-insensitive username login** (normalized to lowercase)
+- [x] **Admin dept users migration** (50 users with department mapping)
 
 ### Deliverables
 
@@ -77,10 +80,12 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - ✅ User management API
 - ✅ Login UI
 - ✅ Session management
+- ✅ Case-insensitive login support
+- ✅ User migration scripts
 
 ### Default Credentials
 
-- Username: `admin`
+- Username: `admin` (case-insensitive)
 - Password: `admin123`
 
 ---
@@ -147,7 +152,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 **Status:** Complete  
 **Duration:** 3-4 days  
-**Completed:** 2024-12-XX
+**Completed:** 2024-12-XX  
+**Updated:** 2026-01-06
 
 ### Completed Tasks
 
@@ -159,6 +165,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [x] Chart visualization (Chart.js)
 - [x] Excel export functionality
 - [x] KPI management UI
+- [x] **Year selector dropdown** (current year ± 5 years)
+- [x] Support for historical and future year data entry
 
 ### Deliverables
 
@@ -166,6 +174,7 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - ✅ Chart visualization
 - ✅ Excel export
 - ✅ KPI management UI
+- ✅ Year selector for viewing/editing data by year
 
 ---
 

@@ -31,14 +31,15 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const year = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const loadRecords = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await api.get<KpiRecord[]>(
-        `/kpi/records?departmentId=${departmentId}&year=${year}`
+        `/kpi/records?departmentId=${departmentId}&year=${selectedYear}`
       );
       setRecords(data);
     } catch (err) {
@@ -47,7 +48,7 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
     } finally {
       setLoading(false);
     }
-  }, [departmentId, year, tCommon]);
+  }, [departmentId, selectedYear, tCommon]);
 
   useEffect(() => {
     loadRecords();
@@ -86,10 +87,25 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
-        <ArrowLeft className="h-4 w-4" />
-        {t("actions.back")}
-      </button>
+      <div className="flex items-center justify-between gap-4">
+        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          {t("actions.back")}
+        </button>
+        <select
+          className="cyber-button px-4 py-2 font-cyber text-sm bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-300 hover:bg-cyan-500/20 transition-colors"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+        >
+          {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(
+            (y) => (
+              <option key={y} value={y} className="bg-gray-900 text-cyan-300">
+                {t("year")} {y}
+              </option>
+            )
+          )}
+        </select>
+      </div>
 
       {records.length === 0 ? (
         <div className="cyber-card p-6 cyber-corner">

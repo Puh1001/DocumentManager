@@ -104,7 +104,8 @@ apps/api/
 │   │   ├── KPI Record service (by department/year)
 │   │   ├── KPI Metric service (monthly values)
 │   │   ├── KPI Export service (Excel)
-│   │   └── Calculation logic (efficiency, averages)
+│   │   ├── Calculation logic (efficiency, averages)
+│   │   └── Year selector support (current year ± 5 years)
 │   │
 │   ├── Maintenance
 │   │   ├── Maintenance notice service
@@ -144,6 +145,7 @@ apps/api/
 ```
 User → Login Page → POST /auth/login
   → AuthService.validateUser()
+  → Username normalized to lowercase (case-insensitive)
   → Argon2 password verification
   → JWT token generation
   → Session stored in DB
@@ -277,6 +279,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 ### Authentication
 
 - **Method**: Username/password (separate system, not AD/LDAP)
+- **Username Handling**: Case-insensitive (normalized to lowercase before lookup)
 - **Password Hashing**: Argon2id
 - **Tokens**: JWT (access: 15min, refresh: 7d)
 - **Session Management**: Database-backed (Session table)
@@ -448,8 +451,9 @@ Folder ──┬── Folder (self-reference for hierarchy)
 ├── /kpi
 │   ├── /records
 │   │   ├── GET    /          # List (query: departmentId, year)
+│   │   │                        # Year selector: current year ± 5 years
 │   │   ├── GET    /:id       # Get with metrics
-│   │   ├── POST   /          # Create
+│   │   ├── POST   /          # Create (with year field)
 │   │   ├── PATCH  /:id       # Update
 │   │   ├── DELETE /:id       # Delete
 │   │   └── GET    /:id/export # Export to Excel

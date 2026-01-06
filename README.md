@@ -11,11 +11,14 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 📁 **Quản lý File & Folder**: Browse, upload, download tài liệu từ SMB shared folder
 - 🔄 **File System Sync**: Two-pass sync với soft delete để đồng bộ database với file system
 - 📊 **Dashboard Statistics**: Thống kê tổng quan (documents, folders, users, recent uploads)
+- 🔐 **Authentication**: Case-insensitive username login (V210889, v210889, etc.)
 - 🏢 **Department Management**: Quản lý phòng ban với CRUD operations
 - 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
+  - **Year Selector**: Chọn năm để xem/chỉnh sửa dữ liệu KPI (năm hiện tại ± 5 năm)
 - 🔧 **Maintenance Notices**: Quản lý thông báo bảo trì theo phòng ban
 - 🌐 **Internationalization**: Hỗ trợ đa ngôn ngữ (English, Vietnamese, Chinese)
 - 🔒 **Phân quyền RBAC + ABAC**: Role-based + Attribute-based access control
+- 👥 **User Management**: Migration script cho admin_dept users với department mapping
 - 📄 **Document Viewer**: Xem PDF/DOCX trực tiếp trên web với copy protection
 - 📝 **Version Control**: Theo dõi lịch sử thay đổi, restore phiên bản cũ
 - 🖥️ **Local Edit**: Mở file trực tiếp trong ứng dụng local (Word, Excel)
@@ -241,6 +244,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Department management UI
 - ✅ KPI Tracking
   - ✅ KPI record management
+  - ✅ Year selector dropdown (current year ± 5 years)
   - ✅ Monthly metric tracking
   - ✅ Chart visualization
   - ✅ Excel export
@@ -251,6 +255,12 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 - ✅ Internationalization (i18n)
   - ✅ Multi-language support (EN, VI, ZH)
   - ✅ Locale-based routing
+- ✅ Authentication Enhancements
+  - ✅ Case-insensitive username login
+  - ✅ Username normalization to lowercase
+- ✅ User Management
+  - ✅ Admin dept users migration script
+  - ✅ Department code mapping
 - ✅ Authorization (RBAC + ABAC) - Complete
   - ✅ CASL ability factory (backend)
   - ✅ Policies guard (backend)
@@ -260,6 +270,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Document-level permissions
   - ✅ Page-level permissions (User, Department, KPI, Maintenance, Permission)
   - ✅ Boss role (read-only access to all resources)
+  - ✅ Admin dept role (department administrators with KPI permissions)
   - ✅ Permission management UI (frontend)
   - ✅ Frontend route protection (useCanAccess hook, PageGuard component)
   - ✅ Sidebar navigation filtering

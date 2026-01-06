@@ -127,6 +127,7 @@ src/
 ### 1. Authentication
 
 - Username/password login
+- **Case-insensitive username login** (V210889, v210889, etc.)
 - JWT access token (15min) + refresh token (7d)
 - Session management in database
 - Rate limiting
@@ -157,10 +158,12 @@ src/
 ### 2.6. KPI Tracking
 
 - KPI record management (by department and year)
+- **Year selector dropdown** (current year ± 5 years, default: current year)
 - KPI metric tracking (monthly values)
 - Auto-calculation of efficiency and averages
 - Chart visualization (Chart.js)
 - Excel export functionality
+- Support for historical and future year data entry (e.g., 2025)
 
 ### 2.7. Maintenance Notices
 
@@ -285,9 +288,18 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - **Department Management Module**: Full CRUD operations for departments
 - **KPI Tracking Module**: Track KPIs by department with monthly metrics, charts, and Excel export
+  - **Year selector**: Users can select year (current ± 5 years) to view/edit KPI data
+  - Support for historical and future year data entry (e.g., 2025)
 - **Maintenance Notices**: Create and manage maintenance notices with department filtering
 - **Internationalization**: Multi-language support with next-intl (English, Vietnamese, Chinese)
 - **Enhanced Dashboard**: Statistics cards, upcoming maintenance notices, activity tracking
+- **Authentication Enhancements**:
+  - **Case-insensitive username login**: Users can login with any case combination (V210889, v210889, etc.)
+  - Username normalized to lowercase before database lookup
+- **User Management**:
+  - **Admin Dept Users Migration**: Migration script for 50 users with admin_dept role
+  - Department code mapping from users.txt to existing database codes
+  - Default password management for migrated users
 - **Authorization Module**: Complete RBAC + ABAC implementation with CASL
   - Permission management API (role, folder, document permissions)
   - CASL ability factory for dynamic permission evaluation

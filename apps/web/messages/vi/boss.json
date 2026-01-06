@@ -46,6 +46,7 @@
     "efficiency": "Hiệu quả (%)",
     "chartTitle": "KPI / Hiệu quả (%)"
   },
+  "year": "Năm",
   "empty": {
     "noDepartments": "Không có phòng ban",
     "noDepartmentsDescription": "Không có phòng ban nào để hiển thị.",

@@ -46,6 +46,7 @@
     "efficiency": "Efficiency (%)",
     "chartTitle": "KPI / Efficiency (%)"
   },
+  "year": "Year",
   "empty": {
     "noDepartments": "No departments found",
     "noDepartmentsDescription": "There are no departments available to display.",
