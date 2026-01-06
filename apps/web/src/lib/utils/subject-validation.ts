@@ -10,6 +10,7 @@ const VALID_SUBJECT_NAMES = [
   "Kpi",
   "Maintenance",
   "Permission",
+  "Module",
   "all",
 ] as const;
 

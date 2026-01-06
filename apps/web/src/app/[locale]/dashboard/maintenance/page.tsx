@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { CalendarDays, Megaphone, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
-import { api, type Department, type MaintenanceNotice } from "@/lib/api";
+import {
+  api,
+  type Department,
+  type MaintenanceNotice,
+  getDepartmentName,
+} from "@/lib/api";
 import type { PageMetadata } from "@/lib/types/page-metadata";
 import { registerPage } from "@/lib/page-registry";
 import { PageGuard } from "@/components/page-guard";
@@ -62,6 +67,7 @@ export default function MaintenancePage() {
   const t = useTranslations("maintenance");
   const commonT = useTranslations("common");
   const errorT = useTranslations("errors");
+  const locale = useLocale();
   const { notices, addNotice, updateNotice, deleteNotice, loading } =
     useMaintenanceNotices();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -90,13 +96,13 @@ export default function MaintenancePage() {
     [notices]
   );
 
-  const getDepartmentName = (notice: MaintenanceNotice) => {
+  const getNoticeDepartmentName = (notice: MaintenanceNotice) => {
     if (notice.department) {
-      return notice.department.name;
+      return getDepartmentName(notice.department, locale);
     }
     if (notice.departmentId) {
       const dept = departments.find((d) => d.id === notice.departmentId);
-      return dept?.name ?? t("list.allDepartments");
+      return dept ? getDepartmentName(dept, locale) : t("list.allDepartments");
     }
     return t("list.allDepartments");
   };
@@ -340,7 +346,7 @@ export default function MaintenancePage() {
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-semibold">{notice.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {t("list.department")}: {getDepartmentName(notice)}
+                          {t("list.department")}: {getNoticeDepartmentName(notice)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t("list.windowLabel")}:{" "}

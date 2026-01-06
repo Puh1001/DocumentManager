@@ -1,15 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-import { useCopyProtection } from '@/hooks/use-copy-protection';
-import { PdfViewer } from '@/components/viewers/pdf-viewer';
-import { DocxViewer } from '@/components/viewers/docx-viewer';
-import { Watermark } from '@/components/viewers/watermark';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, ExternalLink, Printer } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { useCopyProtection } from "@/hooks/use-copy-protection";
+import { PdfViewer } from "@/components/viewers/pdf-viewer";
+import { DocxViewer } from "@/components/viewers/docx-viewer";
+import { XlsxViewer } from "@/components/viewers/xlsx-viewer";
+import { ImageViewer } from "@/components/viewers/image-viewer";
+import { Watermark } from "@/components/viewers/watermark";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Download, ExternalLink, Printer } from "lucide-react";
 
 interface Document {
   id: string;
@@ -27,7 +29,7 @@ interface Permissions {
 }
 
 export default function DocumentViewPage() {
-  const params = useParams();
+  const params = useParams<{ locale: string; id: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const [document, setDocument] = useState<Document | null>(null);
@@ -55,7 +57,7 @@ export default function DocumentViewPage() {
         canEdit: true,
       });
     } catch (error) {
-      console.error('Failed to load document:', error);
+      console.error("Failed to load document:", error);
     } finally {
       setLoading(false);
     }
@@ -66,7 +68,7 @@ export default function DocumentViewPage() {
   }, [loadDocument]);
 
   const handleDownload = () => {
-    window.open(`/api/storage/documents/${params.id}/download`, '_blank');
+    window.open(`/api/storage/documents/${params.id}/download`, "_blank");
   };
 
   const handleOpenLocal = async () => {
@@ -74,11 +76,15 @@ export default function DocumentViewPage() {
       interface OpenPathResponse {
         networkPath: string;
       }
-      const response = await api.get<OpenPathResponse>(`/storage/documents/${params.id}/open-path`);
+      const response = await api.get<OpenPathResponse>(
+        `/storage/documents/${params.id}/open-path`
+      );
       await navigator.clipboard.writeText(response.networkPath);
-      alert(`Đường dẫn đã được sao chép:\n${response.networkPath}\n\nDán vào Run (Win+R) hoặc Explorer để mở file.`);
+      alert(
+        `Đường dẫn đã được sao chép:\n${response.networkPath}\n\nDán vào Run (Win+R) hoặc Explorer để mở file.`
+      );
     } catch (error) {
-      console.error('Failed to get open path:', error);
+      console.error("Failed to get open path:", error);
     }
   };
 
@@ -139,8 +145,10 @@ export default function DocumentViewPage() {
       </div>
 
       {/* Viewer */}
-      <div className={`flex-1 relative overflow-hidden ${!permissions.canDownload ? 'viewer-protected' : ''}`}>
-        {document.fileType === 'pdf' && (
+      <div
+        className={`flex-1 relative overflow-hidden ${!permissions.canDownload ? "viewer-protected" : ""}`}
+      >
+        {document.fileType === "pdf" && (
           <PdfViewer
             fileUrl={fileUrl}
             canDownload={permissions.canDownload}
@@ -148,26 +156,25 @@ export default function DocumentViewPage() {
           />
         )}
 
-        {['doc', 'docx'].includes(document.fileType) && (
+        {["doc", "docx"].includes(document.fileType) && (
           <DocxViewer fileUrl={fileUrl} />
         )}
 
-        {['png', 'jpg', 'jpeg', 'gif'].includes(document.fileType) && (
-          <div className="flex items-center justify-center h-full">
-            <img
-              src={fileUrl}
-              alt={document.name}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
+        {["xls", "xlsx"].includes(document.fileType) && (
+          <XlsxViewer fileUrl={fileUrl} />
+        )}
+
+        {["png", "jpg", "jpeg", "gif"].includes(document.fileType) && (
+          <ImageViewer fileUrl={fileUrl} alt={document.name} />
         )}
 
         {/* Watermark */}
         {!permissions.canDownload && user && (
-          <Watermark text={`${user.email} - ${new Date().toLocaleDateString()}`} />
+          <Watermark
+            text={`${user.email} - ${new Date().toLocaleDateString()}`}
+          />
         )}
       </div>
     </div>
   );
 }
-

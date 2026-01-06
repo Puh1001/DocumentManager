@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type Department } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { type Department, getDepartmentName } from "@/lib/api";
 import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ export function DepartmentGrid({
   error = null,
 }: DepartmentGridProps) {
   const t = useTranslations("boss");
+  const locale = useLocale();
 
   if (loading) {
     return (
@@ -88,7 +89,7 @@ export function DepartmentGrid({
               )}
             </div>
             <h3 className="font-cyber font-bold text-lg mb-2 line-clamp-2 cyber-neon-cyan">
-              {dept.name}
+              {getDepartmentName(dept, locale)}
             </h3>
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cyan-500/30">
               <span className="text-xs font-cyber text-cyan-300/80">ID:</span>

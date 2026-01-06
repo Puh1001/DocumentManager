@@ -3,7 +3,8 @@
 import * as React from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const ToastProvider = ToastPrimitives.Provider;
 
@@ -24,13 +25,18 @@ ToastViewport.displayName = ToastPrimitives.Viewport.displayName;
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & {
+    variant?: 'default' | 'destructive' | 'success';
+  }
+>(({ className, variant = 'default', ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(
-        'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all bg-background text-foreground',
+        'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all',
+        variant === 'destructive' && 'border-destructive bg-destructive text-destructive-foreground',
+        variant === 'success' && 'border-green-500 bg-green-50 text-green-900 dark:bg-green-900 dark:text-green-50',
+        variant === 'default' && 'bg-background text-foreground',
         className
       )}
       {...props}
@@ -74,9 +80,31 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 
 export function Toaster() {
+  const { toasts } = useToast();
+
   return (
     <ToastProvider>
       <ToastViewport />
+      {toasts.map(function ({ id, title, description, action, variant, ...props }) {
+        return (
+          <Toast key={id} variant={variant} {...props}>
+            <div className="grid gap-1">
+              {title && (
+                <div className="flex items-center gap-2">
+                  {variant === 'success' && <CheckCircle2 className="h-4 w-4" />}
+                  {variant === 'destructive' && <AlertCircle className="h-4 w-4" />}
+                  <ToastTitle>{title}</ToastTitle>
+                </div>
+              )}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        );
+      })}
     </ToastProvider>
   );
 }

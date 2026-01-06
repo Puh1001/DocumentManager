@@ -56,8 +56,75 @@ async function main() {
     `✅ Modules: ${createdModules} created, ${existingModules} already exist (not modified)`
   );
 
-  // Create permissions
-  const permissions = [
+  /**
+   * Auto-generate module permissions
+   *
+   * Generates all standard permissions (view, create, edit, delete, manage) for each module.
+   * Uses same STANDARD_ACTIONS as ModuleService for consistency.
+   * Fetches all active modules from database (not just newly created ones) to ensure
+   * permissions are generated for existing modules as well.
+   *
+   * @remarks
+   * - Uses upsert for idempotency (safe to run multiple times)
+   * - Tracks created vs existing permissions for logging
+   * - Continues with next permission if one fails (error handling)
+   */
+  const STANDARD_ACTIONS = ["view", "create", "edit", "delete", "manage"];
+
+  let createdModulePerms = 0;
+  let existingModulePerms = 0;
+  let failedModulePerms = 0;
+
+  // Get all modules (including newly created ones)
+  // This ensures permissions are generated for existing modules too
+  const allModules = await prisma.module.findMany({
+    where: { isActive: true },
+  });
+
+  // Auto-generate permissions for each module
+  for (const module of allModules) {
+    for (const action of STANDARD_ACTIONS) {
+      try {
+        const permissionName = `${action}:${module.name}`;
+        const existing = await prisma.permission.findUnique({
+          where: { name: permissionName },
+        });
+        if (existing) {
+          existingModulePerms++;
+        } else {
+          createdModulePerms++;
+        }
+        await prisma.permission.upsert({
+          where: { name: permissionName },
+          update: {},
+          create: {
+            name: permissionName,
+            description: `${action.charAt(0).toUpperCase() + action.slice(1)} ${module.name} module`,
+          },
+        });
+      } catch (error) {
+        failedModulePerms++;
+        console.error(
+          `❌ Failed to create permission ${action}:${module.name}:`,
+          error instanceof Error ? error.message : error
+        );
+        // Continue with next permission
+      }
+    }
+  }
+
+  if (failedModulePerms > 0) {
+    console.log(
+      `⚠️  Module permissions: ${createdModulePerms} created, ${existingModulePerms} already exist, ${failedModulePerms} failed`
+    );
+  } else {
+    console.log(
+      `✅ Module permissions: ${createdModulePerms} created, ${existingModulePerms} already exist (not modified)`
+    );
+  }
+
+  // Create document-level permissions (not module-specific)
+  const documentPermissions = [
     { name: "view", description: "View document content" },
     { name: "download", description: "Download document file" },
     { name: "print", description: "Print document" },
@@ -65,24 +132,18 @@ async function main() {
     { name: "create", description: "Create new documents" },
     { name: "delete", description: "Delete documents" },
     { name: "manage", description: "Manage permissions" },
-    // Page-level permissions
-    { name: "view:User", description: "View user management page" },
-    { name: "view:Department", description: "View department management page" },
-    { name: "view:Kpi", description: "View KPI tracking page" },
-    { name: "view:Maintenance", description: "View maintenance notices page" },
-    { name: "view:Permission", description: "View permission management page" },
   ];
 
-  let createdPerms = 0;
-  let existingPerms = 0;
-  for (const perm of permissions) {
+  let createdDocPerms = 0;
+  let existingDocPerms = 0;
+  for (const perm of documentPermissions) {
     const existing = await prisma.permission.findUnique({
       where: { name: perm.name },
     });
     if (existing) {
-      existingPerms++;
+      existingDocPerms++;
     } else {
-      createdPerms++;
+      createdDocPerms++;
     }
     await prisma.permission.upsert({
       where: { name: perm.name },
@@ -91,7 +152,7 @@ async function main() {
     });
   }
   console.log(
-    `✅ Permissions: ${createdPerms} created, ${existingPerms} already exist (not modified)`
+    `✅ Document permissions: ${createdDocPerms} created, ${existingDocPerms} already exist (not modified)`
   );
 
   // Create roles
@@ -311,20 +372,287 @@ async function main() {
     console.log("✅ Boss user created (username: boss, password: boss123)");
   }
 
-  // Create sample departments/folders
-  // Match with actual folders: HR, IT, PR, SD, QC, PD
+  // Create all departments with multilingual support (EN, VI, ZH)
   const departments = [
-    { name: "HR", code: "HR", physicalLocation: "Tủ A, Kệ 1" },
-    { name: "IT", code: "IT", physicalLocation: "Tủ A, Kệ 2" },
-    { name: "PR", code: "PR", physicalLocation: "Tủ B, Kệ 1" }, // Purchasing/Production
-    { name: "SD", code: "SD", physicalLocation: "Tủ B, Kệ 2" }, // Sales/Service Department
-    { name: "QC", code: "QC", physicalLocation: "Tủ C, Kệ 1" }, // Quality Control
-    { name: "PD", code: "PD", physicalLocation: "Tủ C, Kệ 2" }, // Production/Product Development
+    {
+      code: "BOD",
+      nameVi: "BOD",
+      nameEn: "General Manager's Office",
+      nameZh: "总经办BOD",
+      physicalLocation: "Tủ A, Kệ 1",
+    },
+    {
+      code: "HCNS",
+      nameVi: "HCNS",
+      nameEn: "Human Resources Department",
+      nameZh: "人力资源部HCNS",
+      physicalLocation: "Tủ A, Kệ 2",
+    },
+    {
+      code: "KINH_DOANH",
+      nameVi: "Kinh doanh",
+      nameEn: "Business Department",
+      nameZh: "营业部Kinh doanh",
+      physicalLocation: "Tủ B, Kệ 1",
+    },
+    {
+      code: "KE_TOAN",
+      nameVi: "Kế toán",
+      nameEn: "Finance Department",
+      nameZh: "财务部Kế toán",
+      physicalLocation: "Tủ B, Kệ 2",
+    },
+    {
+      code: "THU_MUA",
+      nameVi: "Thu mua",
+      nameEn: "Purchasing Department",
+      nameZh: "采购部Thu mua",
+      physicalLocation: "Tủ C, Kệ 1",
+    },
+    {
+      code: "IT",
+      nameVi: "Phòng thông tin",
+      nameEn: "Information Technology Department",
+      nameZh: "资讯科技部IT",
+      physicalLocation: "Tủ C, Kệ 2",
+    },
+    {
+      code: "XNK",
+      nameVi: "Xuất nhập khẩu",
+      nameEn: "Shipping Department",
+      nameZh: "船务部 XNK",
+      physicalLocation: "Tủ D, Kệ 1",
+    },
+    {
+      code: "PTVL",
+      nameVi: "Phát triển vật liệu",
+      nameEn: "Material Development Department",
+      nameZh: "材料开发部Phát triển vật liệu",
+      physicalLocation: "Tủ D, Kệ 2",
+    },
+    {
+      code: "PHONG_MAU",
+      nameVi: "Phòng mẫu",
+      nameEn: "Sample Room",
+      nameZh: "板房Phòng mẫu",
+      physicalLocation: "Tủ E, Kệ 1",
+    },
+    {
+      code: "SAN_XUAT",
+      nameVi: "Sản xuất",
+      nameEn: "Production Department",
+      nameZh: "生产部Sản xuất",
+      physicalLocation: "Tủ E, Kệ 2",
+    },
+    {
+      code: "LTB",
+      nameVi: "LTB",
+      nameEn: "LTB",
+      nameZh: "LTB",
+      physicalLocation: "Tủ F, Kệ 1",
+    },
+    {
+      code: "LTB_DAI",
+      nameVi: "LTB đai",
+      nameEn: "LTB Webbing",
+      nameZh: "织带LTBLTB đai",
+      physicalLocation: "Tủ F, Kệ 2",
+    },
+    {
+      code: "PHONG_KIEM_NGHIEM",
+      nameVi: "Phòng kiểm nghiệm",
+      nameEn: "Testing Room",
+      nameZh: "测试室Phòng kiểm nghiệm",
+      physicalLocation: "Tủ G, Kệ 1",
+    },
+    {
+      code: "NC_PT_VAI",
+      nameVi: "Nghiên cứu phát triển vải",
+      nameEn: "Fabric R&D Department",
+      nameZh: "面料研发部Nghiên cứu phát triển vải",
+      physicalLocation: "Tủ G, Kệ 2",
+    },
+    {
+      code: "PMC",
+      nameVi: "PMC",
+      nameEn: "Planning Department",
+      nameZh: "计划部PMC",
+      physicalLocation: "Tủ H, Kệ 1",
+    },
+    {
+      code: "QA",
+      nameVi: "QA",
+      nameEn: "QA",
+      nameZh: "QA",
+      physicalLocation: "Tủ H, Kệ 2",
+    },
+    {
+      code: "KHO",
+      nameVi: "Kho",
+      nameEn: "Warehouse",
+      nameZh: "仓库Kho",
+      physicalLocation: "Tủ I, Kệ 1",
+    },
+    {
+      code: "CONG_TRINH",
+      nameVi: "Công trình",
+      nameEn: "Engineering Department",
+      nameZh: "工程部Công trình",
+      physicalLocation: "Tủ I, Kệ 2",
+    },
+    {
+      code: "CONG_TRINH_DU_AN",
+      nameVi: "Công trình dự án",
+      nameEn: "Industrial Engineering Department",
+      nameZh: "工业工程部Công trình Dự án",
+      physicalLocation: "Tủ J, Kệ 1",
+    },
+    {
+      code: "BOC_SOI",
+      nameVi: "Bọc sợi",
+      nameEn: "Yarn Covering Department",
+      nameZh: "包根部Bọc sợi",
+      physicalLocation: "Tủ J, Kệ 2",
+    },
+    {
+      code: "KEO_SOI",
+      nameVi: "Kéo sợi",
+      nameEn: "Warping Department",
+      nameZh: "经纱部Kéo sợi",
+      physicalLocation: "Tủ K, Kệ 1",
+    },
+    {
+      code: "CONG_NGHE",
+      nameVi: "Công nghệ",
+      nameEn: "Transfer Machine Technology Department",
+      nameZh: "转机工艺部Công nghệ",
+      physicalLocation: "Tủ K, Kệ 2",
+    },
+    {
+      code: "DET_DAI",
+      nameVi: "Dệt đai",
+      nameEn: "Weaving Machine Department",
+      nameZh: "织机部Dệt đai",
+      physicalLocation: "Tủ L, Kệ 1",
+    },
+    {
+      code: "NHUOM_DAI",
+      nameVi: "Nhuộm đai",
+      nameEn: "Bleaching and Dyeing Department",
+      nameZh: "漂染部Nhuộm đai",
+      physicalLocation: "Tủ L, Kệ 2",
+    },
+    {
+      code: "QC_DAI",
+      nameVi: "QC đai",
+      nameEn: "Webbing QC Department",
+      nameZh: "织带QC部QC đai",
+      physicalLocation: "Tủ M, Kệ 1",
+    },
+    {
+      code: "DET_DOC",
+      nameVi: "Dệt dọc",
+      nameEn: "Warping and Weaving Department",
+      nameZh: "整经织造部Dệt dọc",
+      physicalLocation: "Tủ M, Kệ 2",
+    },
+    {
+      code: "DET_NGANG",
+      nameVi: "Dệt ngang",
+      nameEn: "Weft Knitting Department",
+      nameZh: "纬编部Dệt ngang",
+      physicalLocation: "Tủ N, Kệ 1",
+    },
+    {
+      code: "DET_NGANG_S",
+      nameVi: "Dệt ngang - S",
+      nameEn: "Weft Knitting Department - S",
+      nameZh: "纬编部 - S Dệt ngang - S",
+      physicalLocation: "Tủ N, Kệ 2",
+    },
+    {
+      code: "PHONG_THI_NGHIEM",
+      nameVi: "Phòng thí nghiệm",
+      nameEn: "Laboratory",
+      nameZh: "实验室Thí nghiệm",
+      physicalLocation: "Tủ O, Kệ 1",
+    },
+    {
+      code: "NHUOM_VAI",
+      nameVi: "Nhuộm vải",
+      nameEn: "Dyeing Department",
+      nameZh: "染色部Nhuộm vải",
+      physicalLocation: "Tủ O, Kệ 2",
+    },
+    {
+      code: "DINH_HINH",
+      nameVi: "Định hình",
+      nameEn: "Setting Department",
+      nameZh: "定型部Định hình",
+      physicalLocation: "Tủ P, Kệ 1",
+    },
+    {
+      code: "QC_VAI",
+      nameVi: "QC vải",
+      nameEn: "Fabric QC Department",
+      nameZh: "面料QC部QC vải",
+      physicalLocation: "Tủ P, Kệ 2",
+    },
+    {
+      code: "IN_HOA",
+      nameVi: "In hoa",
+      nameEn: "Printing Department",
+      nameZh: "印花部In hoa",
+      physicalLocation: "Tủ Q, Kệ 1",
+    },
+    {
+      code: "GIAI_DOAN_TRUOC_NHUOM_SOI",
+      nameVi: "Giai đoạn trước nhuộm sợi",
+      nameEn: "Pre-dyeing Yarn Section Department",
+      nameZh: "染纱前段部Giai đoạn trước nhuộm sợi",
+      physicalLocation: "Tủ Q, Kệ 2",
+    },
+    {
+      code: "GIAI_DOAN_SAU_NHUOM_SOI",
+      nameVi: "Giai đoạn sau nhuộm sợi",
+      nameEn: "Post-dyeing Yarn Section Department",
+      nameZh: "染纱后段部Giai đoạn sau nhuộm sợi",
+      physicalLocation: "Tủ R, Kệ 1",
+    },
+    {
+      code: "CN_HUNG_YEN_DET_NGANG",
+      nameVi: "Chi nhánh Hưng Yên - Dệt ngang",
+      nameEn: "Weft Knitting Department - Hung Yen Branch",
+      nameZh: "纬编部 - 兴安Chi nhánh Hưng Yên- Dệt ngang",
+      physicalLocation: "Tủ R, Kệ 2",
+    },
+    {
+      code: "CN_NGHE_AN_2_DET_NGANG",
+      nameVi: "Chi nhánh Nghệ An 2 - Dệt ngang",
+      nameEn: "Weft Knitting Department - Nghe An 2 Branch",
+      nameZh: "纬编部 - 义安 2Chi nhánh Dệt ngang - Nghệ An 2",
+      physicalLocation: "Tủ S, Kệ 1",
+    },
+    {
+      code: "CN_HUNG_YEN_DET_DAI",
+      nameVi: "Chi nhánh Hưng Yên - Dệt đai",
+      nameEn: "Weaving Machine Department - Hung Yen Branch",
+      nameZh: "织机部- 兴安Chi nhánh Hưng Yên - Dệt đai",
+      physicalLocation: "Tủ S, Kệ 2",
+    },
+    {
+      code: "MG",
+      nameVi: "MG",
+      nameEn: "MG",
+      nameZh: "MG",
+      physicalLocation: "Tủ T, Kệ 1",
+    },
   ];
 
   // Create or get departments
   let createdDepts = 0;
   let existingDepts = 0;
+  let updatedDepts = 0;
   const departmentMap = new Map<string, { id: string; name: string }>();
 
   for (const dept of departments) {
@@ -333,37 +661,79 @@ async function main() {
     });
     if (existing) {
       existingDepts++;
-      departmentMap.set(dept.name, { id: existing.id, name: existing.name });
+      // Update multilingual names if they're missing
+      // Type assertion needed until Prisma Client is regenerated
+      const existingWithMultilingual = existing as typeof existing & {
+        nameEn?: string | null;
+        nameVi?: string | null;
+        nameZh?: string | null;
+      };
+      const needsUpdate =
+        !existingWithMultilingual.nameEn ||
+        !existingWithMultilingual.nameVi ||
+        !existingWithMultilingual.nameZh ||
+        existing.name !== dept.nameVi;
+      if (needsUpdate) {
+        updatedDepts++;
+        await prisma.department.update({
+          where: { code: dept.code },
+          data: {
+            name: dept.nameVi,
+            nameEn: dept.nameEn,
+            nameVi: dept.nameVi,
+            nameZh: dept.nameZh,
+          } as any, // Type assertion: fields exist in DB, will be in Prisma Client after regenerate
+        });
+      }
+      departmentMap.set(dept.code, {
+        id: existing.id,
+        name: dept.nameVi,
+      });
     } else {
       createdDepts++;
       const department = await prisma.department.upsert({
         where: { code: dept.code },
-        update: {},
+        update: {
+          name: dept.nameVi,
+          nameEn: dept.nameEn,
+          nameVi: dept.nameVi,
+          nameZh: dept.nameZh,
+        } as any, // Type assertion: fields exist in DB, will be in Prisma Client after regenerate
         create: {
-          name: dept.name,
+          name: dept.nameVi,
+          nameEn: dept.nameEn,
+          nameVi: dept.nameVi,
+          nameZh: dept.nameZh,
           code: dept.code,
           isActive: true,
-        },
+        } as any, // Type assertion: fields exist in DB, will be in Prisma Client after regenerate
       });
-      departmentMap.set(dept.name, {
+      departmentMap.set(dept.code, {
         id: department.id,
         name: department.name,
       });
     }
   }
-  console.log(
-    `✅ Departments: ${createdDepts} created, ${existingDepts} already exist (not modified)`
-  );
+  if (updatedDepts > 0) {
+    console.log(
+      `✅ Departments: ${createdDepts} created, ${existingDepts} already exist, ${updatedDepts} updated with multilingual names`
+    );
+  } else {
+    console.log(
+      `✅ Departments: ${createdDepts} created, ${existingDepts} already exist (not modified)`
+    );
+  }
 
   // Create folders linked to departments
   let createdFolders = 0;
   let existingFolders = 0;
   for (const dept of departments) {
-    const department = departmentMap.get(dept.name);
+    const department = departmentMap.get(dept.code);
     if (!department) continue;
 
+    const folderPath = dept.code;
     const existing = await prisma.folder.findUnique({
-      where: { path: dept.name },
+      where: { path: folderPath },
     });
     if (existing) {
       existingFolders++;
@@ -378,13 +748,13 @@ async function main() {
       createdFolders++;
     }
     const folder = await prisma.folder.upsert({
-      where: { path: dept.name },
+      where: { path: folderPath },
       update: {
         departmentId: department.id, // Update departmentId if folder exists
       },
       create: {
-        name: dept.name,
-        path: dept.name,
+        name: dept.nameVi,
+        path: folderPath,
         physicalLocation: dept.physicalLocation,
         departmentId: department.id, // Link to department
       },
@@ -394,13 +764,13 @@ async function main() {
     const subfolders = ["Tài liệu ISO", "KPI", "Bảo trì thiết bị", "Cải tiến"];
     for (const sub of subfolders) {
       await prisma.folder.upsert({
-        where: { path: `${dept.name}/${sub}` },
+        where: { path: `${folderPath}/${sub}` },
         update: {
           departmentId: department.id, // Update departmentId if subfolder exists
         },
         create: {
           name: sub,
-          path: `${dept.name}/${sub}`,
+          path: `${folderPath}/${sub}`,
           parentId: folder.id,
           departmentId: department.id, // Inherit from parent
         },

@@ -7,10 +7,17 @@ import { KpiExportController } from "./controllers/kpi-export.controller";
 import { KpiRecordService } from "./services/kpi-record.service";
 import { KpiMetricService } from "./services/kpi-metric.service";
 import { KpiExportService } from "./services/kpi-export.service";
+import { UserDepartmentResolver } from "./services/user-department.resolver";
 
 @Module({
   imports: [PrismaModule, DepartmentModule],
   controllers: [KpiRecordController, KpiMetricController, KpiExportController],
-  providers: [KpiRecordService, KpiMetricService, KpiExportService],
+  providers: [
+    KpiRecordService,
+    KpiMetricService,
+    KpiExportService,
+    UserDepartmentResolver,
+  ],
+  exports: [UserDepartmentResolver],
 })
 export class KpiModule {}

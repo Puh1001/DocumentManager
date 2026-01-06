@@ -225,6 +225,99 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
 
+  /**
+   * Fetch a file as blob with authentication
+   * Returns a blob URL that can be used in iframe, img, etc.
+   */
+  async fetchFileAsBlobUrl(endpoint: string): Promise<string> {
+    await this.ensureValidToken();
+
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Try to refresh token and retry once
+        try {
+          await this.refreshTokenIfNeeded();
+          const newToken = this.getToken();
+          if (newToken) {
+            headers.Authorization = `Bearer ${newToken}`;
+          }
+          const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+            method: "GET",
+            headers,
+          });
+          if (!retryResponse.ok) {
+            throw new Error(`Failed to fetch file: ${retryResponse.status}`);
+          }
+          const blob = await retryResponse.blob();
+          return URL.createObjectURL(blob);
+        } catch (error) {
+          throw new Error("Unauthorized: Failed to fetch file");
+        }
+      }
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  /**
+   * Fetch a file as ArrayBuffer with authentication
+   */
+  async fetchFileAsArrayBuffer(endpoint: string): Promise<ArrayBuffer> {
+    await this.ensureValidToken();
+
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Try to refresh token and retry once
+        try {
+          await this.refreshTokenIfNeeded();
+          const newToken = this.getToken();
+          if (newToken) {
+            headers.Authorization = `Bearer ${newToken}`;
+          }
+          const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+            method: "GET",
+            headers,
+          });
+          if (!retryResponse.ok) {
+            throw new Error(`Failed to fetch file: ${retryResponse.status}`);
+          }
+          return await retryResponse.arrayBuffer();
+        } catch (error) {
+          throw new Error("Unauthorized: Failed to fetch file");
+        }
+      }
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    }
+
+    return await response.arrayBuffer();
+  }
+
   async upload<T>(
     endpoint: string,
     file: File,
@@ -419,7 +512,10 @@ export const api = new ApiClient();
 // Department types and API methods
 export interface Department {
   id: string;
-  name: string;
+  name: string; // Vietnamese name (for backward compatibility)
+  nameEn?: string; // English name
+  nameVi?: string; // Vietnamese name
+  nameZh?: string; // Chinese name
   code: string;
   isActive: boolean;
   createdAt: string;
@@ -427,14 +523,20 @@ export interface Department {
 }
 
 export interface CreateDepartmentDto {
-  name: string;
   code: string;
+  name?: string; // Vietnamese name (for backward compatibility)
+  nameEn?: string; // English name
+  nameVi?: string; // Vietnamese name
+  nameZh?: string; // Chinese name
   isActive?: boolean;
 }
 
 export interface UpdateDepartmentDto {
-  name?: string;
   code?: string;
+  name?: string; // Vietnamese name (for backward compatibility)
+  nameEn?: string; // English name
+  nameVi?: string; // Vietnamese name
+  nameZh?: string; // Chinese name
   isActive?: boolean;
 }
 
@@ -447,6 +549,26 @@ export const departmentApi = {
     api.patch<Department>(`/departments/${id}`, data),
   delete: (id: string) => api.delete(`/departments/${id}`),
 };
+
+/**
+ * Get department name based on locale
+ * @param department - Department object
+ * @param locale - Current locale (en, vi, zh)
+ * @returns Department name in the specified locale, falls back to Vietnamese or code
+ */
+export function getDepartmentName(
+  department: Department,
+  locale: string = "vi"
+): string {
+  if (locale === "en" && department.nameEn) {
+    return department.nameEn;
+  }
+  if (locale === "zh" && department.nameZh) {
+    return department.nameZh;
+  }
+  // Default to Vietnamese
+  return department.nameVi || department.name || department.code;
+}
 
 // Maintenance Notice types and API methods
 export interface MaintenanceNotice {
@@ -640,4 +762,37 @@ export const permissionApi = {
     api.get<RoleWithPermissions>(`/permissions/roles/${roleId}`),
   assignRolePermissions: (roleId: string, data: AssignRolePermissionsDto) =>
     api.post<RoleWithPermissions>(`/permissions/roles/${roleId}`, data),
+};
+
+// Module types and API methods
+export interface Module {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateModuleDto {
+  name: string;
+  displayName: string;
+  description?: string;
+}
+
+export interface UpdateModuleDto {
+  name?: string;
+  displayName?: string;
+  description?: string | null;
+  isActive?: boolean;
+}
+
+export const moduleApi = {
+  getAll: () => api.get<Module[]>("/modules"),
+  getById: (id: string) => api.get<Module>(`/modules/${id}`),
+  create: (data: CreateModuleDto) => api.post<Module>("/modules", data),
+  update: (id: string, data: UpdateModuleDto) =>
+    api.patch<Module>(`/modules/${id}`, data),
+  delete: (id: string) => api.delete(`/modules/${id}`),
 };

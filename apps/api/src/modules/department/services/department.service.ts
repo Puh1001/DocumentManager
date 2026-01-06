@@ -56,9 +56,15 @@ export class DepartmentService {
       );
     }
 
+    // Use nameVi if provided, otherwise fallback to name, otherwise use code
+    const nameVi = dto.nameVi || dto.name || dto.code;
+
     return this.prisma.department.create({
       data: {
-        name: dto.name,
+        name: nameVi, // Backward compatibility: default to Vietnamese
+        nameEn: dto.nameEn,
+        nameVi: nameVi,
+        nameZh: dto.nameZh,
         code: dto.code,
         isActive: dto.isActive ?? true,
       },
@@ -91,13 +97,35 @@ export class DepartmentService {
       }
     }
 
+    // Prepare update data
+    const updateData: {
+      code?: string;
+      isActive?: boolean;
+      name?: string;
+      nameEn?: string;
+      nameVi?: string;
+      nameZh?: string;
+    } = {
+      ...(dto.code && { code: dto.code }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    };
+
+    // Update multilingual names
+    if (dto.nameVi !== undefined || dto.name !== undefined) {
+      const nameVi = dto.nameVi || dto.name;
+      updateData.nameVi = nameVi;
+      updateData.name = nameVi; // Update name field for backward compatibility
+    }
+    if (dto.nameEn !== undefined) {
+      updateData.nameEn = dto.nameEn;
+    }
+    if (dto.nameZh !== undefined) {
+      updateData.nameZh = dto.nameZh;
+    }
+
     return this.prisma.department.update({
       where: { id },
-      data: {
-        ...(dto.name && { name: dto.name }),
-        ...(dto.code && { code: dto.code }),
-        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-      },
+      data: updateData,
     });
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type Department } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { type Department, getDepartmentName } from "@/lib/api";
 import { type ViewType } from "./use-boss-navigation";
 import { ArrowLeft, BarChart2, Wrench, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ export function ViewSelector({
   onBack,
 }: ViewSelectorProps) {
   const t = useTranslations("boss");
+  const locale = useLocale();
 
   const views = [
     {
@@ -63,7 +64,7 @@ export function ViewSelector({
         </button>
         <div className="cyber-corner cyber-card px-6 py-4">
           <h2 className="text-3xl font-cyber font-bold cyber-neon-cyan mb-1">
-            {department.name}
+            {getDepartmentName(department, locale)}
           </h2>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-xs font-cyber text-cyan-300/80">ID:</span>

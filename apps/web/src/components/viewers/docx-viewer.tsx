@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
+import { api } from "@/lib/api";
 
 interface DocxViewerProps {
   fileUrl: string;
 }
 
 export function DocxViewer({ fileUrl }: DocxViewerProps) {
-  const [html, setHtml] = useState('');
+  const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,23 +17,38 @@ export function DocxViewer({ fileUrl }: DocxViewerProps) {
       setLoading(true);
       setError(null);
 
-      // Fetch the document
-      const response = await fetch(fileUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch document');
-      }
+      // Extract endpoint from fileUrl (remove /api prefix if present)
+      const endpoint = fileUrl.startsWith("/api/")
+        ? fileUrl.substring(4)
+        : fileUrl;
 
-      const arrayBuffer = await response.arrayBuffer();
+      // Fetch the document with authentication
+      const arrayBuffer = await api.fetchFileAsArrayBuffer(endpoint);
 
-      // Use mammoth to convert to HTML
+      // Use mammoth to convert to HTML with style preservation
       // Note: mammoth is loaded dynamically to reduce bundle size
-      const mammoth = await import('mammoth');
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      
+      const mammoth = await import("mammoth");
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer },
+        {
+          styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Heading 5'] => h5:fresh",
+            "p[style-name='Heading 6'] => h6:fresh",
+            "r[style-name='Strong'] => strong",
+            "r[style-name='Emphasis'] => em",
+          ],
+          includeDefaultStyleMap: true,
+        }
+      );
+
       setHtml(result.value);
     } catch (err) {
-      console.error('Failed to load DOCX:', err);
-      setError('Không thể tải tài liệu. Vui lòng thử lại.');
+      console.error("Failed to load DOCX:", err);
+      setError("Không thể tải tài liệu. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }

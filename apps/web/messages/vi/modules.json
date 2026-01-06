@@ -1,0 +1,37 @@
+{
+  "title": "Quản lý Module",
+  "description": "Quản lý các module hệ thống và quyền của chúng",
+  "list": "Modules",
+  "search": "Tìm kiếm modules...",
+  "addModule": "Thêm Module",
+  "empty": "Không có module nào",
+  "noResults": "Không tìm thấy module",
+  "permissions": "Quyền",
+  "noPermissions": "Chưa có quyền nào được gán",
+  "inactive": "Không hoạt động",
+  "actions": {
+    "create": "Tạo",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "manage": "Quản lý",
+    "view": "Xem"
+  },
+  "createModule": "Tạo Module",
+  "editModule": "Sửa Module",
+  "name": "Tên",
+  "displayName": "Tên hiển thị",
+  "description": "Mô tả",
+  "nameHint": "Định dạng PascalCase (ví dụ: User, Department, Kpi)",
+  "createDescription": "Tạo module mới. Các quyền sẽ được tự động tạo.",
+  "editDescription": "Cập nhật thông tin module",
+  "createSuccess": "Đã tạo module",
+  "createSuccessDesc": "Module đã được tạo và các quyền đã được tự động tạo.",
+  "updateSuccess": "Đã cập nhật module",
+  "updateSuccessDesc": "Module đã được cập nhật thành công.",
+  "deleteSuccess": "Đã xóa module",
+  "deleteSuccessDesc": "Module đã được xóa thành công.",
+  "deleteConfirm": "Xóa Module",
+  "deleteConfirmDesc": "Bạn có chắc chắn muốn xóa module này? Hành động này không thể hoàn tác.",
+  "delete": "Xóa"
+}
+

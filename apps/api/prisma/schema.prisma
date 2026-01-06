@@ -291,8 +291,11 @@ model AuditLog {
 
 model Department {
   id        String   @id @default(uuid())
-  name      String // e.g., "转机部 chuyển máy dệt dây đai-V-TECH"
-  code      String   @unique // e.g., "DEPT-001"
+  name      String // Vietnamese name (default, for backward compatibility)
+  nameEn    String?  @map("name_en") // English name
+  nameVi    String?  @map("name_vi") // Vietnamese name
+  nameZh    String?  @map("name_zh") // Chinese name
+  code      String   @unique // e.g., "BOD", "HCNS"
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

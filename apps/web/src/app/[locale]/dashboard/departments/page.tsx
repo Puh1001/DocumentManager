@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { departmentApi, type Department } from "@/lib/api";
+import { departmentApi, type Department, getDepartmentName } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getErrorMessage } from "@/lib/error-handler";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -39,6 +39,7 @@ export default function DepartmentsPage() {
   const t = useTranslations();
   const tDept = useTranslations("departments");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,7 +183,9 @@ export default function DepartmentsPage() {
                     <Card key={dept.id} className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{dept.name}</h3>
+                          <h3 className="font-semibold text-lg">
+                            {getDepartmentName(dept, locale)}
+                          </h3>
                           <p className="text-sm text-muted-foreground mt-1">
                             {tDept("code")}: {dept.code}
                           </p>

@@ -38,6 +38,10 @@ export interface Permission {
   id: string;
 }
 
+export interface Module {
+  id: string;
+}
+
 export type Subjects =
   | Document
   | Folder
@@ -46,6 +50,7 @@ export type Subjects =
   | Department
   | Kpi
   | Permission
+  | Module
   | "Document"
   | "Folder"
   | "User"
@@ -53,6 +58,7 @@ export type Subjects =
   | "Department"
   | "Kpi"
   | "Permission"
+  | "Module"
   | "all";
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>;

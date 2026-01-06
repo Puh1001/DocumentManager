@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { api } from "@/lib/api";
 import { FolderTree } from "@/components/documents/folder-tree";
 import { DocumentList } from "@/components/documents/document-list";
@@ -42,6 +42,7 @@ interface UploadProgress {
 
 export default function DocumentsPage() {
   const t = useTranslations("documents");
+  const locale = useLocale();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -267,8 +268,8 @@ export default function DocumentsPage() {
                 documents={documents}
                 folderId={selectedFolderId}
                 onDocumentClick={(doc) => {
-                  // Open document viewer
-                  window.open(`/dashboard/documents/${doc.id}/view`, "_blank");
+                  // Open document viewer with locale
+                  window.open(`/${locale}/dashboard/documents/${doc.id}/view`, "_blank");
                 }}
               />
             ) : (

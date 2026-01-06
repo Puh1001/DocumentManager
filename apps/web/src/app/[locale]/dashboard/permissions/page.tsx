@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,10 @@ import {
 import {
   roleApi,
   permissionApi,
+  moduleApi,
   type Role,
   type Permission,
+  type Module,
   type CreateRoleDto,
   type UpdateRoleDto,
 } from "@/lib/api";
@@ -34,6 +36,10 @@ import {
   Settings,
   Search,
   Check,
+  Filter,
+  Grid3x3,
+  List,
+  X,
 } from "lucide-react";
 import type { PageMetadata } from "@/lib/types/page-metadata";
 import { registerPage } from "@/lib/page-registry";
@@ -58,8 +64,11 @@ export default function PermissionsPage() {
   const { user } = useAuth();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [groupByModule, setGroupByModule] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [isPermissionFormDialogOpen, setIsPermissionFormDialogOpen] =
@@ -91,12 +100,14 @@ export default function PermissionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [permsData, rolesData] = await Promise.all([
+      const [permsData, rolesData, modulesData] = await Promise.all([
         permissionApi.getAll(),
         roleApi.getAll({ limit: 100 }),
+        moduleApi.getAll(),
       ]);
       setPermissions(permsData);
       setRoles(rolesData.data);
+      setModules(modulesData.filter((m) => m.isActive));
 
       // Load permissions for each role to compute usage
       const usageMap = new Map<string, Role[]>();
@@ -330,14 +341,97 @@ export default function PermissionsPage() {
       role.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPermissions = permissions.filter(
-    (perm) =>
-      !permissionSearchTerm ||
-      perm.name.toLowerCase().includes(permissionSearchTerm.toLowerCase()) ||
-      perm.description
-        ?.toLowerCase()
-        .includes(permissionSearchTerm.toLowerCase())
-  );
+  /**
+   * Extracts module name from permission name.
+   *
+   * Permission names follow the format: "action:Module" (e.g., "view:User", "create:Department").
+   * Returns the module name part, or null if the format is invalid or module name is empty.
+   *
+   * @param permission - The permission object containing the name to parse
+   * @returns The module name (e.g., "User", "Department") or null if not found/invalid
+   *
+   * @example
+   * ```typescript
+   * getModuleFromPermission({ name: "view:User" }) // Returns "User"
+   * getModuleFromPermission({ name: "create:Department" }) // Returns "Department"
+   * getModuleFromPermission({ name: "invalid" }) // Returns null
+   * getModuleFromPermission({ name: "view:" }) // Returns null (empty module name)
+   * ```
+   */
+  const getModuleFromPermission = (permission: Permission): string | null => {
+    const parts = permission.name.split(":");
+    if (parts.length >= 2 && parts[1]) {
+      // Return first part after action (handles action:Module:SubModule by returning Module)
+      return parts[1];
+    }
+    return null;
+  };
+
+  // Filter permissions by search term and module
+  const filteredPermissions = useMemo(() => {
+    let filtered = permissions.filter(
+      (perm) =>
+        !permissionSearchTerm ||
+        perm.name.toLowerCase().includes(permissionSearchTerm.toLowerCase()) ||
+        perm.description
+          ?.toLowerCase()
+          .includes(permissionSearchTerm.toLowerCase())
+    );
+
+    // Filter by module if selected
+    if (selectedModule) {
+      filtered = filtered.filter((perm) => {
+        const moduleName = getModuleFromPermission(perm);
+        return moduleName === selectedModule;
+      });
+    }
+
+    return filtered;
+  }, [permissions, permissionSearchTerm, selectedModule]);
+
+  // Group permissions by module
+  const groupedPermissions = useMemo(() => {
+    const groups: Record<string, Permission[]> = {};
+    const otherGroup: Permission[] = [];
+
+    filteredPermissions.forEach((perm) => {
+      const moduleName = getModuleFromPermission(perm);
+      if (moduleName) {
+        if (!groups[moduleName]) {
+          groups[moduleName] = [];
+        }
+        groups[moduleName].push(perm);
+      } else {
+        otherGroup.push(perm);
+      }
+    });
+
+    // Sort modules alphabetically
+    const sortedGroups: Record<string, Permission[]> = {};
+    Object.keys(groups)
+      .sort()
+      .forEach((key) => {
+        sortedGroups[key] = groups[key];
+      });
+
+    if (otherGroup.length > 0) {
+      sortedGroups["Other"] = otherGroup;
+    }
+
+    return sortedGroups;
+  }, [filteredPermissions]);
+
+  // Get available modules from permissions
+  const availableModules = useMemo(() => {
+    const moduleSet = new Set<string>();
+    permissions.forEach((perm) => {
+      const moduleName = getModuleFromPermission(perm);
+      if (moduleName) {
+        moduleSet.add(moduleName);
+      }
+    });
+    return Array.from(moduleSet).sort();
+  }, [permissions]);
 
   if (loading && roles.length === 0) {
     return (
@@ -384,36 +478,189 @@ export default function PermissionsPage() {
                 <Shield className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>{tPerms("availablePermissions")}</CardTitle>
               </div>
-              {isAdmin && (
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder={tPerms("searchPermissions")}
-                    value={permissionSearchTerm}
-                    onChange={(e) => setPermissionSearchTerm(e.target.value)}
-                    className="pl-8 w-48"
-                  />
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {/* Group toggle */}
+                <Button
+                  variant={groupByModule ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setGroupByModule(!groupByModule)}
+                  title={groupByModule ? "List view" : "Group by module"}
+                >
+                  {groupByModule ? (
+                    <List className="h-4 w-4" />
+                  ) : (
+                    <Grid3x3 className="h-4 w-4" />
+                  )}
+                </Button>
+                {/* Module filter */}
+                {availableModules.length > 0 && (
+                  <div className="relative">
+                    <Filter className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <select
+                      value={selectedModule || ""}
+                      onChange={(e) =>
+                        setSelectedModule(e.target.value || null)
+                      }
+                      className="pl-8 pr-8 h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="">All Modules</option>
+                      {availableModules.map((moduleName) => {
+                        const module = modules.find(
+                          (m) => m.name === moduleName
+                        );
+                        return (
+                          <option key={moduleName} value={moduleName}>
+                            {module?.displayName || moduleName}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {selectedModule && (
+                      <button
+                        onClick={() => setSelectedModule(null)}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                        title="Clear filter"
+                      >
+                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {/* Search */}
+                {isAdmin && (
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder={tPerms("searchPermissions")}
+                      value={permissionSearchTerm}
+                      onChange={(e) => setPermissionSearchTerm(e.target.value)}
+                      className="pl-8 w-48"
+                    />
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {filteredPermissions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {tPerms("noPermissions")}
+                  {selectedModule
+                    ? tPerms("noPermissionsForModule", {
+                        module:
+                          modules.find((m) => m.name === selectedModule)
+                            ?.displayName || selectedModule,
+                      }) ||
+                      `No permissions found for ${modules.find((m) => m.name === selectedModule)?.displayName || selectedModule}`
+                    : permissionSearchTerm
+                      ? tPerms("noPermissionsMatchingSearch") ||
+                        "No permissions match your search"
+                      : tPerms("noPermissions")}
                 </p>
+              ) : groupByModule ? (
+                // Grouped view
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {Object.entries(groupedPermissions).map(
+                    ([moduleName, modulePerms]) => {
+                      const module = modules.find((m) => m.name === moduleName);
+                      return (
+                        <div key={moduleName} className="space-y-2">
+                          <div className="flex items-center gap-2 pb-2 border-b">
+                            <h3 className="font-semibold text-sm">
+                              {module?.displayName || moduleName}
+                            </h3>
+                            <span className="text-xs text-muted-foreground">
+                              ({modulePerms.length})
+                            </span>
+                          </div>
+                          <div className="space-y-2 pl-2">
+                            {modulePerms.map((perm) => {
+                              const rolesUsingPermission =
+                                rolesWithPermissions.get(perm.id) || [];
+                              return (
+                                <div
+                                  key={perm.id}
+                                  className="flex items-center justify-between p-3 rounded border hover:bg-muted/50"
+                                >
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm">
+                                      {perm.name}
+                                    </p>
+                                    {perm.description && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {perm.description}
+                                      </p>
+                                    )}
+                                    {rolesUsingPermission.length > 0 && (
+                                      <div className="mt-1 flex flex-wrap gap-1">
+                                        <span className="text-xs text-muted-foreground">
+                                          {tPerms("usedBy")}:
+                                        </span>
+                                        {rolesUsingPermission.map((role) => (
+                                          <span
+                                            key={role.id}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                          >
+                                            {role.name}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isAdmin && (
+                                    <div className="flex gap-2 ml-4">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleOpenPermissionFormDialog(perm)
+                                        }
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleDeletePermission(perm.id)
+                                        }
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
               ) : (
+                // List view
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {filteredPermissions.map((perm) => {
                     const rolesUsingPermission =
                       rolesWithPermissions.get(perm.id) || [];
+                    const moduleName = getModuleFromPermission(perm);
+                    const module = moduleName
+                      ? modules.find((m) => m.name === moduleName)
+                      : null;
                     return (
                       <div
                         key={perm.id}
                         className="flex items-center justify-between p-3 rounded border hover:bg-muted/50"
                       >
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{perm.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{perm.name}</p>
+                            {moduleName && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {module?.displayName || moduleName}
+                              </span>
+                            )}
+                          </div>
                           {perm.description && (
                             <p className="text-xs text-muted-foreground">
                               {perm.description}

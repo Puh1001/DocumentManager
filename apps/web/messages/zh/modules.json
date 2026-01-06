@@ -1,0 +1,37 @@
+{
+  "title": "模块管理",
+  "description": "管理系统模块及其权限",
+  "list": "模块",
+  "search": "搜索模块...",
+  "addModule": "添加模块",
+  "empty": "没有可用模块",
+  "noResults": "未找到模块",
+  "permissions": "权限",
+  "noPermissions": "未分配权限",
+  "inactive": "未激活",
+  "actions": {
+    "create": "创建",
+    "delete": "删除",
+    "edit": "编辑",
+    "manage": "管理",
+    "view": "查看"
+  },
+  "createModule": "创建模块",
+  "editModule": "编辑模块",
+  "name": "名称",
+  "displayName": "显示名称",
+  "description": "描述",
+  "nameHint": "PascalCase格式（例如：User, Department, Kpi）",
+  "createDescription": "创建新模块。权限将自动生成。",
+  "editDescription": "更新模块信息",
+  "createSuccess": "模块已创建",
+  "createSuccessDesc": "模块已创建，权限已自动生成。",
+  "updateSuccess": "模块已更新",
+  "updateSuccessDesc": "模块已成功更新。",
+  "deleteSuccess": "模块已删除",
+  "deleteSuccessDesc": "模块已成功删除。",
+  "deleteConfirm": "删除模块",
+  "deleteConfirmDesc": "您确定要删除此模块吗？此操作无法撤销。",
+  "delete": "删除"
+}
+

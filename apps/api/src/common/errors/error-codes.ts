@@ -11,6 +11,7 @@ export const ErrorCodes = {
   },
   USER: {
     NOT_FOUND: "user.not_found",
+    INVALID_ID: "user.invalid_id",
     USERNAME_EXISTS: "user.create.username_exists",
     EMAIL_EXISTS: "user.create.email_exists",
     USERNAME_OR_EMAIL_EXISTS: "user.create.username_or_email_exists",
