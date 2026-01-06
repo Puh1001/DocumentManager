@@ -8,6 +8,7 @@ import { KpiRecordService } from "./services/kpi-record.service";
 import { KpiMetricService } from "./services/kpi-metric.service";
 import { KpiExportService } from "./services/kpi-export.service";
 import { UserDepartmentResolver } from "./services/user-department.resolver";
+import { UserDepartmentGuard } from "./guards/user-department.guard";
 
 @Module({
   imports: [PrismaModule, DepartmentModule],
@@ -17,6 +18,7 @@ import { UserDepartmentResolver } from "./services/user-department.resolver";
     KpiMetricService,
     KpiExportService,
     UserDepartmentResolver,
+    UserDepartmentGuard,
   ],
   exports: [UserDepartmentResolver],
 })

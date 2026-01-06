@@ -5,10 +5,38 @@ import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { CreateKpiRecordDto } from "../dto/create-kpi-record.dto";
 import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
+import {
+  UserDepartmentResolver,
+  UserWithDepartment,
+} from "./user-department.resolver";
 
 describe("KpiRecordService", () => {
   let service: KpiRecordService;
   let prismaService: jest.Mocked<PrismaService>;
+
+  const mockAdminUser: UserWithDepartment = {
+    userId: "user-1",
+    departmentId: "dept-1",
+    roles: ["admin"],
+    isAdmin: true,
+    isBoss: false,
+  };
+
+  const mockRegularUser: UserWithDepartment = {
+    userId: "user-2",
+    departmentId: "dept-1",
+    roles: ["editor"],
+    isAdmin: false,
+    isBoss: false,
+  };
+
+  const mockUserNoDept: UserWithDepartment = {
+    userId: "user-3",
+    departmentId: null,
+    roles: ["editor"],
+    isAdmin: false,
+    isBoss: false,
+  };
 
   const mockKpiRecord = {
     id: "kpi-record-1",
@@ -41,10 +69,20 @@ describe("KpiRecordService", () => {
       },
     };
 
+    const mockUserDepartmentResolver = {
+      getUserWithDepartment: jest.fn(),
+      resolveDepartmentId: jest.fn(),
+      hasFullAccess: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KpiRecordService,
         { provide: PrismaService, useValue: mockPrismaService },
+        {
+          provide: UserDepartmentResolver,
+          useValue: mockUserDepartmentResolver,
+        },
       ],
     }).compile();
 
@@ -57,13 +95,13 @@ describe("KpiRecordService", () => {
   });
 
   describe("findAll", () => {
-    it("should return all KPI records when no filters provided", async () => {
+    it("should return all KPI records for admin user", async () => {
       const mockRecords = [mockKpiRecord];
       prismaService.kpiRecord.findMany = jest
         .fn()
         .mockResolvedValue(mockRecords);
 
-      const result = await service.findAll({});
+      const result = await service.findAll({}, mockAdminUser);
 
       expect(result).toEqual(mockRecords);
       expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
@@ -81,13 +119,16 @@ describe("KpiRecordService", () => {
       });
     });
 
-    it("should filter by departmentId when provided", async () => {
+    it("should filter by departmentId for admin user", async () => {
       const mockRecords = [mockKpiRecord];
       prismaService.kpiRecord.findMany = jest
         .fn()
         .mockResolvedValue(mockRecords);
 
-      const result = await service.findAll({ departmentId: "dept-1" });
+      const result = await service.findAll(
+        { departmentId: "dept-1" },
+        mockAdminUser
+      );
 
       expect(result).toEqual(mockRecords);
       expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
@@ -111,7 +152,7 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(mockRecords);
 
-      const result = await service.findAll({ year: 2025 });
+      const result = await service.findAll({ year: 2025 }, mockAdminUser);
 
       expect(result).toEqual(mockRecords);
       expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
@@ -135,10 +176,13 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(mockRecords);
 
-      const result = await service.findAll({
-        departmentId: "dept-1",
-        year: 2025,
-      });
+      const result = await service.findAll(
+        {
+          departmentId: "dept-1",
+          year: 2025,
+        },
+        mockAdminUser
+      );
 
       expect(result).toEqual(mockRecords);
       expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
@@ -155,6 +199,37 @@ describe("KpiRecordService", () => {
         orderBy: { createdAt: "desc" },
       });
     });
+
+    it("should filter by user's department for regular user", async () => {
+      const mockRecords = [mockKpiRecord];
+      prismaService.kpiRecord.findMany = jest
+        .fn()
+        .mockResolvedValue(mockRecords);
+
+      const result = await service.findAll({}, mockRegularUser);
+
+      expect(result).toEqual(mockRecords);
+      expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
+        where: {
+          departmentId: "dept-1", // User's department
+          year: undefined,
+        },
+        include: {
+          department: true,
+          metrics: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    });
+
+    it("should return empty array for user with no department", async () => {
+      const result = await service.findAll({}, mockUserNoDept);
+
+      expect(result).toEqual([]);
+      expect(prismaService.kpiRecord.findMany).not.toHaveBeenCalled();
+    });
   });
 
   describe("findOne", () => {
@@ -163,7 +238,7 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(mockKpiRecord);
 
-      const result = await service.findOne("kpi-record-1");
+      const result = await service.findOne("kpi-record-1", mockAdminUser);
 
       expect(result).toEqual(mockKpiRecord);
       expect(prismaService.kpiRecord.findUnique).toHaveBeenCalledWith({
@@ -181,12 +256,32 @@ describe("KpiRecordService", () => {
       prismaService.kpiRecord.findUnique = jest.fn().mockResolvedValue(null);
 
       try {
-        await service.findOne("invalid-id");
+        await service.findOne("invalid-id", mockAdminUser);
         fail("Expected CustomException to be thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
           ErrorCodes.KPI.RECORD_NOT_FOUND
+        );
+      }
+    });
+
+    it("should throw 403 when regular user accesses different department", async () => {
+      const differentDeptRecord = {
+        ...mockKpiRecord,
+        departmentId: "dept-2",
+      };
+      prismaService.kpiRecord.findUnique = jest
+        .fn()
+        .mockResolvedValue(differentDeptRecord);
+
+      try {
+        await service.findOne("kpi-record-1", mockRegularUser);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
         );
       }
     });
@@ -213,7 +308,7 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(createdRecord);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, mockAdminUser);
 
       expect(result).toEqual(createdRecord);
       expect(prismaService.kpiRecord.create).toHaveBeenCalledWith({
@@ -246,7 +341,7 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(createdRecord);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, mockAdminUser);
 
       expect(result).toEqual(createdRecord);
       expect(prismaService.kpiRecord.create).toHaveBeenCalledWith({
@@ -258,6 +353,45 @@ describe("KpiRecordService", () => {
           targetValue: undefined,
         },
       });
+    });
+
+    it("should throw 403 when regular user creates KPI for different department", async () => {
+      const dto: CreateKpiRecordDto = {
+        departmentId: "dept-2", // Different from user's department
+        year: 2025,
+        title: "New KPI Title",
+        target: "≥90%",
+        targetValue: 90,
+      };
+
+      try {
+        await service.create(dto, mockRegularUser);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.DEPARTMENT_MISMATCH
+        );
+      }
+    });
+
+    it("should throw 403 when user with no department creates KPI", async () => {
+      const dto: CreateKpiRecordDto = {
+        departmentId: "dept-1",
+        year: 2025,
+        title: "New KPI Title",
+        target: "≥90%",
+      };
+
+      try {
+        await service.create(dto, mockUserNoDept);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT
+        );
+      }
     });
   });
 
@@ -278,17 +412,17 @@ describe("KpiRecordService", () => {
 
       prismaService.kpiRecord.findUnique = jest
         .fn()
-        .mockResolvedValue({ id: "kpi-record-1" });
+        .mockResolvedValue({ departmentId: "dept-1" });
       prismaService.kpiRecord.update = jest
         .fn()
         .mockResolvedValue(updatedRecord);
 
-      const result = await service.update("kpi-record-1", dto);
+      const result = await service.update("kpi-record-1", dto, mockAdminUser);
 
       expect(result).toEqual(updatedRecord);
       expect(prismaService.kpiRecord.findUnique).toHaveBeenCalledWith({
         where: { id: "kpi-record-1" },
-        select: { id: true },
+        select: { departmentId: true },
       });
       expect(prismaService.kpiRecord.update).toHaveBeenCalledWith({
         where: { id: "kpi-record-1" },
@@ -310,12 +444,32 @@ describe("KpiRecordService", () => {
       prismaService.kpiRecord.findUnique = jest.fn().mockResolvedValue(null);
 
       try {
-        await service.update("invalid-id", dto);
+        await service.update("invalid-id", dto, mockAdminUser);
         fail("Expected CustomException to be thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
           ErrorCodes.KPI.RECORD_NOT_FOUND
+        );
+      }
+    });
+
+    it("should throw 403 when regular user updates different department's KPI", async () => {
+      const dto: UpdateKpiRecordDto = {
+        title: "Updated Title",
+      };
+
+      prismaService.kpiRecord.findUnique = jest
+        .fn()
+        .mockResolvedValue({ departmentId: "dept-2" }); // Different department
+
+      try {
+        await service.update("kpi-record-1", dto, mockRegularUser);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
         );
       }
     });
@@ -325,17 +479,17 @@ describe("KpiRecordService", () => {
     it("should delete KPI record", async () => {
       prismaService.kpiRecord.findUnique = jest
         .fn()
-        .mockResolvedValue({ id: "kpi-record-1" });
+        .mockResolvedValue({ departmentId: "dept-1" });
       prismaService.kpiRecord.delete = jest
         .fn()
         .mockResolvedValue(mockKpiRecord);
 
-      const result = await service.remove("kpi-record-1");
+      const result = await service.remove("kpi-record-1", mockAdminUser);
 
       expect(result).toEqual(mockKpiRecord);
       expect(prismaService.kpiRecord.findUnique).toHaveBeenCalledWith({
         where: { id: "kpi-record-1" },
-        select: { id: true },
+        select: { departmentId: true },
       });
       expect(prismaService.kpiRecord.delete).toHaveBeenCalledWith({
         where: { id: "kpi-record-1" },
@@ -346,12 +500,28 @@ describe("KpiRecordService", () => {
       prismaService.kpiRecord.findUnique = jest.fn().mockResolvedValue(null);
 
       try {
-        await service.remove("invalid-id");
+        await service.remove("invalid-id", mockAdminUser);
         fail("Expected CustomException to be thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
           ErrorCodes.KPI.RECORD_NOT_FOUND
+        );
+      }
+    });
+
+    it("should throw 403 when regular user deletes different department's KPI", async () => {
+      prismaService.kpiRecord.findUnique = jest
+        .fn()
+        .mockResolvedValue({ departmentId: "dept-2" }); // Different department
+
+      try {
+        await service.remove("kpi-record-1", mockRegularUser);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
         );
       }
     });

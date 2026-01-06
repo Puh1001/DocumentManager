@@ -12,29 +12,42 @@ import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { KpiMetricService } from "../services/kpi-metric.service";
 import { CreateKpiMetricDto } from "../dto/create-kpi-metric.dto";
 import { UpdateKpiMetricDto } from "../dto/update-kpi-metric.dto";
+import { UserDepartmentGuard } from "../guards/user-department.guard";
+import { CurrentUserWithDepartment } from "../decorators/current-user-with-department.decorator";
+import { UserWithDepartment } from "../services/user-department.resolver";
 
 @ApiTags("KPI Metrics")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, UserDepartmentGuard)
 @Controller("kpi/metrics")
 export class KpiMetricController {
   constructor(private readonly kpiMetricService: KpiMetricService) {}
 
   @Post()
   @ApiOperation({ summary: "Create KPI metric row" })
-  create(@Body() dto: CreateKpiMetricDto) {
-    return this.kpiMetricService.create(dto);
+  async create(
+    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @Body() dto: CreateKpiMetricDto
+  ) {
+    return this.kpiMetricService.create(dto, user);
   }
 
   @Patch(":id")
   @ApiOperation({ summary: "Update KPI metric row" })
-  update(@Param("id") id: string, @Body() dto: UpdateKpiMetricDto) {
-    return this.kpiMetricService.update(id, dto);
+  async update(
+    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @Param("id") id: string,
+    @Body() dto: UpdateKpiMetricDto
+  ) {
+    return this.kpiMetricService.update(id, dto, user);
   }
 
   @Delete(":id")
   @ApiOperation({ summary: "Delete KPI metric row" })
-  remove(@Param("id") id: string) {
-    return this.kpiMetricService.remove(id);
+  async remove(
+    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @Param("id") id: string
+  ) {
+    return this.kpiMetricService.remove(id, user);
   }
 }

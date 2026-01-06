@@ -41,6 +41,11 @@ export const ErrorCodes = {
   KPI: {
     RECORD_NOT_FOUND: "kpi.record.not_found",
     METRIC_NOT_FOUND: "kpi.metric.not_found",
+    ACCESS_DENIED: "kpi.access.denied",
+    ACCESS_DENIED_NO_DEPARTMENT: "kpi.access.denied.no_department",
+    ACCESS_DENIED_DIFFERENT_DEPARTMENT:
+      "kpi.access.denied.different_department",
+    DEPARTMENT_MISMATCH: "kpi.department.mismatch",
   },
   MAINTENANCE: {
     NOT_FOUND: "maintenance.not_found",
