@@ -353,7 +353,8 @@ export default function MaintenancePage() {
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-semibold">{notice.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {t("list.department")}: {getNoticeDepartmentName(notice)}
+                          {t("list.department")}:{" "}
+                          {getNoticeDepartmentName(notice)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t("list.windowLabel")}:{" "}
