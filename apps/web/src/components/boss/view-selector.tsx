@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import { type Department, getDepartmentName } from "@/lib/api";
 import { type ViewType } from "./use-boss-navigation";
-import { ArrowLeft, BarChart2, Wrench, FileText } from "lucide-react";
+import { ArrowLeft, BarChart2, Wrench, FileText, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ViewSelectorProps {
@@ -54,7 +54,7 @@ export function ViewSelector({
   return (
     <div className="space-y-8">
       {/* Header with back button and department name */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         <button
           onClick={onBack}
           className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
@@ -62,15 +62,18 @@ export function ViewSelector({
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
-        <div className="cyber-corner cyber-card px-6 py-4">
-          <h2 className="text-3xl font-cyber font-bold cyber-neon-cyan mb-1">
-            {getDepartmentName(department, locale)}
-          </h2>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs font-cyber text-cyan-300/80">ID:</span>
-            <span className="text-sm font-cyber text-cyan-200 font-semibold">
-              {department.code}
-            </span>
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+            <Building2 className="h-6 w-6" />
+          </span>
+          <div className="flex flex-col">
+            <h2 className="text-3xl font-cyber font-bold cyber-neon-cyan leading-tight">
+              {getDepartmentName(department, locale)}
+            </h2>
+            <div className="flex items-center gap-2 mt-1 text-sm text-cyan-200">
+              <span className="text-xs font-cyber text-cyan-300/80 uppercase">ID</span>
+              <span className="font-cyber font-semibold">{department.code}</span>
+            </div>
           </div>
         </div>
       </div>

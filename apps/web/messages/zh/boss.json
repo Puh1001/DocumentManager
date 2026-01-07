@@ -1,7 +1,7 @@
 {
-  "title": "BOSS 仪表板",
+  "title": "BPVN 管理看板",
   "description": "查看所有部门、KPI、维护和文档",
-  "comingSoon": "BOSS UI 正在实施中...",
+  "comingSoon": "BPVN 管理看板界面正在实施中...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "维护",

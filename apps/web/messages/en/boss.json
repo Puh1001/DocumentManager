@@ -1,7 +1,7 @@
 {
-  "title": "BOSS Dashboard",
+  "title": "BPVN Management Board",
   "description": "View all departments, KPIs, maintenance, and documents",
-  "comingSoon": "BOSS UI is being implemented...",
+  "comingSoon": "BPVN board UI is being implemented...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Maintenance",

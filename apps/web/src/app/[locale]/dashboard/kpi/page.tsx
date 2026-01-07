@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,6 +106,41 @@ function getAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Local storage key for KPI backup
+function getKpiBackupKey(departmentId: string, year: number) {
+  return `kpi_backup_${departmentId}_${year}`;
+}
+
+// Custom debounce hook
+function useDebounce<T extends (...args: unknown[]) => void>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  ) as T;
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return debouncedCallback;
+}
+
 export default function KpiPage() {
   const t = useTranslations("kpi");
   const tTable = useTranslations("kpi.table");
@@ -118,11 +153,15 @@ export default function KpiPage() {
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [hasAttemptedAutoCreate, setHasAttemptedAutoCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const initialRecordsRef = useRef<string>(""); // Store serialized initial state
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -162,6 +201,22 @@ export default function KpiPage() {
     // Reset auto-create flag when department or year changes
     setHasAttemptedAutoCreate(false);
   }, [departments, selectedDepartmentId, selectedYear]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    if (!hasUnsavedChanges || !isEditMode) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, isEditMode]);
 
   useEffect(() => {
     const loadRecords = async () => {
@@ -312,7 +367,40 @@ export default function KpiPage() {
         }
 
         setRecords(recordsWithMetrics);
+        // Store initial state for comparison
+        initialRecordsRef.current = JSON.stringify(recordsWithMetrics);
+        setHasUnsavedChanges(false);
+        setLastSavedAt(new Date());
+
+        // Clear backup after successful load
+        if (typeof window !== "undefined") {
+          const backupKey = getKpiBackupKey(selectedDepartmentId, selectedYear);
+          localStorage.removeItem(backupKey);
+        }
       } catch (err: unknown) {
+        // Try to restore from backup if API fails
+        if (typeof window !== "undefined") {
+          const backupKey = getKpiBackupKey(selectedDepartmentId, selectedYear);
+          const backup = localStorage.getItem(backupKey);
+          if (backup) {
+            try {
+              const backupData = JSON.parse(backup) as KpiRecord[];
+              setRecords(backupData);
+              initialRecordsRef.current = backup;
+              setHasUnsavedChanges(true);
+              toast({
+                title: "Khôi phục dữ liệu",
+                description: "Đã khôi phục dữ liệu chưa lưu từ phiên trước",
+                variant: "default",
+              });
+              setLoading(false);
+              return;
+            } catch {
+              // Backup corrupted, continue with error handling
+            }
+          }
+        }
+
         handleKpiApiError(err, "tải dữ liệu KPI", {
           on403: () => setRecords([]),
           onOther: () => setError("Không tải được dữ liệu KPI"),
@@ -427,13 +515,83 @@ export default function KpiPage() {
     const validValues = efficiencyValues
       .slice(0, 12)
       .filter((v): v is number => v != null);
-    const maxValue = validValues.length > 0 ? Math.max(...validValues) : 100;
-    // Set max to 120% of the highest value, or minimum 150
-    // Also consider targetValue when setting max
+
+    if (validValues.length === 0) {
+      // Default options when no data
+      return {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: "top" as const,
+          },
+          title: {
+            display: true,
+            text: "KPI / Hiệu suất (%)",
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: (value: number | string) => `${value}%`,
+            },
+          },
+        },
+      };
+    }
+
+    const maxValue = Math.max(...validValues);
+    const minValue = Math.min(...validValues);
+    const dataRange = maxValue - minValue;
+
+    // Calculate max with target consideration
     const maxWithTarget = targetValue
       ? Math.max(maxValue, targetValue)
       : maxValue;
-    const dynamicMax = Math.max(maxWithTarget * 1.2, 150);
+
+    // Smart padding based on value range
+    // For low values (< 10%), use larger padding to make bars visible
+    // For normal values (>= 10%), use standard padding
+    let paddingPercent = 0.2; // Default 20% padding
+
+    if (maxWithTarget < 10) {
+      // For very low values (< 10%), use larger padding (50%)
+      paddingPercent = 0.5;
+    } else if (maxWithTarget < 50) {
+      // For low values (10-50%), use medium padding (30%)
+      paddingPercent = 0.3;
+    }
+
+    // Calculate dynamic max with smart padding
+    let dynamicMax = maxWithTarget * (1 + paddingPercent);
+
+    // Ensure minimum visible range for very small values
+    // This prevents bars from being invisible when values are very small
+    if (maxWithTarget < 5 && dataRange < 2) {
+      // For very small ranges (< 5% with range < 2%), ensure at least 5% scale
+      dynamicMax = Math.max(dynamicMax, 5);
+    } else if (maxWithTarget < 10) {
+      // For small values (< 10%), ensure at least 10% scale
+      dynamicMax = Math.max(dynamicMax, 10);
+    } else if (maxWithTarget < 100) {
+      // For medium values (10-100%), ensure at least 20% above max
+      dynamicMax = Math.max(dynamicMax, maxWithTarget * 1.2);
+    } else {
+      // For normal values (>= 100%), use standard 20% padding
+      dynamicMax = maxWithTarget * 1.2;
+    }
+
+    // Round up to nearest nice number (5, 10, 20, 50, 100, etc.)
+    let niceMax: number;
+    if (dynamicMax < 10) {
+      niceMax = Math.ceil(dynamicMax / 1) * 1; // Round to nearest 1
+    } else if (dynamicMax < 50) {
+      niceMax = Math.ceil(dynamicMax / 5) * 5; // Round to nearest 5
+    } else {
+      niceMax = Math.ceil(dynamicMax / 10) * 10; // Round to nearest 10
+    }
 
     return {
       responsive: true,
@@ -450,7 +608,7 @@ export default function KpiPage() {
       scales: {
         y: {
           beginAtZero: true,
-          max: Math.ceil(dynamicMax / 10) * 10, // Round up to nearest 10
+          max: niceMax,
           ticks: {
             callback: (value: number | string) => `${value}%`,
           },
@@ -616,62 +774,133 @@ export default function KpiPage() {
     }
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      for (const record of records) {
-        try {
-          await api.patch(`/kpi/records/${record.id}`, {
-            title: record.title,
-            target: record.target,
-            targetValue: record.targetValue,
-          });
-        } catch (err: unknown) {
-          const apiError = toApiError(err);
-          if (apiError.statusCode === 403) {
-            handleKpiApiError(err, `cập nhật KPI "${record.title}"`);
-            continue;
-          }
-          throw err;
-        }
+  // Save function (used by both manual save and auto-save)
+  const performSave = useCallback(
+    async (isAutoSave = false) => {
+      if (!selectedDepartmentId) return;
 
-        for (const metric of record.metrics) {
+      const savingState = isAutoSave ? setIsAutoSaving : setIsSaving;
+      savingState(true);
+
+      try {
+        for (const record of records) {
           try {
-            await api.patch(`/kpi/metrics/${metric.id}`, {
-              name: metric.name,
-              type: metric.type,
-              sortOrder: metric.sortOrder,
-              values: JSON.stringify(metric.values || {}),
+            await api.patch(`/kpi/records/${record.id}`, {
+              title: record.title,
+              target: record.target,
+              targetValue: record.targetValue,
             });
           } catch (err: unknown) {
             const apiError = toApiError(err);
             if (apiError.statusCode === 403) {
-              handleKpiApiError(err, "cập nhật metric");
+              handleKpiApiError(err, `cập nhật KPI "${record.title}"`);
               continue;
             }
             throw err;
           }
+
+          for (const metric of record.metrics) {
+            try {
+              await api.patch(`/kpi/metrics/${metric.id}`, {
+                name: metric.name,
+                type: metric.type,
+                sortOrder: metric.sortOrder,
+                values: JSON.stringify(metric.values || {}),
+              });
+            } catch (err: unknown) {
+              const apiError = toApiError(err);
+              if (apiError.statusCode === 403) {
+                handleKpiApiError(err, "cập nhật metric");
+                continue;
+              }
+              throw err;
+            }
+          }
         }
+
+        // Update initial state reference
+        initialRecordsRef.current = JSON.stringify(records);
+        setHasUnsavedChanges(false);
+        setLastSavedAt(new Date());
+
+        // Clear backup after successful save
+        if (typeof window !== "undefined") {
+          const backupKey = getKpiBackupKey(selectedDepartmentId, selectedYear);
+          localStorage.removeItem(backupKey);
+        }
+
+        if (!isAutoSave) {
+          toast({
+            title: "Thành công",
+            description: "Đã lưu thay đổi",
+            variant: "success",
+          });
+        }
+      } catch (err: unknown) {
+        console.error(err);
+        const apiError = err as { statusCode?: number; message?: string };
+        if (apiError.statusCode !== 403) {
+          toast({
+            title: "Lỗi",
+            description: apiError.message || "Không thể lưu thay đổi",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        savingState(false);
       }
-      toast({
-        title: "Thành công",
-        description: "Đã lưu thay đổi",
-        variant: "success",
-      });
-    } catch (err: unknown) {
-      console.error(err);
-      const apiError = err as { statusCode?: number; message?: string };
-      if (apiError.statusCode !== 403) {
-        toast({
-          title: "Lỗi",
-          description: apiError.message || "Không thể lưu thay đổi",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsSaving(false);
-      setIsEditMode(false);
+    },
+    [records, selectedDepartmentId, selectedYear, toast]
+  );
+
+  // Debounced auto-save
+  const debouncedAutoSave = useDebounce(() => {
+    if (hasUnsavedChanges && isEditMode && !isSaving) {
+      performSave(true);
     }
+  }, 2000); // 2 seconds delay
+
+  // Auto-save when data changes
+  useEffect(() => {
+    if (!isEditMode || !hasUnsavedChanges) return;
+
+    // Backup to localStorage
+    if (typeof window !== "undefined" && selectedDepartmentId) {
+      const backupKey = getKpiBackupKey(selectedDepartmentId, selectedYear);
+      try {
+        localStorage.setItem(backupKey, JSON.stringify(records));
+      } catch (err) {
+        console.error("Failed to backup to localStorage:", err);
+      }
+    }
+
+    // Trigger debounced auto-save
+    debouncedAutoSave();
+  }, [
+    records,
+    isEditMode,
+    hasUnsavedChanges,
+    debouncedAutoSave,
+    selectedDepartmentId,
+    selectedYear,
+    isSaving,
+  ]);
+
+  // Track changes
+  useEffect(() => {
+    if (!isEditMode) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+
+    const currentState = JSON.stringify(records);
+    const hasChanges = currentState !== initialRecordsRef.current;
+    setHasUnsavedChanges(hasChanges);
+  }, [records, isEditMode]);
+
+  const handleSave = async () => {
+    await performSave(false);
+    setIsEditMode(false);
   };
 
   const handleExport = async (recordId: string) => {
@@ -733,7 +962,18 @@ export default function KpiPage() {
                 <select
                   className="border rounded-md px-2 py-1 text-sm"
                   value={selectedDepartmentId}
-                  onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                  onChange={(e) => {
+                    if (hasUnsavedChanges && isEditMode) {
+                      if (
+                        !confirm(
+                          "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển bộ môn không?"
+                        )
+                      ) {
+                        return;
+                      }
+                    }
+                    setSelectedDepartmentId(e.target.value);
+                  }}
                 >
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -749,7 +989,18 @@ export default function KpiPage() {
               <select
                 className="border rounded-md px-2 py-1 text-sm"
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                onChange={(e) => {
+                  if (hasUnsavedChanges && isEditMode) {
+                    if (
+                      !confirm(
+                        "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển năm không?"
+                      )
+                    ) {
+                      return;
+                    }
+                  }
+                  setSelectedYear(Number(e.target.value));
+                }}
               >
                 {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(
                   (y) => (
@@ -763,6 +1014,21 @@ export default function KpiPage() {
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {/* Save status indicator */}
+          {isEditMode && (
+            <div className="flex items-center gap-2 text-sm">
+              {isAutoSaving ? (
+                <span className="text-blue-600">Đang tự động lưu...</span>
+              ) : hasUnsavedChanges ? (
+                <span className="text-orange-600">Có thay đổi chưa lưu</span>
+              ) : lastSavedAt ? (
+                <span className="text-green-600">
+                  Đã lưu lúc {lastSavedAt.toLocaleTimeString("vi-VN")}
+                </span>
+              ) : null}
+            </div>
+          )}
 
           <div className="space-y-6">
             {records.map((record) => {

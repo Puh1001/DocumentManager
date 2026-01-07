@@ -47,3 +47,9 @@ coverage
 
 # Docker
 docker-compose.override.yml
+
+# Deployment
+backups/
+deploy.log
+*.backup
+*.sql.backup

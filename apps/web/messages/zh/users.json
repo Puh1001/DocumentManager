@@ -32,7 +32,7 @@
     "fullName": "全名",
     "fullNamePlaceholder": "输入全名",
     "department": "部门",
-    "departmentPlaceholder": "输入部门名称",
+    "departmentPlaceholder": "选择部门",
     "processing": "处理中...",
     "create": "创建",
     "update": "更新"

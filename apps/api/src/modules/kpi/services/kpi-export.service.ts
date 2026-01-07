@@ -267,11 +267,48 @@ export class KpiExportService {
       });
     }
 
-    // Adjust max to include target value
+    // Calculate max with target consideration and smart scaling
+    const minValue = Math.min(...validValues);
+    const dataRange = maxValue - minValue;
+    
     const maxWithTarget = record.targetValue
       ? Math.max(maxValue, record.targetValue)
       : maxValue;
-    const adjustedMax = Math.max(maxWithTarget * 1.2, 150);
+
+    // Smart padding based on value range
+    let paddingPercent = 0.2; // Default 20% padding
+
+    if (maxWithTarget < 10) {
+      // For very low values (< 10%), use larger padding (50%)
+      paddingPercent = 0.5;
+    } else if (maxWithTarget < 50) {
+      // For low values (10-50%), use medium padding (30%)
+      paddingPercent = 0.3;
+    }
+
+    // Calculate dynamic max with smart padding
+    let adjustedMax = maxWithTarget * (1 + paddingPercent);
+
+    // Ensure minimum visible range for very small values
+    if (maxWithTarget < 5 && dataRange < 2) {
+      adjustedMax = Math.max(adjustedMax, 5);
+    } else if (maxWithTarget < 10) {
+      adjustedMax = Math.max(adjustedMax, 10);
+    } else if (maxWithTarget < 100) {
+      adjustedMax = Math.max(adjustedMax, maxWithTarget * 1.2);
+    } else {
+      adjustedMax = maxWithTarget * 1.2;
+    }
+
+    // Round up to nearest nice number
+    let niceMax: number;
+    if (adjustedMax < 10) {
+      niceMax = Math.ceil(adjustedMax / 1) * 1; // Round to nearest 1
+    } else if (adjustedMax < 50) {
+      niceMax = Math.ceil(adjustedMax / 5) * 5; // Round to nearest 5
+    } else {
+      niceMax = Math.ceil(adjustedMax / 10) * 10; // Round to nearest 10
+    }
 
     const configuration = {
       type: "bar" as const,
@@ -295,7 +332,7 @@ export class KpiExportService {
         scales: {
           y: {
             beginAtZero: true,
-            max: Math.ceil(adjustedMax / 10) * 10,
+            max: niceMax,
             ticks: {
               callback: (value: number | string) => `${value}%`,
             },

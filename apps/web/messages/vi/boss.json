@@ -1,7 +1,7 @@
 {
-  "title": "Bảng điều khiển BOSS",
+  "title": "Ban quản trị BPVN",
   "description": "Xem tất cả phòng ban, KPI, bảo trì và tài liệu",
-  "comingSoon": "Giao diện BOSS đang được triển khai...",
+  "comingSoon": "Giao diện ban quản trị BPVN đang được triển khai...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Bảo trì",

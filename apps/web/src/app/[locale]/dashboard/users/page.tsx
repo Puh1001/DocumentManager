@@ -17,8 +17,10 @@ import {
 import {
   userApi,
   roleApi,
+  departmentApi,
   type User,
   type Role,
+  type Department,
   type CreateUserDto,
   type UpdateUserDto,
 } from "@/lib/api";
@@ -58,6 +60,7 @@ export default function UsersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -115,6 +118,17 @@ export default function UsersPage() {
     }
   }, []);
 
+  const loadDepartments = useCallback(async () => {
+    try {
+      const data = await departmentApi.getAll();
+      setDepartments(data);
+      return data;
+    } catch (err) {
+      console.error("Failed to load departments:", err);
+      return [];
+    }
+  }, []);
+
   useEffect(() => {
     loadUsers(1);
   }, [loadUsers]);
@@ -122,18 +136,43 @@ export default function UsersPage() {
   useEffect(() => {
     if (isAdmin) {
       loadRoles();
+      loadDepartments();
     }
-  }, [isAdmin, loadRoles]);
+  }, [isAdmin, loadRoles, loadDepartments]);
 
-  const handleOpenUserDialog = (user?: User) => {
+  const handleOpenUserDialog = async (user?: User) => {
+    // Load departments if not already loaded
+    let departmentsList = departments;
+    if (departmentsList.length === 0) {
+      departmentsList = await loadDepartments();
+    }
+
     if (user) {
       setEditingUser(user);
+      // Try to find matching department by code or name
+      let departmentCode = "";
+      if (user.department) {
+        const matchedDept = departmentsList.find(
+          (d) =>
+            d.code.toLowerCase() === user.department?.toLowerCase() ||
+            d.name.toLowerCase() === user.department?.toLowerCase() ||
+            d.nameVi?.toLowerCase() === user.department?.toLowerCase() ||
+            d.nameEn?.toLowerCase() === user.department?.toLowerCase() ||
+            d.nameZh?.toLowerCase() === user.department?.toLowerCase()
+        );
+        if (matchedDept) {
+          departmentCode = matchedDept.code;
+        } else {
+          // Fallback: use the department string as-is if no match found
+          departmentCode = user.department;
+        }
+      }
       setFormData({
         username: user.username,
         email: user.email,
         password: "",
         fullName: user.fullName,
-        department: user.department || "",
+        department: departmentCode,
       });
     } else {
       setEditingUser(null);
@@ -574,14 +613,25 @@ export default function UsersPage() {
                   <Label htmlFor="department">
                     {tUsers("form.department")}
                   </Label>
-                  <Input
+                  <select
                     id="department"
                     value={formData.department}
                     onChange={(e) =>
                       setFormData({ ...formData, department: e.target.value })
                     }
-                    placeholder={tUsers("form.departmentPlaceholder")}
-                  />
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">
+                      {tUsers("form.departmentPlaceholder")}
+                    </option>
+                    {departments
+                      .filter((dept) => dept.isActive)
+                      .map((dept) => (
+                        <option key={dept.id} value={dept.code}>
+                          {dept.name} ({dept.code})
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
               <DialogFooter>

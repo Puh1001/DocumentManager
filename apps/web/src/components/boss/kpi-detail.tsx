@@ -146,12 +146,81 @@ function getChartData(
 
 function getChartOptions(
   efficiencyValues: (number | null)[],
-  _targetValue: number | null | undefined
+  targetValue?: number | null
 ) {
   const validValues = efficiencyValues
     .slice(0, 12)
     .filter((v): v is number => v != null);
-  const maxValue = validValues.length > 0 ? Math.max(...validValues) : 100;
+  
+  if (validValues.length === 0) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          backgroundColor: "rgba(20, 20, 40, 0.95)",
+          titleColor: "#4dd0e1",
+          bodyColor: "#4dd0e1",
+          borderColor: "rgba(77, 208, 225, 0.5)",
+          borderWidth: 1,
+          padding: 12,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+        },
+      },
+    };
+  }
+
+  const maxValue = Math.max(...validValues);
+  const minValue = Math.min(...validValues);
+  const dataRange = maxValue - minValue;
+
+  // Calculate max with target consideration
+  const maxWithTarget = targetValue
+    ? Math.max(maxValue, targetValue)
+    : maxValue;
+
+  // Smart padding based on value range
+  let paddingPercent = 0.2; // Default 20% padding
+
+  if (maxWithTarget < 10) {
+    // For very low values (< 10%), use larger padding (50%)
+    paddingPercent = 0.5;
+  } else if (maxWithTarget < 50) {
+    // For low values (10-50%), use medium padding (30%)
+    paddingPercent = 0.3;
+  }
+
+  // Calculate dynamic max with smart padding
+  let dynamicMax = maxWithTarget * (1 + paddingPercent);
+
+  // Ensure minimum visible range for very small values
+  if (maxWithTarget < 5 && dataRange < 2) {
+    dynamicMax = Math.max(dynamicMax, 5);
+  } else if (maxWithTarget < 10) {
+    dynamicMax = Math.max(dynamicMax, 10);
+  } else if (maxWithTarget < 100) {
+    dynamicMax = Math.max(dynamicMax, maxWithTarget * 1.2);
+  } else {
+    dynamicMax = maxWithTarget * 1.2;
+  }
+
+  // Round up to nearest nice number
+  let niceMax: number;
+  if (dynamicMax < 10) {
+    niceMax = Math.ceil(dynamicMax / 1) * 1; // Round to nearest 1
+  } else if (dynamicMax < 50) {
+    niceMax = Math.ceil(dynamicMax / 5) * 5; // Round to nearest 5
+  } else {
+    niceMax = Math.ceil(dynamicMax / 10) * 10; // Round to nearest 10
+  }
 
   return {
     responsive: true,
@@ -190,7 +259,7 @@ function getChartOptions(
       },
       y: {
         beginAtZero: true,
-        max: Math.ceil(maxValue / 10) * 10,
+        max: niceMax,
         ticks: {
           color: "#4dd0e1",
           font: {

@@ -3,7 +3,6 @@
 import { useTranslations, useLocale } from "next-intl";
 import { type Department, getDepartmentName } from "@/lib/api";
 import { Building2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface DepartmentGridProps {
   departments: Department[];
@@ -65,41 +64,28 @@ export function DepartmentGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {departments.map((dept, index) => (
-        <div
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {departments.map((dept) => (
+        <button
           key={dept.id}
-          className={cn(
-            "cyber-card cyber-hologram cursor-pointer transition-all duration-300",
-            "hover:scale-105 active:scale-95",
-            "cyber-corner"
-          )}
+          type="button"
+          className="group flex items-center gap-3 px-1 py-1 text-left transition hover:text-cyan-100 focus-visible:outline-none"
           onClick={() => onSelectDepartment(dept)}
-          style={{ animationDelay: `${index * 0.1}s` }}
         >
-          <div className="p-6 relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 cyber-border rounded-lg bg-cyan-500/15">
-                <Building2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
-              </div>
-              {!dept.isActive && (
-                <span className="text-xs font-cyber text-fuchsia-400 bg-fuchsia-500/20 px-3 py-1 rounded border border-fuchsia-500/30 cyber-text-glow">
-                  {t("inactive")}
-                </span>
-              )}
-            </div>
-            <h3 className="font-cyber font-bold text-lg mb-2 line-clamp-2 cyber-neon-cyan">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+            <Building2 className="h-5 w-5" />
+          </span>
+          <div className="flex flex-col">
+            <span className="font-cyber font-semibold text-base leading-tight text-cyan-50 line-clamp-2">
               {getDepartmentName(dept, locale)}
-            </h3>
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cyan-500/30">
-              <span className="text-xs font-cyber text-cyan-300/80">ID:</span>
-              <span className="text-sm font-cyber text-cyan-200 font-semibold">
-                {dept.code}
+            </span>
+            {!dept.isActive && (
+              <span className="text-xs font-cyber text-fuchsia-300">
+                {t("inactive")}
               </span>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-magenta-500 to-cyan-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+            )}
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

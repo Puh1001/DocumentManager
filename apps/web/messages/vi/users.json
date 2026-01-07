@@ -32,7 +32,7 @@
     "fullName": "Họ và tên",
     "fullNamePlaceholder": "Nhập họ và tên",
     "department": "Phòng ban",
-    "departmentPlaceholder": "Nhập tên phòng ban",
+    "departmentPlaceholder": "Chọn phòng ban",
     "processing": "Đang xử lý...",
     "create": "Tạo mới",
     "update": "Cập nhật"

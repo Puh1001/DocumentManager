@@ -32,7 +32,7 @@
     "fullName": "Full Name",
     "fullNamePlaceholder": "Enter full name",
     "department": "Department",
-    "departmentPlaceholder": "Enter department name",
+    "departmentPlaceholder": "Select department",
     "processing": "Processing...",
     "create": "Create",
     "update": "Update"
