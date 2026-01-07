@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ISO Docs - Zero-Downtime Deployment Script
-# Usage: ./scripts/deploy.sh [--skip-backup] [--skip-migration]
+# Usage: ./scripts/deploy.sh [--skip-backup] [--skip-migration] [--no-cache]
 
 set -e  # Exit on error
 
@@ -21,6 +21,7 @@ LOG_FILE="./deploy.log"
 # Parse arguments
 SKIP_BACKUP=false
 SKIP_MIGRATION=false
+NO_CACHE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -30,6 +31,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-migration)
       SKIP_MIGRATION=true
+      shift
+      ;;
+    --no-cache)
+      NO_CACHE=true
       shift
       ;;
     *)
@@ -141,7 +146,15 @@ pull_code() {
 build_images() {
   log "Building Docker images..."
   
-  docker-compose -f "$COMPOSE_FILE" build --no-cache || {
+  local build_cmd="docker-compose -f $COMPOSE_FILE build"
+  if [ "$NO_CACHE" = true ]; then
+    build_cmd="$build_cmd --no-cache"
+    log "Using --no-cache flag (slower but ensures clean build)"
+  else
+    log "Using Docker cache (faster, rebuilds only changed layers)"
+  fi
+  
+  $build_cmd || {
     error "Failed to build Docker images"
   }
   
