@@ -1326,13 +1326,13 @@ export default function KpiPage() {
                                 key={MONTH_KEYS[idx]}
                                 className="border border-gray-200 px-1 py-1 text-center text-xs"
                               >
-                                {v == null ? "" : `${v.toFixed(0)}%`}
+                                {v == null ? "" : `${v.toFixed(2)}%`}
                               </td>
                             ))}
                             <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
                               {efficiencyValues[12] == null
                                 ? ""
-                                : `${efficiencyValues[12]!.toFixed(0)}%`}
+                                : `${efficiencyValues[12]!.toFixed(2)}%`}
                             </td>
                           </tr>
                         </tbody>
