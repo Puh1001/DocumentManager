@@ -15,6 +15,10 @@
   "saving": "Saving...",
   "chartTitle": "KPI / Efficiency (%)",
   "targetPlaceholder": "Row 1: TARGET / Target (e.g., Planned quantity)",
+  "displayType": "Table Type",
+  "displayTypePercentage": "Percentage Table (%)",
+  "displayTypeCount": "Count Table (Number)",
+  "displayTypeDescription": "Choose how to display your KPI data",
   "table": {
     "itemColumn": "Item",
     "months": {

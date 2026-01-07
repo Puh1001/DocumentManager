@@ -15,6 +15,10 @@
   "saving": "Đang lưu...",
   "chartTitle": "KPI / Hiệu suất (%)",
   "targetPlaceholder": "Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)",
+  "displayType": "Loại bảng",
+  "displayTypePercentage": "Bảng phần trăm (%)",
+  "displayTypeCount": "Bảng số lần",
+  "displayTypeDescription": "Chọn cách hiển thị dữ liệu KPI",
   "table": {
     "itemColumn": "Mục",
     "months": {

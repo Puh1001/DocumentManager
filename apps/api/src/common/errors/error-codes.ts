@@ -8,6 +8,7 @@ export const ErrorCodes = {
     TOKEN_EXPIRED: "auth.token.expired",
     TOKEN_INVALID: "auth.token.invalid",
     USER_NOT_FOUND: "auth.user.not_found",
+    CHANGE_PASSWORD_INVALID_CURRENT: "auth.change_password.invalid_current",
   },
   USER: {
     NOT_FOUND: "user.not_found",

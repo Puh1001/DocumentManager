@@ -125,6 +125,7 @@ export class KpiRecordService {
         title: dto.title,
         target: dto.target,
         targetValue: dto.targetValue,
+        displayType: dto.displayType,
       },
     });
   }
@@ -166,6 +167,7 @@ export class KpiRecordService {
         title: dto.title,
         target: dto.target,
         targetValue: dto.targetValue,
+        displayType: dto.displayType,
       },
     });
   }

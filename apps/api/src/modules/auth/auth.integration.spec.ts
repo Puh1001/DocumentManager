@@ -334,4 +334,101 @@ describe("Auth Integration Tests", () => {
       await request(app.getHttpServer()).post("/api/auth/logout").expect(401);
     });
   });
+
+  describe("POST /api/auth/change-password", () => {
+    it("should change password with correct current password", async () => {
+      // Login to get token
+      const loginResponse = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: testPassword,
+        });
+
+      if (loginResponse.status !== 200) {
+        console.error("Login error:", loginResponse.status, loginResponse.body);
+        return;
+      }
+
+      const accessToken = loginResponse.body.accessToken;
+
+      const changeResponse = await request(app.getHttpServer())
+        .post("/api/auth/change-password")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          currentPassword: testPassword,
+          newPassword: "NewTestPassword123!",
+        })
+        .expect(200);
+
+      expect(changeResponse.body).toEqual({
+        message: "Password changed successfully",
+      });
+
+      // Login with new password should work
+      await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: "NewTestPassword123!",
+        })
+        .expect(200);
+
+      // Login with old password should fail
+      await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: testPassword,
+        })
+        .expect(401);
+
+      // Reset password back for other tests
+      const user = await prismaService.user.findUnique({
+        where: { username: "testuser" },
+      });
+      if (user) {
+        const resetHash = await argon2.hash(testPassword);
+        await prismaService.user.update({
+          where: { id: user.id },
+          data: { passwordHash: resetHash },
+        });
+      }
+    });
+
+    it("should reject change password with wrong current password", async () => {
+      const loginResponse = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({
+          username: "testuser",
+          password: testPassword,
+        });
+
+      if (loginResponse.status !== 200) {
+        console.error("Login error:", loginResponse.status, loginResponse.body);
+        return;
+      }
+
+      const accessToken = loginResponse.body.accessToken;
+
+      await request(app.getHttpServer())
+        .post("/api/auth/change-password")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          currentPassword: "WrongPassword123!",
+          newPassword: "AnotherNewPassword123!",
+        })
+        .expect(401);
+    });
+
+    it("should reject change password without token", async () => {
+      await request(app.getHttpServer())
+        .post("/api/auth/change-password")
+        .send({
+          currentPassword: testPassword,
+          newPassword: "NewTestPassword123!",
+        })
+        .expect(401);
+    });
+  });
 });

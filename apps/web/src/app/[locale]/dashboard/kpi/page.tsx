@@ -5,6 +5,14 @@ import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import {
   Chart as ChartJS,
@@ -73,6 +81,8 @@ interface KpiMetric {
   values: Record<string, number | null>;
 }
 
+type DisplayType = "PERCENTAGE" | "COUNT";
+
 interface KpiRecord {
   id: string;
   departmentId: string;
@@ -80,6 +90,7 @@ interface KpiRecord {
   title: string;
   target: string;
   targetValue?: number | null;
+  displayType?: DisplayType;
   metrics: KpiMetric[];
 }
 
@@ -162,6 +173,9 @@ export default function KpiPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const initialRecordsRef = useRef<string>(""); // Store serialized initial state
+  const [showAddTableDialog, setShowAddTableDialog] = useState(false);
+  const [selectedDisplayType, setSelectedDisplayType] =
+    useState<DisplayType>("PERCENTAGE");
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -470,7 +484,54 @@ export default function KpiPage() {
     return efficiencyValues.map((v) => (v == null ? null : 100 - v));
   };
 
-  // Helper function to get chart data for a record
+  // Helper function to get chart data for COUNT table
+  const getChartDataForCount = (record: KpiRecord) => {
+    const targetMetric = record.metrics.find((m) => m.type === "TARGET");
+    const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+
+    const actualData = MONTH_KEYS.map(
+      (key) => actualMetric?.values?.[key] ?? null
+    );
+    const targetData = MONTH_KEYS.map(
+      (key) => targetMetric?.values?.[key] ?? null
+    );
+
+    const actualAvg = calculateMetricAverage(actualMetric);
+    const targetAvg = calculateMetricAverage(targetMetric);
+
+    const datasets: ChartDataset<"bar" | "line", (number | null)[]>[] = [
+      {
+        type: "bar" as const,
+        label: "ACTUAL",
+        data: [...actualData, actualAvg],
+        backgroundColor: "rgba(54, 162, 235, 0.8)",
+      },
+      {
+        type: "line" as const,
+        label: "TARGET",
+        data: [...targetData, targetAvg],
+        borderColor: "rgba(255, 99, 132, 1)",
+        backgroundColor: "rgba(255, 99, 132, 0.1)",
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 4,
+        fill: false,
+        tension: 0,
+      },
+    ];
+
+    const chartLabels = [
+      ...MONTH_KEYS.map((key) => tTable(`months.${key}`)),
+      tTable("months.average"),
+    ];
+
+    return {
+      labels: chartLabels,
+      datasets,
+    } as ChartData<"bar", (number | null)[], string>;
+  };
+
+  // Helper function to get chart data for a record (PERCENTAGE table)
   const getChartData = (
     record: KpiRecord,
     efficiencyValues: (number | null)[]
@@ -519,7 +580,49 @@ export default function KpiPage() {
     } as ChartData<"bar", number[], string>;
   };
 
-  // Helper function to get chart options with dynamic max
+  // Helper function to get chart options for COUNT table
+  const getChartOptionsForCount = (record: KpiRecord) => {
+    const targetMetric = record.metrics.find((m) => m.type === "TARGET");
+    const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+
+    const actualData = MONTH_KEYS.map(
+      (key) => actualMetric?.values?.[key] ?? null
+    );
+    const targetData = MONTH_KEYS.map(
+      (key) => targetMetric?.values?.[key] ?? null
+    );
+
+    const allValues = [...actualData, ...targetData].filter(
+      (v): v is number => v != null
+    );
+    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+    const niceMax = Math.ceil(maxValue * 1.2);
+
+    return {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top" as const,
+        },
+        title: {
+          display: true,
+          text: t("chartTitle"),
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: niceMax,
+          ticks: {
+            callback: (value: number | string) => `${value}`,
+          },
+        },
+      },
+    };
+  };
+
+  // Helper function to get chart options with dynamic max (for PERCENTAGE table)
   const getChartOptions = (
     efficiencyValues: (number | null)[],
     targetValue?: number | null
@@ -795,7 +898,7 @@ export default function KpiPage() {
 
   const recordRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const handleAddNewTable = async () => {
+  const handleAddNewTable = async (displayType: DisplayType) => {
     if (!selectedDepartmentId || !canCreate || isCreating) return;
 
     setIsCreating(true);
@@ -806,6 +909,7 @@ export default function KpiPage() {
         title: "",
         target: "",
         targetValue: null,
+        displayType,
       });
 
       const baseValues: Record<string, number | null> = {};
@@ -854,7 +958,17 @@ export default function KpiPage() {
       handleKpiApiError(err, "tạo KPI mới");
     } finally {
       setIsCreating(false);
+      setShowAddTableDialog(false);
     }
+  };
+
+  const openAddTableDialog = () => {
+    setSelectedDisplayType("PERCENTAGE");
+    setShowAddTableDialog(true);
+  };
+
+  const confirmAddTable = () => {
+    handleAddNewTable(selectedDisplayType);
   };
 
   const handleDeleteTable = async (recordId: string) => {
@@ -1423,89 +1537,13 @@ export default function KpiPage() {
                             </td>
                           </tr>
 
-                          {/* Efficiency Row */}
-                          <tr className="bg-gray-50 font-medium">
-                            <td className="border border-gray-200 px-2 py-1 text-left text-xs">
-                              {t("efficiency")}
-                            </td>
-                            {efficiencyValues.slice(0, 12).map((v, idx) => (
-                              <td
-                                key={MONTH_KEYS[idx]}
-                                className="border border-gray-200 px-1 py-1 text-center text-xs"
-                              >
-                                {v == null ? "" : `${v.toFixed(2)}%`}
-                              </td>
-                            ))}
-                            <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
-                              {efficiencyValues[12] == null
-                                ? ""
-                                : `${efficiencyValues[12]!.toFixed(2)}%`}
-                            </td>
-                          </tr>
-
-                          {/* Calculated Row (100% - Efficiency) - Optional */}
-                          {calculatedMetric && calculatedValues && (
-                            <tr className="bg-blue-50 font-medium">
+                          {/* Efficiency Row - Only for PERCENTAGE tables */}
+                          {record.displayType !== "COUNT" && (
+                            <tr className="bg-gray-50 font-medium">
                               <td className="border border-gray-200 px-2 py-1 text-left text-xs">
-                                <div className="flex items-center gap-2">
-                                  <textarea
-                                    className="flex-1 resize-none bg-transparent text-xs leading-tight"
-                                    value={calculatedMetric.name}
-                                    disabled={!isEditMode}
-                                    onChange={async (e) => {
-                                      // Create metric if it doesn't exist
-                                      let metricToUse = calculatedMetric;
-                                      if (
-                                        calculatedMetric.id.startsWith("temp-")
-                                      ) {
-                                        const created =
-                                          await ensureMetricExists(
-                                            record.id,
-                                            "CALCULATED"
-                                          );
-                                        if (created) metricToUse = created;
-                                      }
-
-                                      setRecords((prev) =>
-                                        prev.map((r) =>
-                                          r.id === record.id
-                                            ? {
-                                                ...r,
-                                                metrics: r.metrics.map((m) =>
-                                                  m.id === metricToUse.id
-                                                    ? {
-                                                        ...m,
-                                                        name: e.target.value,
-                                                      }
-                                                    : m
-                                                ),
-                                              }
-                                            : r
-                                        )
-                                      );
-                                    }}
-                                    placeholder="Nhập tên dòng tính toán (ví dụ: Tỷ lệ lỗi)"
-                                    rows={2}
-                                  />
-                                  {isEditMode && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleRemoveCalculatedMetric(
-                                          record.id,
-                                          calculatedMetric.id
-                                        )
-                                      }
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                      title="Xóa dòng tính toán"
-                                    >
-                                      ×
-                                    </Button>
-                                  )}
-                                </div>
+                                {t("efficiency")}
                               </td>
-                              {calculatedValues.slice(0, 12).map((v, idx) => (
+                              {efficiencyValues.slice(0, 12).map((v, idx) => (
                                 <td
                                   key={MONTH_KEYS[idx]}
                                   className="border border-gray-200 px-1 py-1 text-center text-xs"
@@ -1514,12 +1552,94 @@ export default function KpiPage() {
                                 </td>
                               ))}
                               <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
-                                {calculatedAverage != null
-                                  ? `${calculatedAverage.toFixed(2)}%`
-                                  : ""}
+                                {efficiencyValues[12] == null
+                                  ? ""
+                                  : `${efficiencyValues[12]!.toFixed(2)}%`}
                               </td>
                             </tr>
                           )}
+
+                          {/* Calculated Row (100% - Efficiency) - Optional, only for PERCENTAGE tables */}
+                          {record.displayType !== "COUNT" &&
+                            calculatedMetric &&
+                            calculatedValues && (
+                              <tr className="bg-blue-50 font-medium">
+                                <td className="border border-gray-200 px-2 py-1 text-left text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <textarea
+                                      className="flex-1 resize-none bg-transparent text-xs leading-tight"
+                                      value={calculatedMetric.name}
+                                      disabled={!isEditMode}
+                                      onChange={async (e) => {
+                                        // Create metric if it doesn't exist
+                                        let metricToUse = calculatedMetric;
+                                        if (
+                                          calculatedMetric.id.startsWith(
+                                            "temp-"
+                                          )
+                                        ) {
+                                          const created =
+                                            await ensureMetricExists(
+                                              record.id,
+                                              "CALCULATED"
+                                            );
+                                          if (created) metricToUse = created;
+                                        }
+
+                                        setRecords((prev) =>
+                                          prev.map((r) =>
+                                            r.id === record.id
+                                              ? {
+                                                  ...r,
+                                                  metrics: r.metrics.map((m) =>
+                                                    m.id === metricToUse.id
+                                                      ? {
+                                                          ...m,
+                                                          name: e.target.value,
+                                                        }
+                                                      : m
+                                                  ),
+                                                }
+                                              : r
+                                          )
+                                        );
+                                      }}
+                                      placeholder="Nhập tên dòng tính toán (ví dụ: Tỷ lệ lỗi)"
+                                      rows={2}
+                                    />
+                                    {isEditMode && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleRemoveCalculatedMetric(
+                                            record.id,
+                                            calculatedMetric.id
+                                          )
+                                        }
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                        title="Xóa dòng tính toán"
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
+                                </td>
+                                {calculatedValues.slice(0, 12).map((v, idx) => (
+                                  <td
+                                    key={MONTH_KEYS[idx]}
+                                    className="border border-gray-200 px-1 py-1 text-center text-xs"
+                                  >
+                                    {v == null ? "" : `${v.toFixed(2)}%`}
+                                  </td>
+                                ))}
+                                <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
+                                  {calculatedAverage != null
+                                    ? `${calculatedAverage.toFixed(2)}%`
+                                    : ""}
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     </div>
@@ -1529,7 +1649,7 @@ export default function KpiPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleAddNewTable}
+                          onClick={openAddTableDialog}
                           disabled={!isEditMode || !canCreate || isCreating}
                           title={
                             !canCreate
@@ -1578,7 +1698,19 @@ export default function KpiPage() {
                   </Card>
 
                   {/* Chart Card - Only show if has data */}
-                  {hasData && (
+                  {hasData && record.displayType === "COUNT" ? (
+                    <Card className="p-4 flex flex-col">
+                      <h2 className="text-sm font-semibold mb-4">
+                        {record.title || t("chartTitle")}
+                      </h2>
+                      <div className="flex-1 min-h-[260px]">
+                        <Bar
+                          options={getChartOptionsForCount(record)}
+                          data={getChartDataForCount(record)}
+                        />
+                      </div>
+                    </Card>
+                  ) : hasData ? (
                     <Card className="p-4 flex flex-col">
                       <h2 className="text-sm font-semibold mb-4">
                         {calculatedMetric
@@ -1595,13 +1727,71 @@ export default function KpiPage() {
                         />
                       </div>
                     </Card>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
           </div>
         </div>
       )}
+
+      {/* Add Table Dialog */}
+      <Dialog open={showAddTableDialog} onOpenChange={setShowAddTableDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("addNewTable")}</DialogTitle>
+            <DialogDescription>{t("displayTypeDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="percentage"
+                  name="displayType"
+                  value="PERCENTAGE"
+                  checked={selectedDisplayType === "PERCENTAGE"}
+                  onChange={(e) =>
+                    setSelectedDisplayType(e.target.value as DisplayType)
+                  }
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="percentage" className="cursor-pointer">
+                  {t("displayTypePercentage")}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="count"
+                  name="displayType"
+                  value="COUNT"
+                  checked={selectedDisplayType === "COUNT"}
+                  onChange={(e) =>
+                    setSelectedDisplayType(e.target.value as DisplayType)
+                  }
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="count" className="cursor-pointer">
+                  {t("displayTypeCount")}
+                </Label>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowAddTableDialog(false)}
+              disabled={isCreating}
+            >
+              {t("cancel")}
+            </Button>
+            <Button onClick={confirmAddTable} disabled={isCreating}>
+              {isCreating ? "Đang tạo..." : t("addNewTable")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageGuard>
   );
 }

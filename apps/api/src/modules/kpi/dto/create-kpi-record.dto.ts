@@ -1,5 +1,18 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from "class-validator";
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from "class-validator";
+
+export enum DisplayType {
+  PERCENTAGE = "PERCENTAGE",
+  COUNT = "COUNT",
+}
 
 export class CreateKpiRecordDto {
   @ApiProperty({ description: "Department ID", format: "uuid" })
@@ -23,4 +36,13 @@ export class CreateKpiRecordDto {
   @ApiProperty({ example: 85, required: false })
   @IsOptional()
   targetValue?: number;
+
+  @ApiProperty({
+    enum: DisplayType,
+    example: DisplayType.PERCENTAGE,
+    required: false,
+  })
+  @IsEnum(DisplayType)
+  @IsOptional()
+  displayType?: DisplayType;
 }

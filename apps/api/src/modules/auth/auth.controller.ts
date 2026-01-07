@@ -15,6 +15,7 @@ import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import { UserWithRoles } from "@/common/types/prisma.types";
 import { CaslAbilityFactory } from "../authorization/factories/casl-ability.factory";
@@ -63,6 +64,22 @@ export class AuthController {
   @ApiOperation({ summary: "Get current user info" })
   async me(@Request() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.id);
+  }
+
+  @Post("change-password")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Change current user password" })
+  async changePassword(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: ChangePasswordDto
+  ) {
+    return this.authService.changePassword(
+      req.user.id,
+      body.currentPassword,
+      body.newPassword
+    );
   }
 
   @Get("abilities")

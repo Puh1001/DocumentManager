@@ -15,6 +15,10 @@
   "saving": "保存中...",
   "chartTitle": "KPI / 效率 (%)",
   "targetPlaceholder": "第1行: 目标 (例如: 计划数量)",
+  "displayType": "表格类型",
+  "displayTypePercentage": "百分比表 (%)",
+  "displayTypeCount": "次数表",
+  "displayTypeDescription": "选择如何显示KPI数据",
   "table": {
     "itemColumn": "项目",
     "months": {

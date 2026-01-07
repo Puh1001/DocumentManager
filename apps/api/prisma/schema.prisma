@@ -309,15 +309,16 @@ model Department {
 }
 
 model KpiRecord {
-  id           String   @id @default(uuid())
-  departmentId String   @map("department_id")
+  id           String      @id @default(uuid())
+  departmentId String      @map("department_id")
   year         Int // e.g., 2024
   title        String // e.g., "梭织转机效率 Hiệu quả chuyển máy dệt thoi"
   target       String // e.g., "≥85%"
-  targetValue  Float?   @map("target_value") // numeric: 85
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  createdBy    String?  @map("created_by")
+  targetValue  Float?      @map("target_value") // numeric: 85
+  displayType  DisplayType @default(PERCENTAGE) @map("display_type") // PERCENTAGE or COUNT
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  createdBy    String?     @map("created_by")
 
   department Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   metrics    KpiMetric[]
@@ -326,6 +327,11 @@ model KpiRecord {
   @@index([departmentId])
   @@index([year])
   @@map("kpi_records")
+}
+
+enum DisplayType {
+  PERCENTAGE // Default: show efficiency calculations (%)
+  COUNT      // Show only actual counts vs targets (数量)
 }
 
 enum MetricType {

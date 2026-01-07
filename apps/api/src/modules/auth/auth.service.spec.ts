@@ -351,4 +351,75 @@ describe("AuthService", () => {
       await expect(service.getProfile(userId)).rejects.toThrow(CustomException);
     });
   });
+
+  describe("changePassword", () => {
+    it("should change password when current password is valid", async () => {
+      const userId = "user-1";
+      const currentPassword = "CurrentPassword123!";
+      const newPassword = "NewPassword123!";
+
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        id: userId,
+      });
+
+      mockArgon2.verify.mockResolvedValue(true);
+      (prismaService.user.update as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        id: userId,
+      });
+      (prismaService.auditLog.create as jest.Mock).mockResolvedValue({
+        id: "audit-1",
+      });
+
+      const result = await service.changePassword(
+        userId,
+        currentPassword,
+        newPassword
+      );
+
+      expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
+      expect(mockArgon2.verify).toHaveBeenCalledWith(
+        mockUser.passwordHash,
+        currentPassword
+      );
+      expect(prismaService.user.update).toHaveBeenCalled();
+      expect(prismaService.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          userId,
+          action: "CHANGE_PASSWORD",
+        },
+      });
+      expect(result).toEqual({ message: "Password changed successfully" });
+    });
+
+    it("should throw when user not found or inactive", async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.changePassword("nonexistent", "pass", "newPass")
+      ).rejects.toThrow(CustomException);
+
+      expect(mockArgon2.verify).not.toHaveBeenCalled();
+    });
+
+    it("should throw when current password is invalid", async () => {
+      const userId = "user-1";
+
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({
+        ...mockUser,
+        id: userId,
+      });
+      mockArgon2.verify.mockResolvedValue(false);
+
+      await expect(
+        service.changePassword(userId, "wrong-pass", "newPass")
+      ).rejects.toThrow(CustomException);
+
+      expect(prismaService.user.update).not.toHaveBeenCalled();
+      expect(prismaService.auditLog.create).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -47,6 +47,51 @@ export class AuthService {
     return user;
   }
 
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ) {
+    const user = await (this.prisma as PrismaClientLike).user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.isActive) {
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.USER_NOT_FOUND,
+        "User not found or inactive"
+      );
+    }
+
+    const isPasswordValid = await argon2.verify(
+      user.passwordHash,
+      currentPassword
+    );
+
+    if (!isPasswordValid) {
+      throw CustomException.unauthorized(
+        ErrorCodes.AUTH.CHANGE_PASSWORD_INVALID_CURRENT,
+        "Current password is incorrect"
+      );
+    }
+
+    const newPasswordHash = await argon2.hash(newPassword);
+
+    await (this.prisma as PrismaClientLike).user.update({
+      where: { id: user.id },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    await (this.prisma as PrismaClientLike).auditLog.create({
+      data: {
+        userId: user.id,
+        action: "CHANGE_PASSWORD",
+      },
+    });
+
+    return { message: "Password changed successfully" };
+  }
+
   async login(user: UserWithRoles, ipAddress?: string, userAgent?: string) {
     const payload = {
       sub: user.id,

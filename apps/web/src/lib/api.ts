@@ -687,6 +687,16 @@ export const userApi = {
     api.delete(`/users/${userId}/roles/${roleId}`),
 };
 
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export const authApi = {
+  changePassword: (data: ChangePasswordDto) =>
+    api.post<{ message: string }>("/auth/change-password", data),
+};
+
 // Role types and API methods
 export interface PaginatedRolesResponse {
   data: Role[];

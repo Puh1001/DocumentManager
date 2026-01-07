@@ -37,6 +37,7 @@
   },
   "searchPlaceholder": "搜索文档...",
   "admin": "管理员",
+  "passwordChangeDescription": "修改您的账户密码。",
   "accessDenied": {
     "title": "访问被拒绝",
     "description": "您没有权限访问此页面。如果您认为这是错误，请联系管理员。",
