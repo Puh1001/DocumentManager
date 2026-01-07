@@ -552,28 +552,36 @@ export default function KpiPage() {
       : maxValue;
 
     // Smart padding based on value range
-    // For low values (< 10%), use larger padding to make bars visible
+    // For very small values (< 1%), use much larger padding to make bars visible
+    // For low values (1-10%), use larger padding
     // For normal values (>= 10%), use standard padding
     let paddingPercent = 0.2; // Default 20% padding
 
-    if (maxWithTarget < 10) {
-      // For very low values (< 10%), use larger padding (50%)
+    if (maxWithTarget < 1) {
+      // For very small values (< 1%), use much larger padding (200%) to ensure bars are visible
+      paddingPercent = 2.0;
+    } else if (maxWithTarget < 10) {
+      // For low values (1-10%), use larger padding (50%)
       paddingPercent = 0.5;
     } else if (maxWithTarget < 50) {
-      // For low values (10-50%), use medium padding (30%)
+      // For medium-low values (10-50%), use medium padding (30%)
       paddingPercent = 0.3;
     }
 
     // Calculate dynamic max with smart padding
     let dynamicMax = maxWithTarget * (1 + paddingPercent);
 
-    // Ensure minimum visible range for very small values
+    // Ensure minimum visible range for small values, but don't force too large scale for very small values
     // This prevents bars from being invisible when values are very small
-    if (maxWithTarget < 5 && dataRange < 2) {
-      // For very small ranges (< 5% with range < 2%), ensure at least 5% scale
+    if (maxWithTarget < 1) {
+      // For very small values (< 1%), use calculated padding without forcing minimum
+      // This ensures bars are at least 33% of chart height (value / (value * 3) = 1/3)
+      // No additional minimum forcing needed
+    } else if (maxWithTarget < 5 && dataRange < 2) {
+      // For small ranges (1-5% with range < 2%), ensure at least 5% scale
       dynamicMax = Math.max(dynamicMax, 5);
     } else if (maxWithTarget < 10) {
-      // For small values (< 10%), ensure at least 10% scale
+      // For small values (5-10%), ensure at least 10% scale
       dynamicMax = Math.max(dynamicMax, 10);
     } else if (maxWithTarget < 100) {
       // For medium values (10-100%), ensure at least 20% above max
@@ -583,14 +591,26 @@ export default function KpiPage() {
       dynamicMax = maxWithTarget * 1.2;
     }
 
-    // Round up to nearest nice number (5, 10, 20, 50, 100, etc.)
+    // Round up to nearest nice number
+    // For very small values (< 1%), round to 2 decimal places
+    // For small values (1-10%), round to 1 decimal place or nearest 0.5
+    // For larger values, round to nearest integer
     let niceMax: number;
-    if (dynamicMax < 10) {
-      niceMax = Math.ceil(dynamicMax / 1) * 1; // Round to nearest 1
+    if (dynamicMax < 0.1) {
+      // For very small values (< 0.1%), round to nearest 0.01
+      niceMax = Math.ceil(dynamicMax * 100) / 100;
+    } else if (dynamicMax < 1) {
+      // For small values (0.1-1%), round to nearest 0.05
+      niceMax = Math.ceil(dynamicMax * 20) / 20;
+    } else if (dynamicMax < 10) {
+      // For medium values (1-10%), round to nearest 0.5
+      niceMax = Math.ceil(dynamicMax * 2) / 2;
     } else if (dynamicMax < 50) {
-      niceMax = Math.ceil(dynamicMax / 5) * 5; // Round to nearest 5
+      // For larger values (10-50%), round to nearest 5
+      niceMax = Math.ceil(dynamicMax / 5) * 5;
     } else {
-      niceMax = Math.ceil(dynamicMax / 10) * 10; // Round to nearest 10
+      // For large values (>= 50%), round to nearest 10
+      niceMax = Math.ceil(dynamicMax / 10) * 10;
     }
 
     return {
