@@ -103,6 +103,7 @@ docker-compose up -d
 ```
 
 **Phân tích:**
+
 - ✅ Pull code trước → Đúng
 - ✅ Build sau khi pull → Đúng
 - ✅ Up sau khi build → Đúng
@@ -122,6 +123,7 @@ docker-compose up -d --build  # Build và up cùng lúc
 ```
 
 **Lợi ích:**
+
 - ✅ Ngắn gọn hơn
 - ✅ Vẫn đảm bảo build sau khi pull
 - ✅ Tự động rebuild nếu cần
@@ -135,6 +137,7 @@ docker-compose up -d --build  # Build và up cùng lúc
 ```
 
 Script này tự động:
+
 1. Pull code
 2. Backup database
 3. Build images
@@ -142,6 +145,7 @@ Script này tự động:
 5. Run migrations
 
 **Lợi ích:**
+
 - ✅ Tự động hóa hoàn toàn
 - ✅ Đảm bảo đúng thứ tự
 - ✅ Có backup tự động
@@ -231,11 +235,13 @@ docker-compose up -d --build
 > Nếu build xong rồi up luôn thì có nhận code mới không?
 
 **Có**, nhưng chỉ khi:
+
 - ✅ Đã pull code mới TRƯỚC KHI build
 - ✅ Build images SAU KHI pull code
 - ✅ Up containers SAU KHI build
 
 **Quy trình hiện tại của bạn là ĐÚNG:**
+
 ```bash
 git pull origin main  # Pull code mới
 docker-compose down   # Stop containers cũ
@@ -261,4 +267,3 @@ Hoặc dùng script:
 ```bash
 ./scripts/deploy-simple.sh
 ```
-

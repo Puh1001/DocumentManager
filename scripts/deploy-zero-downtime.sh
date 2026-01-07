@@ -15,9 +15,10 @@ NC='\033[0m'
 
 # Configuration
 REMOTE_HOST="${1:-}"
-REMOTE_DIR="${REMOTE_DIR:-~/documentsManager}"
+REMOTE_DIR="${REMOTE_DIR:-/var/www/DocumentManager}"  # Default path, can be overridden
 SSH_KEY="${SSH_KEY:-}"
 COMPOSE_FILE="docker-compose.prod.yml"
+REPO_URL="${REPO_URL:-}"  # Will be auto-detected from git remote if not set
 
 # Logging functions
 log_info() {
@@ -131,15 +132,21 @@ if [ -z "$REMOTE_HOST" ]; then
   echo "  --skip-backup      Skip database backup"
   echo "  --skip-migration   Skip database migrations"
   echo ""
+  echo "Environment Variables:"
+  echo "  REMOTE_DIR         Server path (default: /var/www/DocumentManager)"
+  echo "  REPO_URL           Git repository URL (auto-detected if not set)"
+  echo "  SSH_KEY            Path to SSH private key"
+  echo ""
   echo "Other Commands:"
   echo "  status            Show server and application status"
   echo "  logs              Show application logs"
   echo "  check             Quick health check"
   echo ""
   echo "Examples:"
-  echo "  $0 user@server.com              # Deploy zero-downtime"
-  echo "  $0 user@server.com --skip-backup # Skip backup"
-  echo "  $0 user@server.com status       # Check status"
+  echo "  $0 user@server.com                           # Deploy zero-downtime"
+  echo "  $0 user@server.com --skip-backup              # Skip backup"
+  echo "  REMOTE_DIR=/custom/path $0 user@server.com   # Custom path"
+  echo "  $0 status user@server.com                     # Check status"
   echo ""
   exit 1
 fi
@@ -221,6 +228,9 @@ echo "=============================================="
 echo ""
 log_info "Server: $REMOTE_HOST"
 log_info "Path: $REMOTE_DIR"
+if [ -n "$REPO_URL" ]; then
+    log_info "Repo: $REPO_URL"
+fi
 echo ""
 
 # Check SSH access first
@@ -258,10 +268,34 @@ echo ""
 # Step 2: Deploy to server
 log_info "🔌 Step 2: Preparing server environment..."
 
-# Build remote command with better error handling
+# Auto-detect repo URL if not set
+if [ -z "$REPO_URL" ] && [ -d ".git" ]; then
+    REPO_URL=$(git remote get-url origin 2>/dev/null || echo "")
+    if [ -n "$REPO_URL" ]; then
+        log_info "Auto-detected repo URL: $REPO_URL"
+    fi
+fi
+
+# Build remote command with better error handling and auto-clone
 REMOTE_CMD="set -e && "
+REMOTE_CMD+="echo '📂 Checking application directory...' && "
+REMOTE_CMD+="if [ ! -d \"$REMOTE_DIR\" ]; then "
+REMOTE_CMD+="  echo '📦 Directory not found, checking if we can clone...' && "
+if [ -n "$REPO_URL" ]; then
+    REMOTE_CMD+="  echo '📥 Cloning repository to $REMOTE_DIR...' && "
+    REMOTE_CMD+="  git clone $REPO_URL $REMOTE_DIR || { "
+    REMOTE_CMD+="    echo '❌ Failed to clone repository. Please clone manually:' && "
+    REMOTE_CMD+="    echo '   git clone $REPO_URL $REMOTE_DIR' && "
+    REMOTE_CMD+="    exit 1; "
+    REMOTE_CMD+="  } && "
+else
+    REMOTE_CMD+="  echo '❌ Directory not found: $REMOTE_DIR' && "
+    REMOTE_CMD+="  echo '   Please clone repository manually or set REPO_URL environment variable' && "
+    REMOTE_CMD+="  exit 1 && "
+fi
+REMOTE_CMD+="fi && "
 REMOTE_CMD+="echo '📂 Navigating to application directory...' && "
-REMOTE_CMD+="cd $REMOTE_DIR || { echo '❌ Directory not found: $REMOTE_DIR'; exit 1; } && "
+REMOTE_CMD+="cd $REMOTE_DIR && "
 REMOTE_CMD+="echo '📥 Pulling latest code from Git...' && "
 REMOTE_CMD+="git fetch origin && "
 REMOTE_CMD+="git reset --hard origin/main || git reset --hard origin/master || echo '⚠️  Git reset skipped' && "
