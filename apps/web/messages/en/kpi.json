@@ -19,6 +19,8 @@
   "displayTypePercentage": "Percentage Table (%)",
   "displayTypeCount": "Count Table (Number)",
   "displayTypeDescription": "Choose how to display your KPI data",
+  "rowModeSingle": "1 row (ACTUAL only)",
+  "rowModeDouble": "2 rows (TARGET + ACTUAL)",
   "table": {
     "itemColumn": "Item",
     "months": {

@@ -19,6 +19,8 @@
   "displayTypePercentage": "Bảng phần trăm (%)",
   "displayTypeCount": "Bảng số lần",
   "displayTypeDescription": "Chọn cách hiển thị dữ liệu KPI",
+  "rowModeSingle": "1 dòng (chỉ ACTUAL)",
+  "rowModeDouble": "2 dòng (TARGET + ACTUAL)",
   "table": {
     "itemColumn": "Mục",
     "months": {

@@ -14,6 +14,11 @@ export enum DisplayType {
   COUNT = "COUNT",
 }
 
+export enum RowMode {
+  SINGLE = "SINGLE", // 1 dòng: ACTUAL only
+  DOUBLE = "DOUBLE", // 2 dòng: TARGET + ACTUAL
+}
+
 export class CreateKpiRecordDto {
   @ApiProperty({ description: "Department ID", format: "uuid" })
   @IsUUID()
@@ -45,4 +50,14 @@ export class CreateKpiRecordDto {
   @IsEnum(DisplayType)
   @IsOptional()
   displayType?: DisplayType;
+
+  @ApiProperty({
+    enum: RowMode,
+    example: RowMode.DOUBLE,
+    required: false,
+    description: "Row mode for COUNT tables: SINGLE (1 row) or DOUBLE (2 rows)",
+  })
+  @IsEnum(RowMode)
+  @IsOptional()
+  rowMode?: RowMode;
 }

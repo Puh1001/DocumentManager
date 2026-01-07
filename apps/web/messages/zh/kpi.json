@@ -19,6 +19,8 @@
   "displayTypePercentage": "百分比表 (%)",
   "displayTypeCount": "次数表",
   "displayTypeDescription": "选择如何显示KPI数据",
+  "rowModeSingle": "1行 (仅ACTUAL)",
+  "rowModeDouble": "2行 (TARGET + ACTUAL)",
   "table": {
     "itemColumn": "项目",
     "months": {

@@ -82,6 +82,7 @@ interface KpiMetric {
 }
 
 type DisplayType = "PERCENTAGE" | "COUNT";
+type RowMode = "SINGLE" | "DOUBLE";
 
 interface KpiRecord {
   id: string;
@@ -91,6 +92,7 @@ interface KpiRecord {
   target: string;
   targetValue?: number | null;
   displayType?: DisplayType;
+  rowMode?: RowMode;
   metrics: KpiMetric[];
 }
 
@@ -176,6 +178,7 @@ export default function KpiPage() {
   const [showAddTableDialog, setShowAddTableDialog] = useState(false);
   const [selectedDisplayType, setSelectedDisplayType] =
     useState<DisplayType>("PERCENTAGE");
+  const [selectedRowMode, setSelectedRowMode] = useState<RowMode>("DOUBLE");
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -484,7 +487,36 @@ export default function KpiPage() {
     return efficiencyValues.map((v) => (v == null ? null : 100 - v));
   };
 
-  // Helper function to get chart data for COUNT table
+  // Helper function to get chart data for COUNT SINGLE table (1 row)
+  const getChartDataForCountSingle = (record: KpiRecord) => {
+    const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+
+    const actualData = MONTH_KEYS.map(
+      (key) => actualMetric?.values?.[key] ?? null
+    );
+    const actualAvg = calculateMetricAverage(actualMetric);
+
+    const datasets: ChartDataset<"bar", (number | null)[]>[] = [
+      {
+        type: "bar" as const,
+        label: "ACTUAL",
+        data: [...actualData, actualAvg],
+        backgroundColor: "rgba(54, 162, 235, 0.8)",
+      },
+    ];
+
+    const chartLabels = [
+      ...MONTH_KEYS.map((key) => tTable(`months.${key}`)),
+      tTable("months.average"),
+    ];
+
+    return {
+      labels: chartLabels,
+      datasets,
+    } as ChartData<"bar", (number | null)[], string>;
+  };
+
+  // Helper function to get chart data for COUNT DOUBLE table (2 rows)
   const getChartDataForCount = (record: KpiRecord) => {
     const targetMetric = record.metrics.find((m) => m.type === "TARGET");
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
@@ -580,7 +612,42 @@ export default function KpiPage() {
     } as ChartData<"bar", number[], string>;
   };
 
-  // Helper function to get chart options for COUNT table
+  // Helper function to get chart options for COUNT SINGLE table
+  const getChartOptionsForCountSingle = (record: KpiRecord) => {
+    const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+    const actualData = MONTH_KEYS.map(
+      (key) => actualMetric?.values?.[key] ?? null
+    );
+
+    const allValues = actualData.filter((v): v is number => v != null);
+    const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+    const niceMax = Math.ceil(maxValue * 1.2);
+
+    return {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top" as const,
+        },
+        title: {
+          display: true,
+          text: t("chartTitle"),
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: niceMax,
+          ticks: {
+            callback: (value: number | string) => `${value}`,
+          },
+        },
+      },
+    };
+  };
+
+  // Helper function to get chart options for COUNT DOUBLE table
   const getChartOptionsForCount = (record: KpiRecord) => {
     const targetMetric = record.metrics.find((m) => m.type === "TARGET");
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
@@ -898,7 +965,10 @@ export default function KpiPage() {
 
   const recordRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const handleAddNewTable = async (displayType: DisplayType) => {
+  const handleAddNewTable = async (
+    displayType: DisplayType,
+    rowMode?: RowMode
+  ) => {
     if (!selectedDepartmentId || !canCreate || isCreating) return;
 
     setIsCreating(true);
@@ -910,6 +980,7 @@ export default function KpiPage() {
         target: "",
         targetValue: null,
         displayType,
+        rowMode: displayType === "COUNT" ? rowMode : undefined,
       });
 
       const baseValues: Record<string, number | null> = {};
@@ -964,11 +1035,12 @@ export default function KpiPage() {
 
   const openAddTableDialog = () => {
     setSelectedDisplayType("PERCENTAGE");
+    setSelectedRowMode("DOUBLE");
     setShowAddTableDialog(true);
   };
 
   const confirmAddTable = () => {
-    handleAddNewTable(selectedDisplayType);
+    handleAddNewTable(selectedDisplayType, selectedRowMode);
   };
 
   const handleDeleteTable = async (recordId: string) => {
@@ -1379,55 +1451,16 @@ export default function KpiPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {/* TARGET Row - Always render */}
-                          <tr>
-                            <td className="border border-gray-200 px-2 py-1 align-top">
-                              <textarea
-                                className="w-full resize-none bg-transparent text-xs leading-tight"
-                                value={targetMetric.name}
-                                disabled={!isEditMode}
-                                onChange={async (e) => {
-                                  // Create metric if it doesn't exist
-                                  let metricToUse = targetMetric;
-                                  if (targetMetric.id.startsWith("temp-")) {
-                                    const created = await ensureMetricExists(
-                                      record.id,
-                                      "TARGET"
-                                    );
-                                    if (created) metricToUse = created;
-                                  }
-
-                                  setRecords((prev) =>
-                                    prev.map((r) =>
-                                      r.id === record.id
-                                        ? {
-                                            ...r,
-                                            metrics: r.metrics.map((m) =>
-                                              m.id === metricToUse.id
-                                                ? { ...m, name: e.target.value }
-                                                : m
-                                            ),
-                                          }
-                                        : r
-                                    )
-                                  );
-                                }}
-                                placeholder="Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)"
-                                rows={2}
-                              />
-                            </td>
-                            {MONTH_KEYS.map((key) => (
-                              <td
-                                key={key}
-                                className="border border-gray-200 px-1 py-1 text-center"
-                              >
-                                <Input
-                                  type="number"
-                                  value={
-                                    targetMetric.values?.[key] == null
-                                      ? ""
-                                      : targetMetric.values[key]!
-                                  }
+                          {/* TARGET Row - Hide for COUNT + SINGLE */}
+                          {!(
+                            record.displayType === "COUNT" &&
+                            record.rowMode === "SINGLE"
+                          ) && (
+                            <tr>
+                              <td className="border border-gray-200 px-2 py-1 align-top">
+                                <textarea
+                                  className="w-full resize-none bg-transparent text-xs leading-tight"
+                                  value={targetMetric.name}
                                   disabled={!isEditMode}
                                   onChange={async (e) => {
                                     // Create metric if it doesn't exist
@@ -1440,23 +1473,71 @@ export default function KpiPage() {
                                       if (created) metricToUse = created;
                                     }
 
-                                    handleChangeMetricValue(
-                                      record.id,
-                                      metricToUse.id,
-                                      key,
-                                      e.target.value
+                                    setRecords((prev) =>
+                                      prev.map((r) =>
+                                        r.id === record.id
+                                          ? {
+                                              ...r,
+                                              metrics: r.metrics.map((m) =>
+                                                m.id === metricToUse.id
+                                                  ? {
+                                                      ...m,
+                                                      name: e.target.value,
+                                                    }
+                                                  : m
+                                              ),
+                                            }
+                                          : r
+                                      )
                                     );
                                   }}
-                                  className="h-7 w-20 mx-auto text-xs text-center"
+                                  placeholder="Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)"
+                                  rows={2}
                                 />
                               </td>
-                            ))}
-                            <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
-                              {targetAverage != null
-                                ? targetAverage.toFixed(2)
-                                : ""}
-                            </td>
-                          </tr>
+                              {MONTH_KEYS.map((key) => (
+                                <td
+                                  key={key}
+                                  className="border border-gray-200 px-1 py-1 text-center"
+                                >
+                                  <Input
+                                    type="number"
+                                    value={
+                                      targetMetric.values?.[key] == null
+                                        ? ""
+                                        : targetMetric.values[key]!
+                                    }
+                                    disabled={!isEditMode}
+                                    onChange={async (e) => {
+                                      // Create metric if it doesn't exist
+                                      let metricToUse = targetMetric;
+                                      if (targetMetric.id.startsWith("temp-")) {
+                                        const created =
+                                          await ensureMetricExists(
+                                            record.id,
+                                            "TARGET"
+                                          );
+                                        if (created) metricToUse = created;
+                                      }
+
+                                      handleChangeMetricValue(
+                                        record.id,
+                                        metricToUse.id,
+                                        key,
+                                        e.target.value
+                                      );
+                                    }}
+                                    className="h-7 w-20 mx-auto text-xs text-center"
+                                  />
+                                </td>
+                              ))}
+                              <td className="border border-gray-200 px-1 py-1 text-center text-xs font-medium">
+                                {targetAverage != null
+                                  ? targetAverage.toFixed(2)
+                                  : ""}
+                              </td>
+                            </tr>
+                          )}
 
                           {/* ACTUAL Row - Always render */}
                           <tr>
@@ -1698,7 +1779,21 @@ export default function KpiPage() {
                   </Card>
 
                   {/* Chart Card - Only show if has data */}
-                  {hasData && record.displayType === "COUNT" ? (
+                  {hasData &&
+                  record.displayType === "COUNT" &&
+                  record.rowMode === "SINGLE" ? (
+                    <Card className="p-4 flex flex-col">
+                      <h2 className="text-sm font-semibold mb-4">
+                        {record.title || t("chartTitle")}
+                      </h2>
+                      <div className="flex-1 min-h-[260px]">
+                        <Bar
+                          options={getChartOptionsForCountSingle(record)}
+                          data={getChartDataForCountSingle(record)}
+                        />
+                      </div>
+                    </Card>
+                  ) : hasData && record.displayType === "COUNT" ? (
                     <Card className="p-4 flex flex-col">
                       <h2 className="text-sm font-semibold mb-4">
                         {record.title || t("chartTitle")}
@@ -1760,21 +1855,67 @@ export default function KpiPage() {
                   {t("displayTypePercentage")}
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="count"
-                  name="displayType"
-                  value="COUNT"
-                  checked={selectedDisplayType === "COUNT"}
-                  onChange={(e) =>
-                    setSelectedDisplayType(e.target.value as DisplayType)
-                  }
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="count" className="cursor-pointer">
-                  {t("displayTypeCount")}
-                </Label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="count"
+                    name="displayType"
+                    value="COUNT"
+                    checked={selectedDisplayType === "COUNT"}
+                    onChange={(e) =>
+                      setSelectedDisplayType(e.target.value as DisplayType)
+                    }
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="count" className="cursor-pointer">
+                    {t("displayTypeCount")}
+                  </Label>
+                </div>
+
+                {/* Nested row mode selection for COUNT */}
+                {selectedDisplayType === "COUNT" && (
+                  <div className="ml-6 space-y-2 border-l-2 border-gray-200 pl-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="single"
+                        name="rowMode"
+                        value="SINGLE"
+                        checked={selectedRowMode === "SINGLE"}
+                        onChange={(e) =>
+                          setSelectedRowMode(e.target.value as RowMode)
+                        }
+                        className="w-4 h-4"
+                      />
+                      <Label
+                        htmlFor="single"
+                        className="cursor-pointer text-sm"
+                      >
+                        {t("rowModeSingle")}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="double"
+                        name="rowMode"
+                        value="DOUBLE"
+                        checked={selectedRowMode === "DOUBLE"}
+                        onChange={(e) =>
+                          setSelectedRowMode(e.target.value as RowMode)
+                        }
+                        className="w-4 h-4"
+                      />
+                      <Label
+                        htmlFor="double"
+                        className="cursor-pointer text-sm"
+                      >
+                        {t("rowModeDouble")}
+                      </Label>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
