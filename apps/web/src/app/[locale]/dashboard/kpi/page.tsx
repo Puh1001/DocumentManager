@@ -297,11 +297,12 @@ export default function KpiPage() {
               });
             }
 
-            // Sort metrics by sortOrder and filter to only TARGET and ACTUAL
-            // Ensure we get exactly TARGET and ACTUAL, not just first 2
+            // Sort metrics by sortOrder
+            // Include TARGET, ACTUAL, and CALCULATED metrics
             const target = metrics.find((m) => m.type === "TARGET");
             const actual = metrics.find((m) => m.type === "ACTUAL");
-            const sortedMetrics = [target, actual].filter(
+            const calculated = metrics.find((m) => m.type === "CALCULATED");
+            const sortedMetrics = [target, actual, calculated].filter(
               (m): m is KpiMetric => m != null
             );
 
@@ -456,6 +457,17 @@ export default function KpiPage() {
         : null;
 
     return [...values, avg];
+  };
+
+  // Helper function to get calculated metric
+  const getCalculatedMetric = (record: KpiRecord) => {
+    return record.metrics.find((m) => m.type === "CALCULATED");
+  };
+
+  // Helper function to calculate calculated values (100% - efficiency)
+  const calculateCalculatedValues = (record: KpiRecord) => {
+    const efficiencyValues = calculateEfficiency(record);
+    return efficiencyValues.map((v) => (v == null ? null : 100 - v));
   };
 
   // Helper function to get chart data for a record
@@ -669,7 +681,7 @@ export default function KpiPage() {
   // Handle creating metrics if they don't exist when user starts typing
   const ensureMetricExists = async (
     recordId: string,
-    type: "TARGET" | "ACTUAL"
+    type: "TARGET" | "ACTUAL" | "CALCULATED"
   ) => {
     const record = records.find((r) => r.id === recordId);
     if (!record) return null;
@@ -690,7 +702,7 @@ export default function KpiPage() {
         kpiRecordId: recordId,
         name: "",
         type: type,
-        sortOrder: type === "TARGET" ? 1 : 2,
+        sortOrder: type === "TARGET" ? 1 : type === "ACTUAL" ? 2 : 3,
         values: JSON.stringify(baseValues),
       });
 
@@ -713,6 +725,71 @@ export default function KpiPage() {
     } catch (err: unknown) {
       handleKpiApiError(err, "tạo metric");
       return null;
+    }
+  };
+
+  const handleAddCalculatedMetric = async (recordId: string) => {
+    const record = records.find((r) => r.id === recordId);
+    if (!record || !isEditMode) return;
+
+    // Check if calculated metric already exists
+    const existingCalculated = record.metrics.find(
+      (m) => m.type === "CALCULATED"
+    );
+    if (existingCalculated) return;
+
+    try {
+      const baseValues: Record<string, number | null> = {};
+      MONTH_KEYS.forEach((key) => {
+        baseValues[key] = null;
+      });
+
+      const newCalculated = await api.post<KpiMetric>("/kpi/metrics", {
+        kpiRecordId: recordId,
+        name: "",
+        type: "CALCULATED",
+        sortOrder: 3,
+        values: JSON.stringify(baseValues),
+      });
+
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === recordId
+            ? {
+                ...r,
+                metrics: [
+                  ...r.metrics,
+                  { ...newCalculated, values: baseValues },
+                ],
+              }
+            : r
+        )
+      );
+    } catch (err: unknown) {
+      handleKpiApiError(err, "thêm dòng tính toán");
+    }
+  };
+
+  const handleRemoveCalculatedMetric = async (
+    recordId: string,
+    metricId: string
+  ) => {
+    if (!isEditMode) return;
+
+    try {
+      await api.delete(`/kpi/metrics/${metricId}`);
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === recordId
+            ? {
+                ...r,
+                metrics: r.metrics.filter((m) => m.id !== metricId),
+              }
+            : r
+        )
+      );
+    } catch (err: unknown) {
+      handleKpiApiError(err, "xóa dòng tính toán");
     }
   };
 
@@ -1090,9 +1167,19 @@ export default function KpiPage() {
               }
 
               const efficiencyValues = calculateEfficiency(record);
-              const hasData = efficiencyValues.some((v) => v != null);
+              const calculatedMetric = getCalculatedMetric(record);
+              const calculatedValues = calculatedMetric
+                ? calculateCalculatedValues(record)
+                : null;
+              // Use calculated values for chart if available, otherwise use efficiency
+              const chartValues = calculatedValues || efficiencyValues;
+              const hasData = chartValues.some((v) => v != null);
               const targetAverage = calculateMetricAverage(targetMetric);
               const actualAverage = calculateMetricAverage(actualMetric);
+              const calculatedAverage =
+                calculatedValues && calculatedValues[12] != null
+                  ? calculatedValues[12]
+                  : null;
 
               return (
                 <div
@@ -1355,24 +1442,114 @@ export default function KpiPage() {
                                 : `${efficiencyValues[12]!.toFixed(2)}%`}
                             </td>
                           </tr>
+
+                          {/* Calculated Row (100% - Efficiency) - Optional */}
+                          {calculatedMetric && calculatedValues && (
+                            <tr className="bg-blue-50 font-medium">
+                              <td className="border border-gray-200 px-2 py-1 text-left text-xs">
+                                <div className="flex items-center gap-2">
+                                  <textarea
+                                    className="flex-1 resize-none bg-transparent text-xs leading-tight"
+                                    value={calculatedMetric.name}
+                                    disabled={!isEditMode}
+                                    onChange={async (e) => {
+                                      // Create metric if it doesn't exist
+                                      let metricToUse = calculatedMetric;
+                                      if (
+                                        calculatedMetric.id.startsWith("temp-")
+                                      ) {
+                                        const created =
+                                          await ensureMetricExists(
+                                            record.id,
+                                            "CALCULATED"
+                                          );
+                                        if (created) metricToUse = created;
+                                      }
+
+                                      setRecords((prev) =>
+                                        prev.map((r) =>
+                                          r.id === record.id
+                                            ? {
+                                                ...r,
+                                                metrics: r.metrics.map((m) =>
+                                                  m.id === metricToUse.id
+                                                    ? {
+                                                        ...m,
+                                                        name: e.target.value,
+                                                      }
+                                                    : m
+                                                ),
+                                              }
+                                            : r
+                                        )
+                                      );
+                                    }}
+                                    placeholder="Nhập tên dòng tính toán (ví dụ: Tỷ lệ lỗi)"
+                                    rows={2}
+                                  />
+                                  {isEditMode && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleRemoveCalculatedMetric(
+                                          record.id,
+                                          calculatedMetric.id
+                                        )
+                                      }
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                      title="Xóa dòng tính toán"
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                              {calculatedValues.slice(0, 12).map((v, idx) => (
+                                <td
+                                  key={MONTH_KEYS[idx]}
+                                  className="border border-gray-200 px-1 py-1 text-center text-xs"
+                                >
+                                  {v == null ? "" : `${v.toFixed(2)}%`}
+                                </td>
+                              ))}
+                              <td className="border border-gray-200 px-1 py-1 text-center text-xs font-semibold">
+                                {calculatedAverage != null
+                                  ? `${calculatedAverage.toFixed(2)}%`
+                                  : ""}
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddNewTable}
-                        disabled={!isEditMode || !canCreate || isCreating}
-                        title={
-                          !canCreate
-                            ? "Bạn không có quyền tạo KPI mới"
-                            : undefined
-                        }
-                      >
-                        {isCreating ? "Đang tạo..." : t("addNewTable")}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddNewTable}
+                          disabled={!isEditMode || !canCreate || isCreating}
+                          title={
+                            !canCreate
+                              ? "Bạn không có quyền tạo KPI mới"
+                              : undefined
+                          }
+                        >
+                          {isCreating ? "Đang tạo..." : t("addNewTable")}
+                        </Button>
+                        {isEditMode && !calculatedMetric && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddCalculatedMetric(record.id)}
+                            title="Thêm dòng tính toán (100% - Efficiency)"
+                          >
+                            + Thêm dòng tính toán
+                          </Button>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
@@ -1404,15 +1581,17 @@ export default function KpiPage() {
                   {hasData && (
                     <Card className="p-4 flex flex-col">
                       <h2 className="text-sm font-semibold mb-4">
-                        {t("chartTitle")}
+                        {calculatedMetric
+                          ? calculatedMetric.name || t("chartTitle")
+                          : t("chartTitle")}
                       </h2>
                       <div className="flex-1 min-h-[260px]">
                         <Bar
                           options={getChartOptions(
-                            efficiencyValues,
+                            chartValues,
                             record.targetValue
                           )}
-                          data={getChartData(record, efficiencyValues)}
+                          data={getChartData(record, chartValues)}
                         />
                       </div>
                     </Card>

@@ -276,46 +276,19 @@ if [ -z "$REPO_URL" ] && [ -d ".git" ]; then
     fi
 fi
 
-# Build remote command with better error handling and auto-clone
-REMOTE_CMD="set -e && "
-REMOTE_CMD+="echo '📂 Checking application directory...' && "
-REMOTE_CMD+="if [ ! -d \"$REMOTE_DIR\" ]; then "
-REMOTE_CMD+="  echo '📦 Directory not found, checking if we can clone...' && "
-if [ -n "$REPO_URL" ]; then
-    REMOTE_CMD+="  echo '📥 Cloning repository to $REMOTE_DIR...' && "
-    REMOTE_CMD+="  git clone $REPO_URL $REMOTE_DIR || { "
-    REMOTE_CMD+="    echo '❌ Failed to clone repository. Please clone manually:' && "
-    REMOTE_CMD+="    echo '   git clone $REPO_URL $REMOTE_DIR' && "
-    REMOTE_CMD+="    exit 1; "
-    REMOTE_CMD+="  } && "
-else
-    REMOTE_CMD+="  echo '❌ Directory not found: $REMOTE_DIR' && "
-    REMOTE_CMD+="  echo '   Please clone repository manually or set REPO_URL environment variable' && "
-    REMOTE_CMD+="  exit 1 && "
-fi
-REMOTE_CMD+="fi && "
-REMOTE_CMD+="echo '📂 Navigating to application directory...' && "
-REMOTE_CMD+="cd $REMOTE_DIR && "
-REMOTE_CMD+="echo '📥 Pulling latest code from Git...' && "
-REMOTE_CMD+="git fetch origin && "
-REMOTE_CMD+="git reset --hard origin/main || git reset --hard origin/master || echo '⚠️  Git reset skipped' && "
-REMOTE_CMD+="echo '🔧 Updating script permissions...' && "
-REMOTE_CMD+="chmod +x scripts/deploy.sh 2>/dev/null || true && "
-REMOTE_CMD+="echo '' && "
-REMOTE_CMD+="echo '🚀 Starting zero-downtime deployment...' && "
-REMOTE_CMD+="./scripts/deploy.sh"
-
+# Build deploy options
+DEPLOY_OPTS=""
 if [ "$SKIP_BACKUP" = true ]; then
-  REMOTE_CMD+=" --skip-backup"
+  DEPLOY_OPTS="$DEPLOY_OPTS --skip-backup"
 fi
 
 if [ "$SKIP_MIGRATION" = true ]; then
-  REMOTE_CMD+=" --skip-migration"
+  DEPLOY_OPTS="$DEPLOY_OPTS --skip-migration"
 fi
 
-# Execute remote deployment
-echo ""
-$SSH_CMD "$REMOTE_CMD" || {
+# Execute remote deployment using heredoc for better syntax handling
+log_info "Executing deployment on server..."
+$SSH_CMD bash << REMOTE_DEPLOY_SCRIPT || {
   echo ""
   log_error "Deployment failed!"
   echo ""
@@ -326,6 +299,43 @@ $SSH_CMD "$REMOTE_CMD" || {
   log_info "4. Check directory: ssh $REMOTE_HOST 'ls -la $REMOTE_DIR'"
   exit 1
 }
+set -e
+
+REMOTE_DIR_VAR="$REMOTE_DIR"
+REPO_URL_VAR="$REPO_URL"
+DEPLOY_OPTS_VAR="$DEPLOY_OPTS"
+
+echo "📂 Checking application directory..."
+if [ ! -d "\$REMOTE_DIR_VAR" ]; then
+  echo "📦 Directory not found, checking if we can clone..."
+  if [ -n "\$REPO_URL_VAR" ]; then
+    echo "📥 Cloning repository to \$REMOTE_DIR_VAR..."
+    git clone "\$REPO_URL_VAR" "\$REMOTE_DIR_VAR" || {
+      echo "❌ Failed to clone repository. Please clone manually:"
+      echo "   git clone \$REPO_URL_VAR \$REMOTE_DIR_VAR"
+      exit 1
+    }
+  else
+    echo "❌ Directory not found: \$REMOTE_DIR_VAR"
+    echo "   Please clone repository manually or set REPO_URL environment variable"
+    exit 1
+  fi
+fi
+
+echo "📂 Navigating to application directory..."
+cd "\$REMOTE_DIR_VAR"
+
+echo "📥 Pulling latest code from Git..."
+git fetch origin
+git reset --hard origin/main || git reset --hard origin/master || echo "⚠️  Git reset skipped"
+
+echo "🔧 Updating script permissions..."
+chmod +x scripts/deploy.sh 2>/dev/null || true
+
+echo ""
+echo "🚀 Starting zero-downtime deployment..."
+./scripts/deploy.sh\$DEPLOY_OPTS_VAR
+REMOTE_DEPLOY_SCRIPT
 
 echo ""
 log_success "Zero-downtime deployment completed successfully!"
