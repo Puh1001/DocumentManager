@@ -288,17 +288,7 @@ fi
 
 # Execute remote deployment using heredoc for better syntax handling
 log_info "Executing deployment on server..."
-$SSH_CMD bash << REMOTE_DEPLOY_SCRIPT || {
-  echo ""
-  log_error "Deployment failed!"
-  echo ""
-  log_info "Troubleshooting:"
-  log_info "1. Check SSH connection: ssh $REMOTE_HOST"
-  log_info "2. Check server logs: ssh $REMOTE_HOST 'cd $REMOTE_DIR && docker-compose -f $COMPOSE_FILE logs'"
-  log_info "3. Check script exists: ssh $REMOTE_HOST 'ls -la $REMOTE_DIR/scripts/deploy.sh'"
-  log_info "4. Check directory: ssh $REMOTE_HOST 'ls -la $REMOTE_DIR'"
-  exit 1
-}
+$SSH_CMD bash << REMOTE_DEPLOY_SCRIPT
 set -e
 
 REMOTE_DIR_VAR="$REMOTE_DIR"
@@ -336,6 +326,19 @@ echo ""
 echo "🚀 Starting zero-downtime deployment..."
 ./scripts/deploy.sh\$DEPLOY_OPTS_VAR
 REMOTE_DEPLOY_SCRIPT
+
+# Check deployment result
+if [ $? -ne 0 ]; then
+  echo ""
+  log_error "Deployment failed!"
+  echo ""
+  log_info "Troubleshooting:"
+  log_info "1. Check SSH connection: ssh $REMOTE_HOST"
+  log_info "2. Check server logs: ssh $REMOTE_HOST 'cd $REMOTE_DIR && docker-compose -f $COMPOSE_FILE logs'"
+  log_info "3. Check script exists: ssh $REMOTE_HOST 'ls -la $REMOTE_DIR/scripts/deploy.sh'"
+  log_info "4. Check directory: ssh $REMOTE_HOST 'ls -la $REMOTE_DIR'"
+  exit 1
+fi
 
 echo ""
 log_success "Zero-downtime deployment completed successfully!"
