@@ -108,7 +108,7 @@ backup_database() {
 health_check() {
   local service=$1
   local url=$2
-  local max_attempts=30
+  local max_attempts=90
   local attempt=1
   
   log "Waiting for $service to be healthy..."
