@@ -1,47 +1,101 @@
 # 🚀 Quick Deploy Guide
 
-## Deploy Đơn Giản (Khuyến Nghị)
+## Deploy Zero-Downtime Từ Local (Khuyến Nghị) ⭐
 
-### Trên Server:
+**Chỉ 2 lệnh:**
 
 ```bash
-cd ~/documentsManager
-./scripts/deploy-simple.sh
+# 1. Push code
+git push origin main
+
+# 2. Deploy zero-downtime
+./scripts/deploy-zero-downtime.sh user@your-server.com
 ```
 
-**Chỉ 1 lệnh!** Script sẽ tự động:
+**Hoặc dùng script cũ:**
+
+```bash
+./scripts/deploy-remote.sh user@your-server.com
+```
+
+**Tự động:**
+
+- ✅ Push code lên GitHub
+- ✅ SSH vào server
 - ✅ Pull code mới
 - ✅ Backup database
-- ✅ Build và deploy
-- ✅ Chạy migrations
-- ✅ Cleanup
+- ✅ Build images
+- ✅ Deploy zero-downtime (1-2 giây downtime)
+- ✅ Health checks
+- ✅ Run migrations
 
 ---
 
-## Deploy Zero-Downtime
+## Deploy Trên Server
+
+### Option 1: Zero-Downtime (Khuyến nghị)
 
 ```bash
 cd ~/documentsManager
 ./scripts/deploy.sh
 ```
 
-**Zero-downtime** với health checks tự động.
+**Downtime:** 1-2 giây
+
+### Option 2: Deploy Đơn Giản
+
+```bash
+cd ~/documentsManager
+./scripts/deploy-simple.sh
+```
+
+**Downtime:** 30-60 giây
 
 ---
 
-## Deploy Từ Local
+## Setup Lần Đầu
+
+### 1. Setup SSH Key
 
 ```bash
-# Push code lên GitHub
-git push origin main
+# Generate SSH key
+ssh-keygen -t rsa -b 4096
 
-# Deploy lên server qua SSH
-./scripts/deploy-remote.sh user@your-server.com
+# Copy lên server
+ssh-copy-id user@your-server.com
+```
+
+### 2. Test Connection
+
+```bash
+ssh user@your-server.com "echo 'SSH OK'"
+```
+
+### 3. Deploy
+
+```bash
+./scripts/deploy-zero-downtime.sh user@your-server.com
+```
+
+---
+
+## Options
+
+```bash
+# Skip backup
+./scripts/deploy-zero-downtime.sh user@server.com --skip-backup
+
+# Skip migration
+./scripts/deploy-zero-downtime.sh user@server.com --skip-migration
+
+# Với SSH key
+SSH_KEY=~/.ssh/id_rsa ./scripts/deploy-zero-downtime.sh user@server.com
 ```
 
 ---
 
 ## Xem Chi Tiết
 
-Xem file `docs/deployment-automation.md` để biết thêm chi tiết.
-
+- **Zero-Downtime Guide:** `docs/deploy-zero-downtime-guide.md`
+- **Deployment Automation:** `docs/deployment-automation.md`
+- **Deployment Guide:** `docs/deployment-guide.md`

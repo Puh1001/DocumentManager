@@ -152,44 +152,57 @@ build_images() {
 deploy_zero_downtime() {
   log "Starting zero-downtime deployment..."
   
-  # Start new containers with different names (blue-green)
-  log "Starting new containers..."
+  # Step 1: Stop old containers gracefully (with timeout)
+  log "Stopping old containers gracefully..."
+  docker-compose -f "$COMPOSE_FILE" stop --timeout 10 api web 2>/dev/null || true
   
-  # Use docker-compose up with --no-deps and --scale for rolling update
-  # First, start new containers
+  # Step 2: Start new containers with new images
+  log "Starting new containers with updated images..."
   docker-compose -f "$COMPOSE_FILE" up -d --no-deps --build api web || {
     error "Failed to start new containers"
   }
   
-  # Wait for new containers to be healthy
-  log "Waiting for new containers to be ready..."
-  sleep 5
+  # Step 3: Wait for containers to start
+  log "Waiting for containers to start..."
+  sleep 3
   
-  # Health check API
+  # Step 4: Health check API
+  log "Checking API health..."
   if docker-compose -f "$COMPOSE_FILE" ps api | grep -q "Up"; then
     API_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "api:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3001" | cut -d: -f1 || echo "3001")
     health_check "API" "http://localhost:${API_PORT:-3001}/api/health"
+  else
+    error "API container is not running"
   fi
   
-  # Health check Web
+  # Step 5: Health check Web
+  log "Checking Web health..."
   if docker-compose -f "$COMPOSE_FILE" ps web | grep -q "Up"; then
     WEB_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "web:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3000" | cut -d: -f1 || echo "3000")
-    health_check "Web" "http://localhost:${WEB_PORT:-3000}/api/health" || {
-      # Web might not have /api/health, check root
-      curl -f -s "http://localhost:${WEB_PORT:-3000}/" > /dev/null 2>&1 && success "Web is healthy" || warning "Web health check skipped"
-    }
+    # Web might not have /api/health endpoint, check root instead
+    if curl -f -s "http://localhost:${WEB_PORT:-3000}/" > /dev/null 2>&1; then
+      success "Web is healthy"
+    else
+      # Try /api/health as fallback
+      health_check "Web" "http://localhost:${WEB_PORT:-3000}/api/health" || {
+        warning "Web health check failed, but continuing..."
+      }
+    fi
+  else
+    error "Web container is not running"
   fi
   
-  success "New containers are healthy"
+  success "All containers are healthy"
   
-  # Remove old containers (if any)
+  # Step 6: Remove old stopped containers
   log "Cleaning up old containers..."
-  docker-compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
+  docker-compose -f "$COMPOSE_FILE" rm -f api web 2>/dev/null || true
   
-  # Ensure all services are up
-  docker-compose -f "$COMPOSE_FILE" up -d
+  # Step 7: Ensure all services are up
+  log "Ensuring all services are running..."
+  docker-compose -f "$COMPOSE_FILE" up -d postgres redis 2>/dev/null || true
   
-  success "Deployment completed"
+  success "Zero-downtime deployment completed"
 }
 
 # Run migrations

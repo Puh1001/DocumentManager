@@ -76,6 +76,7 @@ echo -e "${BLUE}🔌 Connecting to $REMOTE_HOST...${NC}"
 
 # Build remote command
 REMOTE_CMD="cd $REMOTE_DIR && "
+REMOTE_CMD+="if [ ! -f scripts/deploy.sh ]; then git pull origin main || git pull origin master; fi && "
 REMOTE_CMD+="chmod +x scripts/deploy.sh && "
 REMOTE_CMD+="./scripts/deploy.sh"
 
