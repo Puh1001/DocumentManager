@@ -101,7 +101,13 @@ check_ssh_access() {
     if [ -n "$SSH_KEY" ]; then
         ssh_test_cmd="$ssh_test_cmd -i $SSH_KEY"
     fi
-    ssh_test_cmd="$ssh_test_cmd -o ConnectTimeout=10 -o BatchMode=yes $REMOTE_HOST"
+    # Add keepalive options to prevent timeout during long operations
+    ssh_test_cmd="$ssh_test_cmd -o ConnectTimeout=10"
+    ssh_test_cmd="$ssh_test_cmd -o ServerAliveInterval=60"
+    ssh_test_cmd="$ssh_test_cmd -o ServerAliveCountMax=10"
+    ssh_test_cmd="$ssh_test_cmd -o TCPKeepAlive=yes"
+    ssh_test_cmd="$ssh_test_cmd -o BatchMode=yes"
+    ssh_test_cmd="$ssh_test_cmd $REMOTE_HOST"
     
     if $ssh_test_cmd exit 2>/dev/null; then
         log_success "SSH access confirmed"
@@ -178,6 +184,10 @@ SSH_CMD="ssh"
 if [ -n "$SSH_KEY" ]; then
   SSH_CMD="$SSH_CMD -i $SSH_KEY"
 fi
+# Add keepalive options to prevent timeout during long operations (e.g., Docker build)
+SSH_CMD="$SSH_CMD -o ServerAliveInterval=60"
+SSH_CMD="$SSH_CMD -o ServerAliveCountMax=10"
+SSH_CMD="$SSH_CMD -o TCPKeepAlive=yes"
 
 # Handle special commands (status, logs, check)
 case "$REMOTE_HOST" in
