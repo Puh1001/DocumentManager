@@ -156,17 +156,22 @@ deploy_zero_downtime() {
   log "Stopping old containers gracefully..."
   docker-compose -f "$COMPOSE_FILE" stop --timeout 10 api web 2>/dev/null || true
   
-  # Step 2: Start new containers with new images
+  # Step 2: Remove old containers (fix ContainerConfig KeyError)
+  # This prevents docker-compose from trying to merge metadata from old containers
+  log "Removing old containers..."
+  docker-compose -f "$COMPOSE_FILE" rm -f api web 2>/dev/null || true
+  
+  # Step 3: Start new containers with new images (images already built in build_images step)
   log "Starting new containers with updated images..."
-  docker-compose -f "$COMPOSE_FILE" up -d --no-deps --build api web || {
+  docker-compose -f "$COMPOSE_FILE" up -d --no-deps api web || {
     error "Failed to start new containers"
   }
   
-  # Step 3: Wait for containers to start
+  # Step 4: Wait for containers to start
   log "Waiting for containers to start..."
   sleep 3
   
-  # Step 4: Health check API
+  # Step 5: Health check API
   log "Checking API health..."
   if docker-compose -f "$COMPOSE_FILE" ps api | grep -q "Up"; then
     API_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "api:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3001" | cut -d: -f1 || echo "3001")
@@ -175,7 +180,7 @@ deploy_zero_downtime() {
     error "API container is not running"
   fi
   
-  # Step 5: Health check Web
+  # Step 6: Health check Web
   log "Checking Web health..."
   if docker-compose -f "$COMPOSE_FILE" ps web | grep -q "Up"; then
     WEB_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "web:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3000" | cut -d: -f1 || echo "3000")
@@ -193,10 +198,6 @@ deploy_zero_downtime() {
   fi
   
   success "All containers are healthy"
-  
-  # Step 6: Remove old stopped containers
-  log "Cleaning up old containers..."
-  docker-compose -f "$COMPOSE_FILE" rm -f api web 2>/dev/null || true
   
   # Step 7: Ensure all services are up
   log "Ensuring all services are running..."
