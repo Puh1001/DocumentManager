@@ -13,10 +13,14 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    // Check if username or email exists
+    // Normalize username and email to lowercase for consistency
+    const normalizedUsername = dto.username.toLowerCase();
+    const normalizedEmail = dto.email.toLowerCase();
+
+    // Check if username or email exists (case-insensitive)
     const existing = await (this.prisma as PrismaClientLike).user.findFirst({
       where: {
-        OR: [{ username: dto.username }, { email: dto.email }],
+        OR: [{ username: normalizedUsername }, { email: normalizedEmail }],
       },
     });
 
@@ -31,8 +35,8 @@ export class UsersService {
 
     const user = await (this.prisma as PrismaClientLike).user.create({
       data: {
-        username: dto.username,
-        email: dto.email,
+        username: normalizedUsername,
+        email: normalizedEmail,
         passwordHash,
         fullName: dto.fullName,
         department: dto.department,
@@ -152,7 +156,7 @@ export class UsersService {
 
     const data: Prisma.UserUpdateInput = {};
 
-    if (dto.email) data.email = dto.email;
+    if (dto.email) data.email = dto.email.toLowerCase();
     if (dto.fullName) data.fullName = dto.fullName;
     if (dto.department !== undefined) data.department = dto.department;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
@@ -175,6 +179,31 @@ export class UsersService {
 
   async deactivate(id: string) {
     return this.update(id, { isActive: false });
+  }
+
+  async reactivate(id: string) {
+    return this.update(id, { isActive: true });
+  }
+
+  async hardDelete(id: string) {
+    const user = await (this.prisma as PrismaClientLike).user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw CustomException.notFound(
+        ErrorCodes.USER.NOT_FOUND,
+        "User not found"
+      );
+    }
+
+    // Prisma will cascade delete related records (sessions, user_roles, etc.)
+    // based on schema relations with onDelete: Cascade
+    await (this.prisma as PrismaClientLike).user.delete({
+      where: { id },
+    });
+
+    return { message: "User permanently deleted" };
   }
 
   async assignRole(userId: string, roleId: string) {

@@ -60,6 +60,20 @@ export class UsersController {
     return this.usersService.deactivate(id);
   }
 
+  @Delete(":id/hard")
+  @CheckPolicies({ action: "manage", subject: "all" })
+  @ApiOperation({ summary: "Permanently delete user (admin only)" })
+  async hardDelete(@Param("id") id: string) {
+    return this.usersService.hardDelete(id);
+  }
+
+  @Post(":id/reactivate")
+  @CheckPolicies({ action: "manage", subject: "all" })
+  @ApiOperation({ summary: "Reactivate user (admin only)" })
+  async reactivate(@Param("id") id: string) {
+    return this.usersService.reactivate(id);
+  }
+
   @Post(":id/roles/:roleId")
   @CheckPolicies({ action: "manage", subject: "all" })
   @ApiOperation({ summary: "Assign role to user (admin only)" })

@@ -267,6 +267,40 @@ export default function UsersPage() {
     }
   };
 
+  const handleReactivate = async (id: string) => {
+    if (!confirm("Kích hoạt lại tài khoản này?")) {
+      return;
+    }
+
+    try {
+      await userApi.reactivate(id);
+      await loadUsers(currentPage);
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err, (key: string) => t(key)));
+    }
+  };
+
+  const handleHardDelete = async (id: string) => {
+    if (
+      !confirm(
+        "Xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await userApi.hardDelete(id);
+      await loadUsers(currentPage);
+    } catch (err) {
+      console.error(err);
+      const errorMessage =
+        err instanceof Error ? err.message : t("errors.deleteFailed");
+      setError(errorMessage);
+    }
+  };
+
   const handleAssignRole = async (roleId: string) => {
     if (!selectedUserForRoles) return;
 
@@ -444,27 +478,48 @@ export default function UsersPage() {
                         {isAdmin && (
                           <td className="py-3 px-4">
                             <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenUserDialog(user)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenRoleDialog(user)}
-                              >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(user.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              {user.isActive ? (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleOpenUserDialog(user)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleOpenRoleDialog(user)}
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(user.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleReactivate(user.id)}
+                                  >
+                                    <Plus className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleHardDelete(user.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </td>
                         )}

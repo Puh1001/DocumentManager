@@ -679,6 +679,8 @@ export const userApi = {
   update: (id: string, data: UpdateUserDto) =>
     api.patch<User>(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
+  hardDelete: (id: string) => api.delete(`/users/${id}/hard`),
+  reactivate: (id: string) => api.post(`/users/${id}/reactivate`, {}),
   assignRole: (userId: string, roleId: string) =>
     api.post(`/users/${userId}/roles/${roleId}`, {}),
   removeRole: (userId: string, roleId: string) =>
