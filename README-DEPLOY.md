@@ -2,32 +2,37 @@
 
 ## Deploy Zero-Downtime Từ Local (Khuyến Nghị) ⭐
 
-**Chỉ 2 lệnh:**
+**Chỉ 1 lệnh:**
 
 ```bash
-# 1. Push code
-git push origin main
-
-# 2. Deploy zero-downtime
 ./scripts/deploy-zero-downtime.sh user@your-server.com
-```
-
-**Hoặc dùng script cũ:**
-
-```bash
-./scripts/deploy-remote.sh user@your-server.com
 ```
 
 **Tự động:**
 
-- ✅ Push code lên GitHub
+- ✅ Check SSH connection trước
+- ✅ Push code lên GitHub (nếu cần)
 - ✅ SSH vào server
 - ✅ Pull code mới
 - ✅ Backup database
 - ✅ Build images
 - ✅ Deploy zero-downtime (1-2 giây downtime)
-- ✅ Health checks
+- ✅ Health checks tự động
 - ✅ Run migrations
+- ✅ Summary report
+
+**Các lệnh khác:**
+
+```bash
+# Check status
+./scripts/deploy-zero-downtime.sh status user@server.com
+
+# Xem logs
+./scripts/deploy-zero-downtime.sh logs user@server.com
+
+# Health check
+./scripts/deploy-zero-downtime.sh check user@server.com
+```
 
 ---
 
