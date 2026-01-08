@@ -704,8 +704,22 @@ export interface ChangePasswordDto {
   newPassword: string;
 }
 
+// User type for auth endpoints (roles as string[])
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  department: string | null;
+  departments?: Department[];
+  roles: string[]; // Auth endpoints return role names as strings
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
 export const authApi = {
-  getMe: () => api.get<User>("/auth/me"),
+  getMe: () => api.get<AuthUser>("/auth/me"),
   changePassword: (data: ChangePasswordDto) =>
     api.post<{ message: string }>("/auth/change-password", data),
 };

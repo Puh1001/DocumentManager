@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(token);
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      
+
       // NEW: If user data doesn't have departments, fetch fresh data from API
       // This handles cases where user was assigned departments after login
       if (!parsedUser.departments || parsedUser.departments.length === 0) {
@@ -43,8 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .getMe()
           .then((freshUser) => {
             if (freshUser && (freshUser.departments?.length || 0) > 0) {
-              setUser(freshUser);
-              localStorage.setItem("user", JSON.stringify(freshUser));
+              // Convert AuthUser to User type (they're compatible, just need type assertion)
+              const user: User = {
+                id: freshUser.id,
+                username: freshUser.username,
+                email: freshUser.email,
+                fullName: freshUser.fullName,
+                department: freshUser.department,
+                departments: freshUser.departments,
+                roles: freshUser.roles, // Already string[]
+              };
+              setUser(user);
+              localStorage.setItem("user", JSON.stringify(user));
             }
           })
           .catch((err) => {

@@ -326,23 +326,38 @@ describe("AuthService", () => {
   });
 
   describe("getProfile", () => {
-    it("should return user profile", async () => {
+    it("should return user profile with roles as string array", async () => {
       const userId = "user-1";
-      const mockProfile = {
+      const mockUserFromService = {
         id: userId,
         username: "testuser",
         email: "test@example.com",
         fullName: "Test User",
         department: "IT",
         isActive: true,
-        roles: [{ id: "role-1", name: "user" }],
+        createdAt: new Date(),
+        lastLoginAt: null,
+        roles: [{ id: "role-1", name: "user" }], // Role objects from findById
+        departments: [],
       };
 
-      usersService.findById = jest.fn().mockResolvedValue(mockProfile);
+      usersService.findById = jest.fn().mockResolvedValue(mockUserFromService);
 
       const result = await service.getProfile(userId);
 
-      expect(result).toEqual(mockProfile);
+      // getProfile should transform roles to string array
+      expect(result).toEqual({
+        id: userId,
+        username: "testuser",
+        email: "test@example.com",
+        fullName: "Test User",
+        department: "IT",
+        isActive: true,
+        createdAt: mockUserFromService.createdAt,
+        lastLoginAt: null,
+        roles: ["user"], // Transformed to string array
+        departments: [],
+      });
       expect(usersService.findById).toHaveBeenCalledWith(userId);
     });
 

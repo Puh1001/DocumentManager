@@ -258,6 +258,21 @@ export class AuthService {
         "User not found"
       );
     }
-    return user;
+    
+    // Convert roles to string array (consistent with login endpoint)
+    const roleNames = user.roles?.map((r) => r.name) || [];
+    
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      department: user.department, // Legacy field
+      departments: user.departments || [], // NEW: Multi-department support
+      roles: roleNames, // Convert Role[] to string[]
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt,
+    };
   }
 }

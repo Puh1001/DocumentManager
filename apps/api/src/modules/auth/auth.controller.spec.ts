@@ -80,7 +80,9 @@ describe("AuthController", () => {
         password: "password123",
       };
 
-      const mockRequest: ExpressRequest & { user: UserWithRolesAndDepartments } = {
+      const mockRequest: ExpressRequest & {
+        user: UserWithRolesAndDepartments;
+      } = {
         user: mockUser,
         ip: "127.0.0.1",
         headers: {
@@ -106,7 +108,9 @@ describe("AuthController", () => {
         password: "password123",
       };
 
-      const mockRequest: ExpressRequest & { user: UserWithRolesAndDepartments } = {
+      const mockRequest: ExpressRequest & {
+        user: UserWithRolesAndDepartments;
+      } = {
         user: mockUser,
         ip: undefined,
         headers: {},
@@ -180,14 +184,7 @@ describe("AuthController", () => {
         isActive: true,
         createdAt: new Date(),
         lastLoginAt: null,
-        roles: [
-          {
-            id: "role-1",
-            name: "user",
-            description: "Regular user",
-            createdAt: new Date(),
-          },
-        ],
+        roles: ["user"], // Changed: roles are now string[] (role names), not Role[]
         departments: [], // NEW: Multi-department support
       };
 
