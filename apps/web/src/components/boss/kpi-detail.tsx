@@ -10,9 +10,14 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  LineController,
+  PointElement,
   Title,
   Tooltip,
   Legend,
+  type ChartDataset,
+  type ChartData,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
@@ -20,6 +25,9 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineController,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
@@ -33,6 +41,9 @@ interface KpiMetric {
   values: Record<string, number | null>;
 }
 
+type DisplayType = "PERCENTAGE" | "COUNT";
+type RowMode = "SINGLE" | "DOUBLE";
+
 interface KpiRecord {
   id: string;
   departmentId: string;
@@ -40,6 +51,8 @@ interface KpiRecord {
   title: string;
   target: string;
   targetValue?: number | null;
+  displayType?: DisplayType;
+  rowMode?: RowMode;
   metrics: KpiMetric[];
 }
 
@@ -106,11 +119,108 @@ function calculateMetricAverage(metric: KpiMetric): number | null {
   return sum / validValues.length;
 }
 
+// Helper function to get chart data for COUNT SINGLE table (1 row: ACTUAL only)
+function getChartDataForCountSingle(
+  record: KpiRecord,
+  tTable: (key: string) => string
+) {
+  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const actualData = MONTH_KEYS.map(
+    (key) => actualMetric?.values?.[key] ?? null
+  );
+  const actualAvg = calculateMetricAverage(actualMetric);
+
+  const datasets: ChartDataset<"bar", (number | null)[]>[] = [
+    {
+      type: "bar" as const,
+      label: "ACTUAL",
+      data: [...actualData, actualAvg],
+      backgroundColor: "rgba(77, 208, 225, 0.8)",
+      borderColor: "rgba(77, 208, 225, 1)",
+      borderWidth: 2,
+      borderRadius: 4,
+    },
+  ];
+
+  const chartLabels = [
+    ...MONTH_KEYS.map((key) => tTable(`months.${key}`)),
+    tTable("months.average"),
+  ];
+
+  return {
+    labels: chartLabels,
+    datasets,
+  } as ChartData<"bar", number[], string>;
+}
+
+// Helper function to get chart data for COUNT DOUBLE table (2 rows: TARGET + ACTUAL)
+function getChartDataForCount(
+  record: KpiRecord,
+  tTable: (key: string) => string
+) {
+  const targetMetric = record.metrics.find((m) => m.type === "TARGET");
+  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+
+  const actualData = MONTH_KEYS.map(
+    (key) => actualMetric?.values?.[key] ?? null
+  );
+  const targetData = MONTH_KEYS.map(
+    (key) => targetMetric?.values?.[key] ?? null
+  );
+
+  const actualAvg = calculateMetricAverage(actualMetric);
+  const targetAvg = calculateMetricAverage(targetMetric);
+
+  const datasets: ChartDataset<"bar" | "line", (number | null)[]>[] = [
+    {
+      type: "bar" as const,
+      label: "ACTUAL",
+      data: [...actualData, actualAvg],
+      backgroundColor: "rgba(77, 208, 225, 0.8)",
+      borderColor: "rgba(77, 208, 225, 1)",
+      borderWidth: 2,
+      borderRadius: 4,
+    },
+    {
+      type: "line" as const,
+      label: "TARGET",
+      data: [...targetData, targetAvg],
+      borderColor: "rgba(255, 99, 132, 1)",
+      backgroundColor: "rgba(255, 99, 132, 0.1)",
+      borderWidth: 2,
+      borderDash: [5, 5],
+      pointRadius: 4,
+      fill: false,
+    },
+  ];
+
+  const chartLabels = [
+    ...MONTH_KEYS.map((key) => tTable(`months.${key}`)),
+    tTable("months.average"),
+  ];
+
+  return {
+    labels: chartLabels,
+    datasets,
+  } as ChartData<"bar", number[], string>;
+}
+
 function getChartData(
   record: KpiRecord,
   efficiencyValues: (number | null)[],
-  t: (key: string) => string
+  t: (key: string) => string,
+  tTable: (key: string) => string
 ) {
+  // Handle COUNT tables
+  if (record.displayType === "COUNT") {
+    if (record.rowMode === "SINGLE") {
+      return getChartDataForCountSingle(record, tTable);
+    } else {
+      return getChartDataForCount(record, tTable);
+    }
+  }
+
+  // PERCENTAGE table (default)
   const monthLabels = MONTH_KEYS.map((key, idx) => {
     const monthKeys = [
       "months.jan",
@@ -144,10 +254,170 @@ function getChartData(
   };
 }
 
+// Helper function to get chart options for COUNT SINGLE table
+function getChartOptionsForCountSingle(record: KpiRecord) {
+  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const actualData = MONTH_KEYS.map(
+    (key) => actualMetric?.values?.[key] ?? null
+  );
+
+  const allValues = actualData.filter((v): v is number => v != null);
+  const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+  const niceMax = Math.ceil(maxValue * 1.2);
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+      },
+      tooltip: {
+        backgroundColor: "rgba(20, 20, 40, 0.95)",
+        titleColor: "#4dd0e1",
+        bodyColor: "#4dd0e1",
+        borderColor: "rgba(77, 208, 225, 0.5)",
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (context: { parsed: { y: number | null } }) => {
+            const value = context.parsed.y;
+            return value != null ? `${value}` : "N/A";
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        max: niceMax,
+        ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
+          callback: (value: string | number) => {
+            if (typeof value === "number") {
+              return `${value}`;
+            }
+            return value;
+          },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
+        },
+      },
+    },
+  };
+}
+
+// Helper function to get chart options for COUNT DOUBLE table
+function getChartOptionsForCount(record: KpiRecord) {
+  const targetMetric = record.metrics.find((m) => m.type === "TARGET");
+  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+
+  const actualData = MONTH_KEYS.map(
+    (key) => actualMetric?.values?.[key] ?? null
+  );
+  const targetData = MONTH_KEYS.map(
+    (key) => targetMetric?.values?.[key] ?? null
+  );
+
+  const allValues = [...actualData, ...targetData].filter(
+    (v): v is number => v != null
+  );
+  const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
+  const niceMax = Math.ceil(maxValue * 1.2);
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top" as const,
+      },
+      tooltip: {
+        backgroundColor: "rgba(20, 20, 40, 0.95)",
+        titleColor: "#4dd0e1",
+        bodyColor: "#4dd0e1",
+        borderColor: "rgba(77, 208, 225, 0.5)",
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (context: { parsed: { y: number | null } }) => {
+            const value = context.parsed.y;
+            return value != null ? `${value}` : "N/A";
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        max: niceMax,
+        ticks: {
+          color: "#4dd0e1",
+          font: {
+            family: "'Orbitron', 'Rajdhani', monospace",
+            size: 11,
+          },
+          callback: (value: string | number) => {
+            if (typeof value === "number") {
+              return `${value}`;
+            }
+            return value;
+          },
+        },
+        grid: {
+          color: "rgba(77, 208, 225, 0.1)",
+        },
+      },
+    },
+  };
+}
+
 function getChartOptions(
+  record: KpiRecord,
   efficiencyValues: (number | null)[],
   targetValue?: number | null
 ) {
+  // Handle COUNT tables
+  if (record.displayType === "COUNT") {
+    if (record.rowMode === "SINGLE") {
+      return getChartOptionsForCountSingle(record);
+    } else {
+      return getChartOptionsForCount(record);
+    }
+  }
+
+  // PERCENTAGE table (default)
   const validValues = efficiencyValues
     .slice(0, 12)
     .filter((v): v is number => v != null);
@@ -378,9 +648,26 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   }
 
   const efficiencyValues = calculateEfficiency(record);
-  const hasData = efficiencyValues.some((v) => v != null);
+  const calculatedMetric = record.metrics.find((m) => m.type === "CALCULATED");
+  
+  // Calculate calculated values (100% - Efficiency) if calculated metric exists
+  const calculateCalculatedValues = (record: KpiRecord): (number | null)[] => {
+    const efficiencyValues = calculateEfficiency(record);
+    return efficiencyValues.map((v) => (v == null ? null : 100 - v));
+  };
+  const calculatedValues = calculatedMetric
+    ? calculateCalculatedValues(record)
+    : null;
+  
+  // Use calculated values for chart if available, otherwise use efficiency
+  const chartValues = calculatedValues || efficiencyValues;
+  const hasData = chartValues.some((v) => v != null);
   const targetAverage = calculateMetricAverage(targetMetric);
   const actualAverage = calculateMetricAverage(actualMetric);
+  const calculatedAverage =
+    calculatedValues && calculatedValues[12] != null
+      ? calculatedValues[12]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -435,27 +722,32 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                 </tr>
               </thead>
               <tbody>
-                {/* TARGET Row */}
-                <tr className="hover:bg-cyan-500/5 transition-colors">
-                  <td className="border border-cyan-500/20 px-3 py-2 align-top text-cyan-200">
-                    <div className="text-xs leading-tight whitespace-pre-wrap">
-                      {targetMetric.name || "-"}
-                    </div>
-                  </td>
-                  {MONTH_KEYS.map((key) => (
-                    <td
-                      key={key}
-                      className="border border-cyan-500/20 px-2 py-2 text-center text-cyan-300"
-                    >
-                      {targetMetric.values?.[key] == null
-                        ? "-"
-                        : targetMetric.values[key]}
+                {/* TARGET Row - Hide for COUNT + SINGLE */}
+                {!(
+                  record.displayType === "COUNT" &&
+                  record.rowMode === "SINGLE"
+                ) && (
+                  <tr className="hover:bg-cyan-500/5 transition-colors">
+                    <td className="border border-cyan-500/20 px-3 py-2 align-top text-cyan-200">
+                      <div className="text-xs leading-tight whitespace-pre-wrap">
+                        {targetMetric.name || "-"}
+                      </div>
                     </td>
-                  ))}
-                  <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
-                    {targetAverage != null ? targetAverage.toFixed(2) : "-"}
-                  </td>
-                </tr>
+                    {MONTH_KEYS.map((key) => (
+                      <td
+                        key={key}
+                        className="border border-cyan-500/20 px-2 py-2 text-center text-cyan-300"
+                      >
+                        {targetMetric.values?.[key] == null
+                          ? "-"
+                          : targetMetric.values[key]}
+                      </td>
+                    ))}
+                    <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
+                      {targetAverage != null ? targetAverage.toFixed(2) : "-"}
+                    </td>
+                  </tr>
+                )}
 
                 {/* ACTUAL Row */}
                 <tr className="hover:bg-cyan-500/5 transition-colors">
@@ -479,32 +771,62 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                   </td>
                 </tr>
 
-                {/* Efficiency Row */}
-                <tr className="bg-cyan-500/10 font-medium hover:bg-cyan-500/15 transition-colors">
-                  <td className="border border-cyan-500/30 px-3 py-2 text-left text-xs text-cyan-300 font-bold">
-                    {t("kpi.efficiency")}
-                  </td>
-                  {efficiencyValues.slice(0, 12).map((v, idx) => (
-                    <td
-                      key={MONTH_KEYS[idx]}
-                      className="border border-cyan-500/30 px-2 py-2 text-center text-xs text-cyan-200 font-semibold"
-                    >
-                      {v == null ? "-" : `${v.toFixed(0)}%`}
+                {/* Efficiency Row - Only show for PERCENTAGE tables */}
+                {record.displayType !== "COUNT" && (
+                  <tr className="bg-cyan-500/10 font-medium hover:bg-cyan-500/15 transition-colors">
+                    <td className="border border-cyan-500/30 px-3 py-2 text-left text-xs text-cyan-300 font-bold">
+                      {t("kpi.efficiency")}
                     </td>
-                  ))}
-                  <td className="border border-cyan-500/30 px-2 py-2 text-center text-xs font-bold text-cyan-300 cyber-text-glow">
-                    {efficiencyValues[12] == null
-                      ? "-"
-                      : `${efficiencyValues[12]!.toFixed(0)}%`}
-                  </td>
-                </tr>
+                    {efficiencyValues.slice(0, 12).map((v, idx) => (
+                      <td
+                        key={MONTH_KEYS[idx]}
+                        className="border border-cyan-500/30 px-2 py-2 text-center text-xs text-cyan-200 font-semibold"
+                      >
+                        {v == null ? "-" : `${v.toFixed(0)}%`}
+                      </td>
+                    ))}
+                    <td className="border border-cyan-500/30 px-2 py-2 text-center text-xs font-bold text-cyan-300 cyber-text-glow">
+                      {efficiencyValues[12] == null
+                        ? "-"
+                        : `${efficiencyValues[12]!.toFixed(0)}%`}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Calculated Row (100% - Efficiency) - Only show for PERCENTAGE tables with calculated metric */}
+                {record.displayType !== "COUNT" &&
+                  calculatedMetric &&
+                  calculatedValues && (
+                    <tr className="bg-cyan-500/15 font-medium hover:bg-cyan-500/20 transition-colors">
+                      <td className="border border-cyan-500/30 px-3 py-2 text-left text-xs text-cyan-300 font-bold">
+                        <div className="text-xs leading-tight whitespace-pre-wrap">
+                          {calculatedMetric.name || "-"}
+                        </div>
+                      </td>
+                      {calculatedValues.slice(0, 12).map((v, idx) => (
+                        <td
+                          key={MONTH_KEYS[idx]}
+                          className="border border-cyan-500/30 px-2 py-2 text-center text-xs text-cyan-200 font-semibold"
+                        >
+                          {v == null ? "-" : `${v.toFixed(2)}%`}
+                        </td>
+                      ))}
+                      <td className="border border-cyan-500/30 px-2 py-2 text-center text-xs font-bold text-cyan-300 cyber-text-glow">
+                        {calculatedAverage == null
+                          ? "-"
+                          : `${calculatedAverage.toFixed(2)}%`}
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Chart Card - Only show if has data */}
-        {hasData && (
+        {hasData &&
+        record.displayType === "COUNT" &&
+        record.rowMode === "SINGLE" ? (
           <div className="cyber-card cyber-corner p-6 flex flex-col">
             <h2 className="text-base font-cyber font-bold mb-4 flex items-center gap-2 cyber-neon-cyan">
               <BarChart2 className="h-5 w-5" />
@@ -512,12 +834,38 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
             </h2>
             <div className="flex-1 min-h-[260px]">
               <Bar
-                options={getChartOptions(efficiencyValues, record.targetValue)}
-                data={getChartData(record, efficiencyValues, t)}
+                options={getChartOptionsForCountSingle(record)}
+                data={getChartDataForCountSingle(record, tTable)}
               />
             </div>
           </div>
-        )}
+        ) : hasData && record.displayType === "COUNT" ? (
+          <div className="cyber-card cyber-corner p-6 flex flex-col">
+            <h2 className="text-base font-cyber font-bold mb-4 flex items-center gap-2 cyber-neon-cyan">
+              <BarChart2 className="h-5 w-5" />
+              {t("kpi.chartTitle")}
+            </h2>
+            <div className="flex-1 min-h-[260px]">
+              <Bar
+                options={getChartOptionsForCount(record)}
+                data={getChartDataForCount(record, tTable)}
+              />
+            </div>
+          </div>
+        ) : hasData ? (
+          <div className="cyber-card cyber-corner p-6 flex flex-col">
+            <h2 className="text-base font-cyber font-bold mb-4 flex items-center gap-2 cyber-neon-cyan">
+              <BarChart2 className="h-5 w-5" />
+              {t("kpi.chartTitle")}
+            </h2>
+            <div className="flex-1 min-h-[260px]">
+              <Bar
+                options={getChartOptions(record, chartValues, record.targetValue)}
+                data={getChartData(record, chartValues, t, tTable)}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
