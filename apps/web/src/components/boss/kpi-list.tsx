@@ -32,7 +32,7 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const [error, setError] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState(currentYear - 1);
 
   const loadRecords = useCallback(async () => {
     try {
@@ -71,13 +71,18 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   if (error) {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center text-fuchsia-400 cyber-text-glow">
-            <p className="font-cyber font-semibold text-lg">{t("error.loadKpiFailed")}</p>
+            <p className="font-cyber font-semibold text-lg">
+              {t("error.loadKpiFailed")}
+            </p>
             <p className="text-sm mt-2 text-cyan-300/90">{error}</p>
           </div>
         </div>
@@ -88,7 +93,10 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
@@ -111,8 +119,12 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center py-12">
             <BarChart2 className="h-16 w-16 mx-auto mb-4 text-cyan-500/50 cyber-text-glow" />
-            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">{t("empty.noKpi")}</p>
-            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">{t("empty.noKpiDescription")}</p>
+            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">
+              {t("empty.noKpi")}
+            </p>
+            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">
+              {t("empty.noKpiDescription")}
+            </p>
           </div>
         </div>
       ) : (
@@ -137,10 +149,6 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
                   {record.title || t("kpi.untitled")}
                 </h3>
                 <div className="space-y-2 pt-3 border-t border-cyan-500/20">
-                  <p className="text-sm font-cyber text-cyan-300/90">
-                    <span className="font-semibold text-cyan-400">{t("kpi.target")}:</span>{" "}
-                    {record.target || "-"}
-                  </p>
                   <div className="flex items-center gap-2 text-xs font-cyber text-cyan-400/70">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
