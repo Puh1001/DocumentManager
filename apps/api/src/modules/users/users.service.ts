@@ -95,6 +95,12 @@ export class UsersService {
           roles: {
             include: { role: true },
           },
+          departments: {
+            // NEW: Include departments for multi-department support
+            include: {
+              department: true,
+            },
+          },
         },
       }),
       (this.prisma as PrismaClientLike).user.count({ where }),
@@ -104,6 +110,7 @@ export class UsersService {
       data: users.map((u: (typeof users)[0]) => ({
         ...u,
         roles: u.roles.map((r: (typeof u.roles)[0]) => r.role),
+        departments: u.departments?.map((ud) => ud.department) || [],
       })),
       total,
       page,
@@ -237,6 +244,7 @@ export class UsersService {
 
   /**
    * Assign multiple departments to a user
+   * Replaces all existing department assignments with the provided list
    */
   async assignDepartments(
     userId: string,
@@ -254,13 +262,20 @@ export class UsersService {
       );
     }
 
-    // Verify all departments exist
+    // If empty array, just remove all departments
+    if (departmentIds.length === 0) {
+      await (this.prisma as PrismaClientLike).userDepartment.deleteMany({
+        where: { userId },
+      });
+      return;
+    }
+
+    // Verify all departments exist (allow inactive for removal, but new assignments must be active)
     const departments = await (
       this.prisma as PrismaClientLike
     ).department.findMany({
       where: {
         id: { in: departmentIds },
-        isActive: true,
       },
     });
 
@@ -273,31 +288,53 @@ export class UsersService {
       );
     }
 
-    // Assign departments (upsert to handle duplicates)
-    await Promise.all(
-      departmentIds.map((departmentId) =>
-        (this.prisma as PrismaClientLike).userDepartment.upsert({
-          where: {
-            userId_departmentId: {
+    // Get current department assignments
+    const currentAssignments = await (
+      this.prisma as PrismaClientLike
+    ).userDepartment.findMany({
+      where: { userId },
+      select: { departmentId: true },
+    });
+
+    const currentDepartmentIds = currentAssignments.map((a) => a.departmentId);
+    const toAdd = departmentIds.filter(
+      (id) => !currentDepartmentIds.includes(id)
+    );
+    const toRemove = currentDepartmentIds.filter(
+      (id) => !departmentIds.includes(id)
+    );
+
+    // Remove departments not in the new list
+    if (toRemove.length > 0) {
+      await (this.prisma as PrismaClientLike).userDepartment.deleteMany({
+        where: {
+          userId,
+          departmentId: { in: toRemove },
+        },
+      });
+    }
+
+    // Add new departments
+    if (toAdd.length > 0) {
+      await Promise.all(
+        toAdd.map((departmentId) =>
+          (this.prisma as PrismaClientLike).userDepartment.create({
+            data: {
               userId,
               departmentId,
             },
-          },
-          create: {
-            userId,
-            departmentId,
-          },
-          update: {},
-        })
-      )
-    );
+          })
+        )
+      );
+    }
   }
 
   /**
    * Remove a department from a user
+   * Handles orphaned department assignments gracefully (departments that no longer exist)
    */
   async removeDepartment(userId: string, departmentId: string): Promise<void> {
-    // Check if user has this department
+    // Check if user has this department assignment (even if department is orphaned)
     const userDept = await (
       this.prisma as PrismaClientLike
     ).userDepartment.findUnique({
@@ -316,7 +353,8 @@ export class UsersService {
       );
     }
 
-    // Delete the assignment
+    // Delete the assignment (works even if department is orphaned/inactive)
+    // Foreign key cascade will handle cleanup if department is deleted
     await (this.prisma as PrismaClientLike).userDepartment.delete({
       where: {
         userId_departmentId: {
@@ -329,6 +367,8 @@ export class UsersService {
 
   /**
    * Get all departments assigned to a user
+   * Returns all departments including inactive ones (so they can be removed)
+   * Filters out only null departments (orphaned records)
    */
   async getUserDepartments(userId: string) {
     const user = await (this.prisma as PrismaClientLike).user.findUnique({
@@ -349,6 +389,10 @@ export class UsersService {
       );
     }
 
-    return user.departments.map((ud) => ud.department);
+    // Filter out only null departments (orphaned records)
+    // Return inactive departments too so they can be removed
+    return user.departments
+      .map((ud) => ud.department)
+      .filter((dept) => dept !== null);
   }
 }

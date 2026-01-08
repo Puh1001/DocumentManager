@@ -165,26 +165,74 @@ build_images() {
 deploy_zero_downtime() {
   log "Starting zero-downtime deployment..."
   
-  # Step 1: Stop old containers gracefully (with timeout)
+  # Step 1: Ensure database is running (needed for migration)
+  log "Ensuring database is running..."
+  docker-compose -f "$COMPOSE_FILE" up -d postgres redis 2>/dev/null || true
+  
+  # Wait for database to be ready
+  log "Waiting for database to be ready..."
+  sleep 5
+  
+  # Step 2: Run migrations BEFORE deploying new containers (if not skipped)
+  if [ "$SKIP_MIGRATION" != true ]; then
+    log "Running database migrations before deployment..."
+    
+    # Try to run migration using a temporary API container or directly
+    # Option 1: Use existing API container if running
+    if docker-compose -f "$COMPOSE_FILE" ps api | grep -q "Up"; then
+      log "Running migrations using existing API container..."
+      docker-compose -f "$COMPOSE_FILE" exec -T api npx prisma migrate deploy || {
+        warning "Migration via existing container failed, will retry after deployment"
+      }
+    else
+      # Option 2: Start a temporary API container just for migration
+      log "Starting temporary API container for migration..."
+      docker-compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy || {
+        warning "Migration via temporary container failed, will retry after deployment"
+      }
+    fi
+  fi
+  
+  # Step 3: Stop old containers gracefully (with timeout)
   log "Stopping old containers gracefully..."
   docker-compose -f "$COMPOSE_FILE" stop --timeout 10 api web 2>/dev/null || true
   
-  # Step 2: Remove old containers (fix ContainerConfig KeyError)
+  # Step 4: Remove old containers (fix ContainerConfig KeyError)
   # This prevents docker-compose from trying to merge metadata from old containers
   log "Removing old containers..."
   docker-compose -f "$COMPOSE_FILE" rm -f api web 2>/dev/null || true
   
-  # Step 3: Start new containers with new images (images already built in build_images step)
+  # Step 5: Start new containers with new images (images already built in build_images step)
   log "Starting new containers with updated images..."
   docker-compose -f "$COMPOSE_FILE" up -d --no-deps api web || {
     error "Failed to start new containers"
   }
   
-  # Step 4: Wait for containers to start
+  # Step 6: Wait for containers to start
   log "Waiting for containers to start..."
   sleep 3
   
-  # Step 5: Health check API
+  # Step 7: Run migrations again if they failed before (or if skipped earlier)
+  if [ "$SKIP_MIGRATION" != true ]; then
+    log "Verifying/running migrations after deployment..."
+    MAX_RETRIES=10
+    RETRY=0
+    while [ $RETRY -lt $MAX_RETRIES ]; do
+      if docker-compose -f "$COMPOSE_FILE" exec -T api npx prisma migrate deploy 2>/dev/null; then
+        success "Migrations completed successfully"
+        break
+      else
+        RETRY=$((RETRY + 1))
+        if [ $RETRY -ge $MAX_RETRIES ]; then
+          error "Migration failed after $MAX_RETRIES attempts"
+        fi
+        log "Retrying migration ($RETRY/$MAX_RETRIES)..."
+        sleep 3
+      fi
+    done
+  fi
+  
+  # Step 8: Health check API
   log "Checking API health..."
   if docker-compose -f "$COMPOSE_FILE" ps api | grep -q "Up"; then
     API_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "api:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3001" | cut -d: -f1 || echo "3001")
@@ -193,7 +241,7 @@ deploy_zero_downtime() {
     error "API container is not running"
   fi
   
-  # Step 6: Health check Web
+  # Step 9: Health check Web
   log "Checking Web health..."
   if docker-compose -f "$COMPOSE_FILE" ps web | grep -q "Up"; then
     WEB_PORT=$(docker-compose -f "$COMPOSE_FILE" config | grep -A 5 "web:" | grep "ports:" -A 2 | grep -oE "[0-9]+:3000" | cut -d: -f1 || echo "3000")
@@ -212,29 +260,19 @@ deploy_zero_downtime() {
   
   success "All containers are healthy"
   
-  # Step 7: Ensure all services are up
-  log "Ensuring all services are running..."
-  docker-compose -f "$COMPOSE_FILE" up -d postgres redis 2>/dev/null || true
-  
   success "Zero-downtime deployment completed"
 }
 
-# Run migrations
+# Run migrations (kept for backward compatibility, but migrations now run in deploy_zero_downtime)
 run_migrations() {
   if [ "$SKIP_MIGRATION" = true ]; then
     warning "Skipping database migrations"
     return
   fi
   
-  log "Running database migrations..."
-  
-  # Wait for API to be ready
-  sleep 3
-  
-  docker-compose -f "$COMPOSE_FILE" exec -T api npx prisma migrate deploy || {
-    error "Migration failed"
-  }
-  
+  # Migrations are now handled in deploy_zero_downtime function
+  # This function is kept for backward compatibility
+  log "Migrations already handled during deployment"
   success "Migrations completed"
 }
 
@@ -270,6 +308,8 @@ main() {
   backup_database
   build_images
   deploy_zero_downtime
+  # run_migrations is now integrated into deploy_zero_downtime
+  # but we call it here for logging/backward compatibility
   run_migrations
   
   # Show status

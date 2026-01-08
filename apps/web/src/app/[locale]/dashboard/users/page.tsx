@@ -76,6 +76,7 @@ export default function UsersPage() {
     fullName: "",
     department: "", // Legacy field
     selectedDepartmentIds: [] as string[], // NEW: Multi-department support
+    userDepartments: [] as Department[], // Store full department objects (including orphaned ones)
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -150,11 +151,12 @@ export default function UsersPage() {
 
     if (user) {
       setEditingUser(user);
-      
+
       // NEW: Load user's departments from API
       let selectedDepartmentIds: string[] = [];
+      let userDepartments: Department[] = [];
       try {
-        const userDepartments = await userApi.getDepartments(user.id);
+        userDepartments = await userApi.getDepartments(user.id);
         selectedDepartmentIds = userDepartments.map((d) => d.id);
       } catch (err) {
         console.error("Failed to load user departments:", err);
@@ -167,6 +169,7 @@ export default function UsersPage() {
           );
           if (matchedDept) {
             selectedDepartmentIds = [matchedDept.id];
+            userDepartments = [matchedDept];
           }
         }
       }
@@ -188,7 +191,7 @@ export default function UsersPage() {
           departmentCode = user.department;
         }
       }
-      
+
       setFormData({
         username: user.username,
         email: user.email,
@@ -196,6 +199,7 @@ export default function UsersPage() {
         fullName: user.fullName,
         department: departmentCode,
         selectedDepartmentIds,
+        userDepartments, // Store full department objects
       });
     } else {
       setEditingUser(null);
@@ -206,6 +210,7 @@ export default function UsersPage() {
         fullName: "",
         department: "",
         selectedDepartmentIds: [],
+        userDepartments: [],
       });
     }
     setIsUserDialogOpen(true);
@@ -221,6 +226,7 @@ export default function UsersPage() {
       fullName: "",
       department: "",
       selectedDepartmentIds: [],
+      userDepartments: [],
     });
   };
 
@@ -257,14 +263,12 @@ export default function UsersPage() {
           updateData.password = formData.password;
         }
         await userApi.update(editingUser.id, updateData);
-        
-        // NEW: Update departments separately
-        if (formData.selectedDepartmentIds.length > 0) {
-          await userApi.assignDepartments(
-            editingUser.id,
-            formData.selectedDepartmentIds
-          );
-        }
+
+        // NEW: Update departments separately (always call to replace all)
+        await userApi.assignDepartments(
+          editingUser.id,
+          formData.selectedDepartmentIds
+        );
       } else {
         // Create new user
         const createData: CreateUserDto = {
@@ -275,7 +279,7 @@ export default function UsersPage() {
           department: formData.department || undefined, // Legacy field
         };
         const newUser = await userApi.create(createData);
-        
+
         // NEW: Assign departments after user creation
         if (formData.selectedDepartmentIds.length > 0) {
           await userApi.assignDepartments(
@@ -326,9 +330,7 @@ export default function UsersPage() {
 
   const handleHardDelete = async (id: string) => {
     if (
-      !confirm(
-        "Xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác."
-      )
+      !confirm("Xóa vĩnh viễn tài khoản này? Hành động này không thể hoàn tác.")
     ) {
       return;
     }
@@ -490,15 +492,17 @@ export default function UsersPage() {
                         <td className="py-3 px-4">
                           {user.departments && user.departments.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {user.departments.slice(0, 3).map((dept: Department) => (
-                                <span
-                                  key={dept.id}
-                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
-                                  title={dept.name}
-                                >
-                                  {dept.code || dept.name}
-                                </span>
-                              ))}
+                              {user.departments
+                                .slice(0, 3)
+                                .map((dept: Department) => (
+                                  <span
+                                    key={dept.id}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
+                                    title={dept.name}
+                                  >
+                                    {dept.code || dept.name}
+                                  </span>
+                                ))}
                               {user.departments.length > 3 && (
                                 <span
                                   className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground"
@@ -741,9 +745,11 @@ export default function UsersPage() {
                     {tUsers("form.departments") || "Departments"}
                   </Label>
                   <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
-                    {departments.filter((dept) => dept.isActive).length === 0 ? (
+                    {departments.filter((dept) => dept.isActive).length ===
+                    0 ? (
                       <p className="text-sm text-muted-foreground">
-                        {tUsers("form.noDepartments") || "No departments available"}
+                        {tUsers("form.noDepartments") ||
+                          "No departments available"}
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -767,6 +773,12 @@ export default function UsersPage() {
                                         ...formData.selectedDepartmentIds,
                                         dept.id,
                                       ],
+                                      userDepartments: [
+                                        ...formData.userDepartments.filter(
+                                          (d) => d.id !== dept.id
+                                        ),
+                                        dept,
+                                      ],
                                     });
                                   } else {
                                     setFormData({
@@ -774,6 +786,10 @@ export default function UsersPage() {
                                       selectedDepartmentIds:
                                         formData.selectedDepartmentIds.filter(
                                           (id) => id !== dept.id
+                                        ),
+                                      userDepartments:
+                                        formData.userDepartments.filter(
+                                          (d) => d.id !== dept.id
                                         ),
                                     });
                                   }
@@ -790,15 +806,17 @@ export default function UsersPage() {
                   </div>
                   {formData.selectedDepartmentIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
+                      {/* Show selected departments */}
                       {formData.selectedDepartmentIds.map((deptId) => {
                         const dept = departments.find((d) => d.id === deptId);
                         if (!dept) return null;
+
                         return (
                           <span
                             key={deptId}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md"
                           >
-                            {dept.name}
+                            {dept.name || dept.code || "Unknown Department"}
                             <button
                               type="button"
                               onClick={() => {
@@ -807,6 +825,10 @@ export default function UsersPage() {
                                   selectedDepartmentIds:
                                     formData.selectedDepartmentIds.filter(
                                       (id) => id !== deptId
+                                    ),
+                                  userDepartments:
+                                    formData.userDepartments.filter(
+                                      (d) => d.id !== deptId
                                     ),
                                 });
                               }}
