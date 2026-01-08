@@ -6,7 +6,7 @@ import * as argon2 from "argon2";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { UsersService } from "../users/users.service";
-import { UserWithRoles } from "@/common/types/prisma.types";
+import { UserWithRolesAndDepartments } from "@/common/types/prisma.types";
 
 // Mock argon2
 jest.mock("argon2");
@@ -19,7 +19,7 @@ describe("AuthService", () => {
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
 
-  const mockUser: UserWithRoles = {
+  const mockUser: UserWithRolesAndDepartments = {
     id: "user-1",
     username: "testuser",
     email: "test@example.com",
@@ -43,6 +43,7 @@ describe("AuthService", () => {
         },
       },
     ],
+    departments: [], // NEW: Multi-department support
   };
 
   beforeEach(async () => {
@@ -180,6 +181,7 @@ describe("AuthService", () => {
         email: mockUser.email,
         fullName: mockUser.fullName,
         department: mockUser.department,
+        departments: [], // NEW: Multi-department support
         roles: ["user"],
       });
 

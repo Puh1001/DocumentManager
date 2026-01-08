@@ -32,23 +32,22 @@ export class UserDepartmentGuard implements CanActivate {
     }
 
     try {
-      // Resolve user with department information
-      const userWithDepartment =
-        await this.userDepartmentResolver.getUserWithDepartment(
+      // Resolve user with departments information (multi-department support)
+      const userWithDepartments =
+        await this.userDepartmentResolver.getUserWithDepartments(
           request.user.id
         );
 
       // Attach to request for use in controllers
-      request.userWithDepartment = userWithDepartment;
+      request.userWithDepartment = userWithDepartments;
 
       return true;
     } catch (error) {
       this.logger.error(
-        `Failed to resolve user department for user ${request.user.id}`,
+        `Failed to resolve user departments for user ${request.user.id}`,
         error
       );
       return false;
     }
   }
 }
-

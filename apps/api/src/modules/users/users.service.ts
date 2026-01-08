@@ -127,6 +127,12 @@ export class UsersService {
         roles: {
           include: { role: true },
         },
+        departments: {
+          // NEW: Include departments for multi-department support
+          include: {
+            department: true,
+          },
+        },
       },
     });
 
@@ -137,9 +143,13 @@ export class UsersService {
       );
     }
 
+    // Get user's departments
+    const userDepartments = user.departments?.map((ud) => ud.department) || [];
+
     return {
       ...user,
       roles: user.roles.map((r: (typeof user.roles)[0]) => r.role),
+      departments: userDepartments, // NEW: Include departments array
     };
   }
 
@@ -223,5 +233,122 @@ export class UsersService {
     return (this.prisma as PrismaClientLike).user.count({
       where: { isActive: true },
     });
+  }
+
+  /**
+   * Assign multiple departments to a user
+   */
+  async assignDepartments(
+    userId: string,
+    departmentIds: string[]
+  ): Promise<void> {
+    // Verify user exists
+    const user = await (this.prisma as PrismaClientLike).user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw CustomException.notFound(
+        ErrorCodes.USER.NOT_FOUND,
+        "User not found"
+      );
+    }
+
+    // Verify all departments exist
+    const departments = await (
+      this.prisma as PrismaClientLike
+    ).department.findMany({
+      where: {
+        id: { in: departmentIds },
+        isActive: true,
+      },
+    });
+
+    if (departments.length !== departmentIds.length) {
+      const foundIds = departments.map((d) => d.id);
+      const notFoundIds = departmentIds.filter((id) => !foundIds.includes(id));
+      throw CustomException.badRequest(
+        ErrorCodes.DEPARTMENT.NOT_FOUND,
+        `Departments not found: ${notFoundIds.join(", ")}`
+      );
+    }
+
+    // Assign departments (upsert to handle duplicates)
+    await Promise.all(
+      departmentIds.map((departmentId) =>
+        (this.prisma as PrismaClientLike).userDepartment.upsert({
+          where: {
+            userId_departmentId: {
+              userId,
+              departmentId,
+            },
+          },
+          create: {
+            userId,
+            departmentId,
+          },
+          update: {},
+        })
+      )
+    );
+  }
+
+  /**
+   * Remove a department from a user
+   */
+  async removeDepartment(userId: string, departmentId: string): Promise<void> {
+    // Check if user has this department
+    const userDept = await (
+      this.prisma as PrismaClientLike
+    ).userDepartment.findUnique({
+      where: {
+        userId_departmentId: {
+          userId,
+          departmentId,
+        },
+      },
+    });
+
+    if (!userDept) {
+      throw CustomException.notFound(
+        ErrorCodes.DEPARTMENT.NOT_ASSIGNED,
+        "User is not assigned to this department"
+      );
+    }
+
+    // Delete the assignment
+    await (this.prisma as PrismaClientLike).userDepartment.delete({
+      where: {
+        userId_departmentId: {
+          userId,
+          departmentId,
+        },
+      },
+    });
+  }
+
+  /**
+   * Get all departments assigned to a user
+   */
+  async getUserDepartments(userId: string) {
+    const user = await (this.prisma as PrismaClientLike).user.findUnique({
+      where: { id: userId },
+      select: {
+        departments: {
+          include: {
+            department: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw CustomException.notFound(
+        ErrorCodes.USER.NOT_FOUND,
+        "User not found"
+      );
+    }
+
+    return user.departments.map((ud) => ud.department);
   }
 }

@@ -74,7 +74,8 @@ export default function UsersPage() {
     email: "",
     password: "",
     fullName: "",
-    department: "",
+    department: "", // Legacy field
+    selectedDepartmentIds: [] as string[], // NEW: Multi-department support
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -149,7 +150,28 @@ export default function UsersPage() {
 
     if (user) {
       setEditingUser(user);
-      // Try to find matching department by code or name
+      
+      // NEW: Load user's departments from API
+      let selectedDepartmentIds: string[] = [];
+      try {
+        const userDepartments = await userApi.getDepartments(user.id);
+        selectedDepartmentIds = userDepartments.map((d) => d.id);
+      } catch (err) {
+        console.error("Failed to load user departments:", err);
+        // Fallback: try to match from legacy department field
+        if (user.department) {
+          const matchedDept = departmentsList.find(
+            (d) =>
+              d.code.toLowerCase() === user.department?.toLowerCase() ||
+              d.name.toLowerCase() === user.department?.toLowerCase()
+          );
+          if (matchedDept) {
+            selectedDepartmentIds = [matchedDept.id];
+          }
+        }
+      }
+
+      // Legacy: Try to find matching department by code or name
       let departmentCode = "";
       if (user.department) {
         const matchedDept = departmentsList.find(
@@ -163,16 +185,17 @@ export default function UsersPage() {
         if (matchedDept) {
           departmentCode = matchedDept.code;
         } else {
-          // Fallback: use the department string as-is if no match found
           departmentCode = user.department;
         }
       }
+      
       setFormData({
         username: user.username,
         email: user.email,
         password: "",
         fullName: user.fullName,
         department: departmentCode,
+        selectedDepartmentIds,
       });
     } else {
       setEditingUser(null);
@@ -182,6 +205,7 @@ export default function UsersPage() {
         password: "",
         fullName: "",
         department: "",
+        selectedDepartmentIds: [],
       });
     }
     setIsUserDialogOpen(true);
@@ -196,6 +220,7 @@ export default function UsersPage() {
       password: "",
       fullName: "",
       department: "",
+      selectedDepartmentIds: [],
     });
   };
 
@@ -222,24 +247,42 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
+        // Update user basic info
         const updateData: UpdateUserDto = {
           email: formData.email,
           fullName: formData.fullName,
-          department: formData.department || undefined,
+          department: formData.department || undefined, // Legacy field
         };
         if (formData.password) {
           updateData.password = formData.password;
         }
         await userApi.update(editingUser.id, updateData);
+        
+        // NEW: Update departments separately
+        if (formData.selectedDepartmentIds.length > 0) {
+          await userApi.assignDepartments(
+            editingUser.id,
+            formData.selectedDepartmentIds
+          );
+        }
       } else {
+        // Create new user
         const createData: CreateUserDto = {
           username: formData.username,
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          department: formData.department || undefined,
+          department: formData.department || undefined, // Legacy field
         };
-        await userApi.create(createData);
+        const newUser = await userApi.create(createData);
+        
+        // NEW: Assign departments after user creation
+        if (formData.selectedDepartmentIds.length > 0) {
+          await userApi.assignDepartments(
+            newUser.id,
+            formData.selectedDepartmentIds
+          );
+        }
       }
       await loadUsers(currentPage);
       handleCloseUserDialog();
@@ -444,7 +487,36 @@ export default function UsersPage() {
                         <td className="py-3 px-4">{user.username}</td>
                         <td className="py-3 px-4">{user.fullName}</td>
                         <td className="py-3 px-4">{user.email}</td>
-                        <td className="py-3 px-4">{user.department || "-"}</td>
+                        <td className="py-3 px-4">
+                          {user.departments && user.departments.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.departments.slice(0, 3).map((dept: Department) => (
+                                <span
+                                  key={dept.id}
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary"
+                                  title={dept.name}
+                                >
+                                  {dept.code || dept.name}
+                                </span>
+                              ))}
+                              {user.departments.length > 3 && (
+                                <span
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground"
+                                  title={user.departments
+                                    .slice(3)
+                                    .map((d: Department) => d.name)
+                                    .join(", ")}
+                                >
+                                  +{user.departments.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {user.department || "-"}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex flex-wrap gap-1">
                             {user.roles.map((role) => (
@@ -665,28 +737,88 @@ export default function UsersPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="department">
-                    {tUsers("form.department")}
+                  <Label htmlFor="departments">
+                    {tUsers("form.departments") || "Departments"}
                   </Label>
-                  <select
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">
-                      {tUsers("form.departmentPlaceholder")}
-                    </option>
-                    {departments
-                      .filter((dept) => dept.isActive)
-                      .map((dept) => (
-                        <option key={dept.id} value={dept.code}>
-                          {dept.name} ({dept.code})
-                        </option>
-                      ))}
-                  </select>
+                  <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                    {departments.filter((dept) => dept.isActive).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {tUsers("form.noDepartments") || "No departments available"}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {departments
+                          .filter((dept) => dept.isActive)
+                          .map((dept) => (
+                            <label
+                              key={dept.id}
+                              className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedDepartmentIds.includes(
+                                  dept.id
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      selectedDepartmentIds: [
+                                        ...formData.selectedDepartmentIds,
+                                        dept.id,
+                                      ],
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      selectedDepartmentIds:
+                                        formData.selectedDepartmentIds.filter(
+                                          (id) => id !== dept.id
+                                        ),
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                              <span className="text-sm">
+                                {dept.name} ({dept.code})
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                  {formData.selectedDepartmentIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.selectedDepartmentIds.map((deptId) => {
+                        const dept = departments.find((d) => d.id === deptId);
+                        if (!dept) return null;
+                        return (
+                          <span
+                            key={deptId}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md"
+                          >
+                            {dept.name}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  selectedDepartmentIds:
+                                    formData.selectedDepartmentIds.filter(
+                                      (id) => id !== deptId
+                                    ),
+                                });
+                              }}
+                              className="hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
               <DialogFooter>

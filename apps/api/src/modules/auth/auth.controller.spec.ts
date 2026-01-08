@@ -3,7 +3,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
-import { UserWithRoles } from "@/common/types/prisma.types";
+import { UserWithRolesAndDepartments } from "@/common/types/prisma.types";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import type { Request as ExpressRequest } from "express";
 
@@ -11,7 +11,7 @@ describe("AuthController", () => {
   let controller: AuthController;
   let authService: jest.Mocked<AuthService>;
 
-  const mockUser: UserWithRoles = {
+  const mockUser: UserWithRolesAndDepartments = {
     id: "user-1",
     username: "testuser",
     email: "test@example.com",
@@ -35,6 +35,7 @@ describe("AuthController", () => {
         },
       },
     ],
+    departments: [], // NEW: Multi-department support
   };
 
   const mockLoginResponse = {
@@ -46,6 +47,7 @@ describe("AuthController", () => {
       email: mockUser.email,
       fullName: mockUser.fullName,
       department: mockUser.department,
+      departments: [], // NEW: Multi-department support
       roles: ["user"],
     },
   };
@@ -78,13 +80,13 @@ describe("AuthController", () => {
         password: "password123",
       };
 
-      const mockRequest: ExpressRequest & { user: UserWithRoles } = {
+      const mockRequest: ExpressRequest & { user: UserWithRolesAndDepartments } = {
         user: mockUser,
         ip: "127.0.0.1",
         headers: {
           "user-agent": "Mozilla/5.0",
         },
-      } as ExpressRequest & { user: UserWithRoles };
+      } as ExpressRequest & { user: UserWithRolesAndDepartments };
 
       authService.login.mockResolvedValue(mockLoginResponse);
 
@@ -104,11 +106,11 @@ describe("AuthController", () => {
         password: "password123",
       };
 
-      const mockRequest: ExpressRequest & { user: UserWithRoles } = {
+      const mockRequest: ExpressRequest & { user: UserWithRolesAndDepartments } = {
         user: mockUser,
         ip: undefined,
         headers: {},
-      } as ExpressRequest & { user: UserWithRoles };
+      } as ExpressRequest & { user: UserWithRolesAndDepartments };
 
       authService.login.mockResolvedValue(mockLoginResponse);
 
@@ -186,6 +188,7 @@ describe("AuthController", () => {
             createdAt: new Date(),
           },
         ],
+        departments: [], // NEW: Multi-department support
       };
 
       authService.getProfile.mockResolvedValue(mockProfile);

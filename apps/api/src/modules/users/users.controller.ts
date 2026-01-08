@@ -17,6 +17,7 @@ import { CheckPolicies } from "../authorization/decorators/check-policies.decora
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { QueryUsersDto } from "./dto/query-users.dto";
+import { AssignDepartmentsDto } from "./dto/assign-departments.dto";
 
 @ApiTags("Users")
 @ApiBearerAuth()
@@ -92,5 +93,34 @@ export class UsersController {
     @Param("roleId") roleId: string
   ) {
     return this.usersService.removeRole(userId, roleId);
+  }
+
+  @Get(":id/departments")
+  @CheckPolicies({ action: "manage", subject: "all" })
+  @ApiOperation({ summary: "Get user's departments (admin only)" })
+  async getUserDepartments(@Param("id") userId: string) {
+    return this.usersService.getUserDepartments(userId);
+  }
+
+  @Post(":id/departments")
+  @CheckPolicies({ action: "manage", subject: "all" })
+  @ApiOperation({ summary: "Assign departments to user (admin only)" })
+  async assignDepartments(
+    @Param("id") userId: string,
+    @Body() dto: AssignDepartmentsDto
+  ) {
+    await this.usersService.assignDepartments(userId, dto.departmentIds);
+    return { message: "Departments assigned successfully" };
+  }
+
+  @Delete(":id/departments/:departmentId")
+  @CheckPolicies({ action: "manage", subject: "all" })
+  @ApiOperation({ summary: "Remove department from user (admin only)" })
+  async removeDepartment(
+    @Param("id") userId: string,
+    @Param("departmentId") departmentId: string
+  ) {
+    await this.usersService.removeDepartment(userId, departmentId);
+    return { message: "Department removed successfully" };
   }
 }

@@ -17,12 +17,12 @@ import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { AuthenticatedRequest } from "@/common/types/request.types";
-import { UserWithRoles } from "@/common/types/prisma.types";
+import { UserWithRolesAndDepartments } from "@/common/types/prisma.types";
 import { CaslAbilityFactory } from "../authorization/factories/casl-ability.factory";
 
-// Request type for login endpoint - user comes from LocalStrategy as UserWithRoles
+// Request type for login endpoint - user comes from LocalStrategy as UserWithRolesAndDepartments
 interface LoginRequest extends ExpressRequest {
-  user: UserWithRoles;
+  user: UserWithRolesAndDepartments;
 }
 
 @ApiTags("Auth")

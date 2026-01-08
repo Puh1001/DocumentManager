@@ -10,9 +10,19 @@ export const ROLES = {
 
 export type RoleName = (typeof ROLES)[keyof typeof ROLES];
 
+// Legacy interface - kept for backward compatibility
 export interface UserWithDepartment {
   userId: string;
   departmentId: string | null;
+  roles: string[];
+  isAdmin: boolean;
+  isBoss: boolean;
+}
+
+// NEW: Multi-department interface
+export interface UserWithDepartments {
+  userId: string;
+  departmentIds: string[]; // Array of department IDs
   roles: string[];
   isAdmin: boolean;
   isBoss: boolean;
@@ -91,13 +101,13 @@ export class UserDepartmentResolver {
   }
 
   /**
-   * Get user with resolved department ID and role information.
+   * Get user with resolved department IDs (from junction table) and role information.
    *
    * @param userId - User ID
-   * @returns UserWithDepartment object with resolved department and roles
+   * @returns UserWithDepartments object with multiple departments and roles
    * @throws {CustomException} When user ID is invalid or user is not found
    */
-  async getUserWithDepartment(userId: string): Promise<UserWithDepartment> {
+  async getUserWithDepartments(userId: string): Promise<UserWithDepartments> {
     // Validate input
     if (!userId || typeof userId !== "string" || userId.trim() === "") {
       throw CustomException.badRequest(
@@ -110,7 +120,13 @@ export class UserDepartmentResolver {
       where: { id: userId },
       select: {
         id: true,
-        department: true,
+        department: true, // Legacy field
+        departments: {
+          // NEW: Junction table
+          select: {
+            departmentId: true,
+          },
+        },
         roles: {
           select: {
             role: {
@@ -131,14 +147,45 @@ export class UserDepartmentResolver {
     }
 
     const roleNames = user.roles.map((ur) => ur.role.name);
-    const departmentId = await this.resolveDepartmentId(user.department);
+
+    // Get department IDs from junction table
+    let departmentIds = user.departments.map((d) => d.departmentId);
+
+    // Fallback to legacy field if no departments in junction table
+    if (departmentIds.length === 0 && user.department) {
+      const legacyDeptId = await this.resolveDepartmentId(user.department);
+      if (legacyDeptId) {
+        departmentIds = [legacyDeptId];
+      }
+    }
 
     return {
       userId: user.id,
-      departmentId,
+      departmentIds,
       roles: roleNames,
       isAdmin: roleNames.includes(ROLES.ADMIN),
       isBoss: roleNames.includes(ROLES.BOSS),
+    };
+  }
+
+  /**
+   * Get user with resolved department ID and role information (LEGACY).
+   * @deprecated Use getUserWithDepartments() instead
+   *
+   * @param userId - User ID
+   * @returns UserWithDepartment object with resolved department and roles
+   * @throws {CustomException} When user ID is invalid or user is not found
+   */
+  async getUserWithDepartment(userId: string): Promise<UserWithDepartment> {
+    const userWithDepts = await this.getUserWithDepartments(userId);
+
+    // Return first department for backward compatibility
+    return {
+      userId: userWithDepts.userId,
+      departmentId: userWithDepts.departmentIds[0] || null,
+      roles: userWithDepts.roles,
+      isAdmin: userWithDepts.isAdmin,
+      isBoss: userWithDepts.isBoss,
     };
   }
 

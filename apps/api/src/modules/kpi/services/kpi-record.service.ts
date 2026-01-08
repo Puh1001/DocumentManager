@@ -5,7 +5,7 @@ import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import {
-  UserWithDepartment,
+  UserWithDepartments,
   UserDepartmentResolver,
 } from "./user-department.resolver";
 
@@ -23,7 +23,7 @@ export class KpiRecordService {
     private readonly userDepartmentResolver: UserDepartmentResolver
   ) {}
 
-  async findAll(params: FindAllParams, user: UserWithDepartment) {
+  async findAll(params: FindAllParams, user: UserWithDepartments) {
     const { departmentId, year } = params;
 
     // Admin/Boss: No restrictions
@@ -43,16 +43,22 @@ export class KpiRecordService {
       });
     }
 
-    // Regular users: Only their department
-    if (!user.departmentId) {
-      // User has no department, return empty array
+    // Regular users: Only their departments
+    if (!user.departmentIds || user.departmentIds.length === 0) {
+      // User has no departments, return empty array
       return [];
     }
 
-    // Filter by user's department (ignore provided departmentId if different)
+    // Filter by user's departments (or specific department if provided and user has access)
+    const deptFilter = departmentId
+      ? user.departmentIds.includes(departmentId)
+        ? departmentId
+        : undefined
+      : { in: user.departmentIds };
+
     return this.prisma.kpiRecord.findMany({
       where: {
-        departmentId: user.departmentId,
+        departmentId: deptFilter,
         year: year || undefined,
       },
       include: {
@@ -65,7 +71,7 @@ export class KpiRecordService {
     });
   }
 
-  async findOne(id: string, user: UserWithDepartment) {
+  async findOne(id: string, user: UserWithDepartments) {
     const record = await this.prisma.kpiRecord.findUnique({
       where: { id },
       include: {
@@ -89,12 +95,12 @@ export class KpiRecordService {
     return record;
   }
 
-  async create(dto: CreateKpiRecordDto, user: UserWithDepartment) {
-    // Validate departmentId matches user's department (unless admin/boss)
+  async create(dto: CreateKpiRecordDto, user: UserWithDepartments) {
+    // Validate departmentId matches user's departments (unless admin/boss)
     if (!user.isAdmin && !user.isBoss) {
-      if (!user.departmentId) {
+      if (!user.departmentIds || user.departmentIds.length === 0) {
         this.logger.warn(
-          `Authorization denied: User ${user.userId} attempted to create KPI record without department`,
+          `Authorization denied: User ${user.userId} attempted to create KPI record without departments`,
           { userId: user.userId, departmentId: dto.departmentId }
         );
         throw CustomException.forbidden(
@@ -102,18 +108,18 @@ export class KpiRecordService {
           "User must belong to a department to create KPI records"
         );
       }
-      if (dto.departmentId !== user.departmentId) {
+      if (!user.departmentIds.includes(dto.departmentId)) {
         this.logger.warn(
-          `Authorization denied: User ${user.userId} attempted to create KPI record for different department`,
+          `Authorization denied: User ${user.userId} attempted to create KPI record for non-assigned department`,
           {
             userId: user.userId,
-            userDepartmentId: user.departmentId,
+            userDepartmentIds: user.departmentIds,
             requestedDepartmentId: dto.departmentId,
           }
         );
         throw CustomException.forbidden(
           ErrorCodes.KPI.DEPARTMENT_MISMATCH,
-          "Cannot create KPI record for a different department"
+          "Cannot create KPI record for a department you're not assigned to"
         );
       }
     }
@@ -131,7 +137,7 @@ export class KpiRecordService {
     });
   }
 
-  async update(id: string, dto: UpdateKpiRecordDto, user: UserWithDepartment) {
+  async update(id: string, dto: UpdateKpiRecordDto, user: UserWithDepartments) {
     // Check existing record's department
     const existing = await this.prisma.kpiRecord.findUnique({
       where: { id },
@@ -151,10 +157,13 @@ export class KpiRecordService {
     // If updating departmentId, validate new department (unless admin/boss)
     if (dto.departmentId && dto.departmentId !== existing.departmentId) {
       if (!user.isAdmin && !user.isBoss) {
-        if (dto.departmentId !== user.departmentId) {
+        if (
+          !user.departmentIds ||
+          !user.departmentIds.includes(dto.departmentId)
+        ) {
           throw CustomException.forbidden(
             ErrorCodes.KPI.DEPARTMENT_MISMATCH,
-            "Cannot move KPI record to a different department"
+            "Cannot move KPI record to a department you're not assigned to"
           );
         }
       }
@@ -174,7 +183,7 @@ export class KpiRecordService {
     });
   }
 
-  async remove(id: string, user: UserWithDepartment) {
+  async remove(id: string, user: UserWithDepartments) {
     const record = await this.prisma.kpiRecord.findUnique({
       where: { id },
       select: { departmentId: true },
@@ -201,17 +210,17 @@ export class KpiRecordService {
    */
   private checkDepartmentAccess(
     recordDepartmentId: string,
-    user: UserWithDepartment
+    user: UserWithDepartments
   ): void {
     // Admin/Boss: Full access
     if (user.isAdmin || user.isBoss) {
       return;
     }
 
-    // Regular users: Must match their department
-    if (!user.departmentId) {
+    // Regular users: Must be assigned to the department
+    if (!user.departmentIds || user.departmentIds.length === 0) {
       this.logger.warn(
-        `Authorization denied: User ${user.userId} attempted to access KPI record without department`,
+        `Authorization denied: User ${user.userId} attempted to access KPI record without departments`,
         { userId: user.userId, recordDepartmentId }
       );
       throw CustomException.forbidden(
@@ -220,18 +229,18 @@ export class KpiRecordService {
       );
     }
 
-    if (recordDepartmentId !== user.departmentId) {
+    if (!user.departmentIds.includes(recordDepartmentId)) {
       this.logger.warn(
-        `Authorization denied: User ${user.userId} attempted to access KPI record from different department`,
+        `Authorization denied: User ${user.userId} attempted to access KPI record from non-assigned department`,
         {
           userId: user.userId,
-          userDepartmentId: user.departmentId,
+          userDepartmentIds: user.departmentIds,
           recordDepartmentId,
         }
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
-        "Access denied: KPI record belongs to a different department"
+        "Access denied: KPI record belongs to a department you're not assigned to"
       );
     }
   }

@@ -5,7 +5,7 @@ import { UpdateKpiMetricDto } from "../dto/update-kpi-metric.dto";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import {
-  UserWithDepartment,
+  UserWithDepartments,
   UserDepartmentResolver,
 } from "./user-department.resolver";
 
@@ -18,7 +18,7 @@ export class KpiMetricService {
     private readonly userDepartmentResolver: UserDepartmentResolver
   ) {}
 
-  async create(dto: CreateKpiMetricDto, user: UserWithDepartment) {
+  async create(dto: CreateKpiMetricDto, user: UserWithDepartments) {
     // Check parent record's department access
     await this.checkParentRecordAccess(dto.kpiRecordId, user);
 
@@ -33,7 +33,7 @@ export class KpiMetricService {
     });
   }
 
-  async update(id: string, dto: UpdateKpiMetricDto, user: UserWithDepartment) {
+  async update(id: string, dto: UpdateKpiMetricDto, user: UserWithDepartments) {
     const metric = await this.prisma.kpiMetric.findUnique({
       where: { id },
       select: { kpiRecordId: true },
@@ -60,7 +60,7 @@ export class KpiMetricService {
     });
   }
 
-  async remove(id: string, user: UserWithDepartment) {
+  async remove(id: string, user: UserWithDepartments) {
     const metric = await this.prisma.kpiMetric.findUnique({
       where: { id },
       select: { kpiRecordId: true },
@@ -87,7 +87,7 @@ export class KpiMetricService {
    */
   private async checkParentRecordAccess(
     kpiRecordId: string,
-    user: UserWithDepartment
+    user: UserWithDepartments
   ): Promise<void> {
     const record = await this.prisma.kpiRecord.findUnique({
       where: { id: kpiRecordId },
@@ -106,10 +106,10 @@ export class KpiMetricService {
       return;
     }
 
-    // Regular users: Must match their department
-    if (!user.departmentId) {
+    // Regular users: Must be assigned to the department
+    if (!user.departmentIds || user.departmentIds.length === 0) {
       this.logger.warn(
-        `Authorization denied: User ${user.userId} attempted to access KPI metric without department`,
+        `Authorization denied: User ${user.userId} attempted to access KPI metric without departments`,
         {
           userId: user.userId,
           kpiRecordId,
@@ -122,19 +122,19 @@ export class KpiMetricService {
       );
     }
 
-    if (record.departmentId !== user.departmentId) {
+    if (!user.departmentIds.includes(record.departmentId)) {
       this.logger.warn(
-        `Authorization denied: User ${user.userId} attempted to access KPI metric from different department`,
+        `Authorization denied: User ${user.userId} attempted to access KPI metric from non-assigned department`,
         {
           userId: user.userId,
-          userDepartmentId: user.departmentId,
+          userDepartmentIds: user.departmentIds,
           kpiRecordId,
           recordDepartmentId: record.departmentId,
         }
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
-        "Access denied: KPI metric belongs to a different department"
+        "Access denied: KPI metric belongs to a department you're not assigned to"
       );
     }
   }

@@ -15,7 +15,8 @@
     "type-check": "tsc --noEmit",
     "seed:kpi": "ts-node prisma/seed-kpi-departments.ts",
     "cleanup:kpi-titles": "ts-node prisma/cleanup-kpi-titles.ts",
-    "cleanup:kpi-metrics": "ts-node prisma/cleanup-kpi-metrics.ts"
+    "cleanup:kpi-metrics": "ts-node prisma/cleanup-kpi-metrics.ts",
+    "migrate:user-departments": "ts-node prisma/migrations/migrate-user-departments.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

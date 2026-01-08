@@ -1,21 +1,21 @@
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 import { AuthenticatedRequest } from "@/common/types/request.types";
-import { UserWithDepartment } from "../services/user-department.resolver";
+import { UserWithDepartments } from "../services/user-department.resolver";
 
 /**
- * Parameter decorator that extracts UserWithDepartment from request.
+ * Parameter decorator that extracts UserWithDepartments from request.
  * Requires UserDepartmentGuard to be applied to the route.
  *
  * @example
  * ```typescript
  * @Get()
- * async findAll(@CurrentUserWithDepartment() user: UserWithDepartment) {
+ * async findAll(@CurrentUserWithDepartment() user: UserWithDepartments) {
  *   return this.service.findAll({}, user);
  * }
  * ```
  */
 export const CurrentUserWithDepartment = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext): UserWithDepartment => {
+  (data: unknown, ctx: ExecutionContext): UserWithDepartments => {
     const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
     if (!request.userWithDepartment) {
@@ -24,7 +24,6 @@ export const CurrentUserWithDepartment = createParamDecorator(
       );
     }
 
-    return request.userWithDepartment;
+    return request.userWithDepartment as UserWithDepartments;
   }
 );
-

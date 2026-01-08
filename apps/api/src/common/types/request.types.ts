@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { UserWithDepartment } from "@/modules/kpi/services/user-department.resolver";
+import { UserWithDepartments } from "@/modules/kpi/services/user-department.resolver";
 
 export interface AuthenticatedUser {
   id: string;
@@ -9,5 +9,5 @@ export interface AuthenticatedUser {
 
 export interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
-  userWithDepartment?: UserWithDepartment;
+  userWithDepartment?: UserWithDepartments; // Stores multi-department user info
 }

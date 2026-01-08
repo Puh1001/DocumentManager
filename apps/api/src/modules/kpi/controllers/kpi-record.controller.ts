@@ -21,7 +21,7 @@ import { CreateKpiRecordDto } from "../dto/create-kpi-record.dto";
 import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
 import { UserDepartmentGuard } from "../guards/user-department.guard";
 import { CurrentUserWithDepartment } from "../decorators/current-user-with-department.decorator";
-import { UserWithDepartment } from "../services/user-department.resolver";
+import { UserWithDepartments } from "../services/user-department.resolver";
 
 @ApiTags("KPI Records")
 @ApiBearerAuth()
@@ -35,7 +35,7 @@ export class KpiRecordController {
   @ApiQuery({ name: "departmentId", required: false })
   @ApiQuery({ name: "year", required: false, type: Number })
   async findAll(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Query("departmentId") departmentId?: string,
     @Query("year") year?: string
   ) {
@@ -51,7 +51,7 @@ export class KpiRecordController {
   @Get(":id")
   @ApiOperation({ summary: "Get KPI record by ID" })
   async findOne(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string
   ) {
     return this.kpiRecordService.findOne(id, user);
@@ -60,7 +60,7 @@ export class KpiRecordController {
   @Post()
   @ApiOperation({ summary: "Create KPI record" })
   async create(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Body() dto: CreateKpiRecordDto
   ) {
     return this.kpiRecordService.create(dto, user);
@@ -69,7 +69,7 @@ export class KpiRecordController {
   @Patch(":id")
   @ApiOperation({ summary: "Update KPI record" })
   async update(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string,
     @Body() dto: UpdateKpiRecordDto
   ) {
@@ -79,7 +79,7 @@ export class KpiRecordController {
   @Delete(":id")
   @ApiOperation({ summary: "Delete KPI record" })
   async remove(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string
   ) {
     return this.kpiRecordService.remove(id, user);

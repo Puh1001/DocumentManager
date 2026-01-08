@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from "react";
 import type { User } from "@/lib/types/user.types";
+import { authApi } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -32,7 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (token && storedUser) {
       setAccessToken(token);
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      
+      // NEW: If user data doesn't have departments, fetch fresh data from API
+      // This handles cases where user was assigned departments after login
+      if (!parsedUser.departments || parsedUser.departments.length === 0) {
+        authApi
+          .getMe()
+          .then((freshUser) => {
+            if (freshUser && (freshUser.departments?.length || 0) > 0) {
+              setUser(freshUser);
+              localStorage.setItem("user", JSON.stringify(freshUser));
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to refresh user data:", err);
+          });
+      }
     }
     setIsLoading(false);
   }, []);

@@ -7,32 +7,40 @@ import { CreateKpiRecordDto } from "../dto/create-kpi-record.dto";
 import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
 import {
   UserDepartmentResolver,
-  UserWithDepartment,
+  UserWithDepartments,
 } from "./user-department.resolver";
 
 describe("KpiRecordService", () => {
   let service: KpiRecordService;
   let prismaService: jest.Mocked<PrismaService>;
 
-  const mockAdminUser: UserWithDepartment = {
+  const mockAdminUser: UserWithDepartments = {
     userId: "user-1",
-    departmentId: "dept-1",
+    departmentIds: ["dept-1"],
     roles: ["admin"],
     isAdmin: true,
     isBoss: false,
   };
 
-  const mockRegularUser: UserWithDepartment = {
+  const mockRegularUser: UserWithDepartments = {
     userId: "user-2",
-    departmentId: "dept-1",
+    departmentIds: ["dept-1"],
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
   };
 
-  const mockUserNoDept: UserWithDepartment = {
+  const mockUserNoDept: UserWithDepartments = {
     userId: "user-3",
-    departmentId: null,
+    departmentIds: [],
+    roles: ["editor"],
+    isAdmin: false,
+    isBoss: false,
+  };
+
+  const mockMultiDeptUser: UserWithDepartments = {
+    userId: "user-4",
+    departmentIds: ["dept-1", "dept-2", "dept-3"],
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
@@ -200,7 +208,7 @@ describe("KpiRecordService", () => {
       });
     });
 
-    it("should filter by user's department for regular user", async () => {
+    it("should filter by user's departments for regular user", async () => {
       const mockRecords = [mockKpiRecord];
       prismaService.kpiRecord.findMany = jest
         .fn()
@@ -211,7 +219,7 @@ describe("KpiRecordService", () => {
       expect(result).toEqual(mockRecords);
       expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
         where: {
-          departmentId: "dept-1", // User's department
+          departmentId: { in: ["dept-1"] }, // User's departments array
           year: undefined,
         },
         include: {
@@ -229,6 +237,57 @@ describe("KpiRecordService", () => {
 
       expect(result).toEqual([]);
       expect(prismaService.kpiRecord.findMany).not.toHaveBeenCalled();
+    });
+
+    it("should filter by multiple departments for multi-dept user", async () => {
+      const mockRecords = [mockKpiRecord];
+      prismaService.kpiRecord.findMany = jest
+        .fn()
+        .mockResolvedValue(mockRecords);
+
+      const result = await service.findAll({}, mockMultiDeptUser);
+
+      expect(result).toEqual(mockRecords);
+      expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
+        where: {
+          departmentId: { in: ["dept-1", "dept-2", "dept-3"] },
+          year: undefined,
+        },
+        include: {
+          department: true,
+          metrics: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    });
+
+    it("should filter by specific department if user has access", async () => {
+      const mockRecords = [mockKpiRecord];
+      prismaService.kpiRecord.findMany = jest
+        .fn()
+        .mockResolvedValue(mockRecords);
+
+      const result = await service.findAll(
+        { departmentId: "dept-2" },
+        mockMultiDeptUser
+      );
+
+      expect(result).toEqual(mockRecords);
+      expect(prismaService.kpiRecord.findMany).toHaveBeenCalledWith({
+        where: {
+          departmentId: "dept-2", // Specific department user has access to
+          year: undefined,
+        },
+        include: {
+          department: true,
+          metrics: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
     });
   });
 

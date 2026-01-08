@@ -14,7 +14,7 @@ import { CreateKpiMetricDto } from "../dto/create-kpi-metric.dto";
 import { UpdateKpiMetricDto } from "../dto/update-kpi-metric.dto";
 import { UserDepartmentGuard } from "../guards/user-department.guard";
 import { CurrentUserWithDepartment } from "../decorators/current-user-with-department.decorator";
-import { UserWithDepartment } from "../services/user-department.resolver";
+import { UserWithDepartments } from "../services/user-department.resolver";
 
 @ApiTags("KPI Metrics")
 @ApiBearerAuth()
@@ -26,7 +26,7 @@ export class KpiMetricController {
   @Post()
   @ApiOperation({ summary: "Create KPI metric row" })
   async create(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Body() dto: CreateKpiMetricDto
   ) {
     return this.kpiMetricService.create(dto, user);
@@ -35,7 +35,7 @@ export class KpiMetricController {
   @Patch(":id")
   @ApiOperation({ summary: "Update KPI metric row" })
   async update(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string,
     @Body() dto: UpdateKpiMetricDto
   ) {
@@ -45,7 +45,7 @@ export class KpiMetricController {
   @Delete(":id")
   @ApiOperation({ summary: "Delete KPI metric row" })
   async remove(
-    @CurrentUserWithDepartment() user: UserWithDepartment,
+    @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string
   ) {
     return this.kpiMetricService.remove(id, user);

@@ -8,33 +8,32 @@ import { UpdateKpiMetricDto } from "../dto/update-kpi-metric.dto";
 import { MetricType } from "@prisma/client";
 import {
   UserDepartmentResolver,
-  UserWithDepartment,
+  UserWithDepartments,
 } from "./user-department.resolver";
 
 describe("KpiMetricService", () => {
   let service: KpiMetricService;
   let prismaService: jest.Mocked<PrismaService>;
-  let userDepartmentResolver: jest.Mocked<UserDepartmentResolver>;
 
-  const mockAdminUser: UserWithDepartment = {
+  const mockAdminUser: UserWithDepartments = {
     userId: "user-1",
-    departmentId: "dept-1",
+    departmentIds: ["dept-1"],
     roles: ["admin"],
     isAdmin: true,
     isBoss: false,
   };
 
-  const mockRegularUser: UserWithDepartment = {
+  const mockRegularUser: UserWithDepartments = {
     userId: "user-2",
-    departmentId: "dept-1",
+    departmentIds: ["dept-1"],
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
   };
 
-  const mockUserNoDept: UserWithDepartment = {
+  const mockUserNoDept: UserWithDepartments = {
     userId: "user-3",
-    departmentId: null,
+    departmentIds: [],
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
@@ -83,7 +82,6 @@ describe("KpiMetricService", () => {
 
     service = module.get<KpiMetricService>(KpiMetricService);
     prismaService = module.get(PrismaService);
-    userDepartmentResolver = module.get(UserDepartmentResolver);
   });
 
   afterEach(() => {
@@ -390,4 +388,3 @@ describe("KpiMetricService", () => {
     });
   });
 });
-

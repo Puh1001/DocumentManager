@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { UsersService } from "../users/users.service";
-import { PrismaClientLike, UserWithRoles } from "@/common/types/prisma.types";
+import {
+  PrismaClientLike,
+  UserWithRolesAndDepartments,
+} from "@/common/types/prisma.types";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 
@@ -25,6 +28,12 @@ export class AuthService {
       include: {
         roles: {
           include: { role: true },
+        },
+        departments: {
+          // NEW: Include departments for multi-department support
+          include: {
+            department: true,
+          },
         },
       },
     });
@@ -92,7 +101,11 @@ export class AuthService {
     return { message: "Password changed successfully" };
   }
 
-  async login(user: UserWithRoles, ipAddress?: string, userAgent?: string) {
+  async login(
+    user: UserWithRolesAndDepartments,
+    ipAddress?: string,
+    userAgent?: string
+  ) {
     const payload = {
       sub: user.id,
       username: user.username,
@@ -149,6 +162,9 @@ export class AuthService {
       },
     });
 
+    // Get user's departments
+    const userDepartments = user.departments?.map((ud) => ud.department) || [];
+
     return {
       accessToken,
       refreshToken,
@@ -157,7 +173,8 @@ export class AuthService {
         username: user.username,
         email: user.email,
         fullName: user.fullName,
-        department: user.department,
+        department: user.department, // Legacy field
+        departments: userDepartments, // NEW: Multi-department support
         roles: user.roles?.map((ur) => ur.role.name) || [],
       },
     };
@@ -170,6 +187,12 @@ export class AuthService {
         user: {
           include: {
             roles: { include: { role: true } },
+            departments: {
+              // NEW: Include departments for multi-department support
+              include: {
+                department: true,
+              },
+            },
           },
         },
       },

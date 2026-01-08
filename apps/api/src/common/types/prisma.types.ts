@@ -16,3 +16,19 @@ export type UserWithRoles = Prisma.UserGetPayload<{
     };
   };
 }>;
+
+// User with roles and departments relation type (for auth)
+export type UserWithRolesAndDepartments = Prisma.UserGetPayload<{
+  include: {
+    roles: {
+      include: {
+        role: true;
+      };
+    };
+    departments: {
+      include: {
+        department: true;
+      };
+    };
+  };
+}>;

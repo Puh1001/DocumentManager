@@ -22,6 +22,8 @@ export const ErrorCodes = {
     CODE_EXISTS: "department.create.code_exists",
     LOAD_FAILED: "department.list.load_failed",
     FETCH_FAILED: "department.fetch.failed",
+    NOT_ASSIGNED: "department.not_assigned", // User not assigned to department
+    ALREADY_ASSIGNED: "department.already_assigned", // User already assigned
   },
   FOLDER: {
     NOT_FOUND: "folder.not_found",

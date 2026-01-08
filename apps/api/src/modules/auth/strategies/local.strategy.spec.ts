@@ -2,13 +2,13 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { CustomException } from "@/common/errors/custom-exception";
 import { LocalStrategy } from "./local.strategy";
 import { AuthService } from "../auth.service";
-import { UserWithRoles } from "@/common/types/prisma.types";
+import { UserWithRolesAndDepartments } from "@/common/types/prisma.types";
 
 describe("LocalStrategy", () => {
   let strategy: LocalStrategy;
   let authService: jest.Mocked<AuthService>;
 
-  const mockUser: UserWithRoles = {
+  const mockUser: UserWithRolesAndDepartments = {
     id: "user-1",
     username: "testuser",
     email: "test@example.com",
@@ -32,6 +32,7 @@ describe("LocalStrategy", () => {
         },
       },
     ],
+    departments: [], // NEW: Multi-department support
   };
 
   beforeEach(async () => {

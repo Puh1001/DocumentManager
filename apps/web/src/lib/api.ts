@@ -619,6 +619,7 @@ export interface Role {
 }
 
 export interface User {
+  departments?: Department[]; // NEW: Multi-department support
   id: string;
   username: string;
   email: string;
@@ -685,6 +686,17 @@ export const userApi = {
     api.post(`/users/${userId}/roles/${roleId}`, {}),
   removeRole: (userId: string, roleId: string) =>
     api.delete(`/users/${userId}/roles/${roleId}`),
+  // NEW: Department management methods
+  getDepartments: (userId: string) =>
+    api.get<Department[]>(`/users/${userId}/departments`),
+  assignDepartments: (userId: string, departmentIds: string[]) =>
+    api.post<{ message: string }>(`/users/${userId}/departments`, {
+      departmentIds,
+    }),
+  removeDepartment: (userId: string, departmentId: string) =>
+    api.delete<{ message: string }>(
+      `/users/${userId}/departments/${departmentId}`
+    ),
 };
 
 export interface ChangePasswordDto {
@@ -693,6 +705,7 @@ export interface ChangePasswordDto {
 }
 
 export const authApi = {
+  getMe: () => api.get<User>("/auth/me"),
   changePassword: (data: ChangePasswordDto) =>
     api.post<{ message: string }>("/auth/change-password", data),
 };
