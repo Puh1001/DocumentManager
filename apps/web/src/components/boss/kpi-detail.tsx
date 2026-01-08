@@ -111,7 +111,8 @@ function calculateEfficiency(record: KpiRecord): (number | null)[] {
   return efficiencyValues;
 }
 
-function calculateMetricAverage(metric: KpiMetric): number | null {
+function calculateMetricAverage(metric: KpiMetric | undefined): number | null {
+  if (!metric) return null;
   const values = Object.values(metric.values || {});
   const validValues = values.filter((v): v is number => v != null && !isNaN(v));
   if (validValues.length === 0) return null;
@@ -421,7 +422,7 @@ function getChartOptions(
   const validValues = efficiencyValues
     .slice(0, 12)
     .filter((v): v is number => v != null);
-  
+
   if (validValues.length === 0) {
     return {
       responsive: true,
@@ -649,7 +650,7 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
 
   const efficiencyValues = calculateEfficiency(record);
   const calculatedMetric = record.metrics.find((m) => m.type === "CALCULATED");
-  
+
   // Calculate calculated values (100% - Efficiency) if calculated metric exists
   const calculateCalculatedValues = (record: KpiRecord): (number | null)[] => {
     const efficiencyValues = calculateEfficiency(record);
@@ -658,7 +659,7 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   const calculatedValues = calculatedMetric
     ? calculateCalculatedValues(record)
     : null;
-  
+
   // Use calculated values for chart if available, otherwise use efficiency
   const chartValues = calculatedValues || efficiencyValues;
   const hasData = chartValues.some((v) => v != null);
@@ -724,8 +725,7 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
               <tbody>
                 {/* TARGET Row - Hide for COUNT + SINGLE */}
                 {!(
-                  record.displayType === "COUNT" &&
-                  record.rowMode === "SINGLE"
+                  record.displayType === "COUNT" && record.rowMode === "SINGLE"
                 ) && (
                   <tr className="hover:bg-cyan-500/5 transition-colors">
                     <td className="border border-cyan-500/20 px-3 py-2 align-top text-cyan-200">
@@ -860,7 +860,11 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
             </h2>
             <div className="flex-1 min-h-[260px]">
               <Bar
-                options={getChartOptions(record, chartValues, record.targetValue)}
+                options={getChartOptions(
+                  record,
+                  chartValues,
+                  record.targetValue
+                )}
                 data={getChartData(record, chartValues, t, tTable)}
               />
             </div>
