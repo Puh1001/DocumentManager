@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { maintenanceApi, type MaintenanceNotice } from "@/lib/api";
 import { ArrowLeft, Wrench } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
-import { getShortName } from "@/lib/utils";
 
 interface MaintenanceListProps {
   departmentId: string;
@@ -107,15 +106,15 @@ export function MaintenanceList({
           {sortedNotices.map((notice, index) => (
             <div
               key={notice.id}
-              className="cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 p-4"
+              className="w-full cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-4 p-4 border border-fuchsia-500/20 rounded-lg hover:border-fuchsia-500/40 hover:bg-fuchsia-500/5"
               onClick={() => onSelectMaintenance(notice.id)}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex-shrink-0">
                 <Wrench className="h-6 w-6 text-fuchsia-400 cyber-text-glow" />
               </div>
-              <h3 className="font-cyber font-bold text-base cyber-neon-magenta truncate flex-1">
-                {getShortName(notice.title, 25)}
+              <h3 className="font-cyber font-bold text-base cyber-neon-magenta flex-1 break-words whitespace-normal">
+                {notice.title}
               </h3>
             </div>
           ))}

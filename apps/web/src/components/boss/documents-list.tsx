@@ -150,13 +150,13 @@ export function DocumentsList({
           {documents.map((doc, index) => (
             <div
               key={doc.id}
-              className="cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 p-4"
+              className="w-full cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5"
               onClick={() => onSelectDocument(doc.id)}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex-shrink-0 text-2xl">{getFileIcon(doc.fileType)}</div>
-              <h3 className="font-cyber font-bold text-base cyber-neon-cyan truncate flex-1">
-                {getShortName(doc.name, 25)}
+              <h3 className="font-cyber font-bold text-base cyber-neon-cyan flex-1 break-words whitespace-normal">
+                {doc.name}
               </h3>
             </div>
           ))}

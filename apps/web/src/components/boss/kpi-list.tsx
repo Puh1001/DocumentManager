@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { ArrowLeft, BarChart2 } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
-import { getShortName } from "@/lib/utils";
 
 interface KpiRecord {
   id: string;
@@ -128,19 +127,19 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-3">
           {records.map((record, index) => (
             <div
               key={record.id}
-              className="cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-3 p-4"
+              className="w-full cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5"
               onClick={() => onSelectKpi(record.id)}
-              style={{ animationDelay: `${index * 0.1}s` }}
+              style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex-shrink-0">
                 <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
               </div>
-              <h3 className="font-cyber font-bold text-base cyber-neon-cyan truncate flex-1">
-                {getShortName(record.title || t("kpi.untitled"), 25)}
+              <h3 className="font-cyber font-bold text-base cyber-neon-cyan flex-1 break-words whitespace-normal">
+                {record.title || t("kpi.untitled")}
               </h3>
             </div>
           ))}
