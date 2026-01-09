@@ -20,6 +20,7 @@ describe("KpiRecordService", () => {
     roles: ["admin"],
     isAdmin: true,
     isBoss: false,
+    isKpiViewerAll: false,
   };
 
   const mockRegularUser: UserWithDepartments = {
@@ -28,6 +29,7 @@ describe("KpiRecordService", () => {
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
+    isKpiViewerAll: false,
   };
 
   const mockUserNoDept: UserWithDepartments = {
@@ -36,6 +38,7 @@ describe("KpiRecordService", () => {
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
+    isKpiViewerAll: false,
   };
 
   const mockMultiDeptUser: UserWithDepartments = {
@@ -44,6 +47,7 @@ describe("KpiRecordService", () => {
     roles: ["editor"],
     isAdmin: false,
     isBoss: false,
+    isKpiViewerAll: false,
   };
 
   const mockKpiRecord = {

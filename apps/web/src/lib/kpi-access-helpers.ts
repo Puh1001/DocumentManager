@@ -7,6 +7,7 @@ import type { Department } from "@/lib/types/department.types";
 
 const ADMIN_ROLE = "admin";
 const BOSS_ROLE = "boss";
+const KPI_VIEWER_ALL_ROLE = "kpi_viewer_all";
 
 /**
  * Check if user has full KPI access (admin or boss)
@@ -14,6 +15,26 @@ const BOSS_ROLE = "boss";
 export function hasFullKpiAccess(user: User | null): boolean {
   if (!user) return false;
   return user.roles.includes(ADMIN_ROLE) || user.roles.includes(BOSS_ROLE);
+}
+
+/**
+ * Check if user can view all KPI records from all departments (read-only)
+ */
+export function canViewAllKpi(user: User | null): boolean {
+  if (!user) return false;
+  return user.roles.includes(KPI_VIEWER_ALL_ROLE);
+}
+
+/**
+ * Check if user has read access to all KPI (admin, boss, or kpi_viewer_all)
+ */
+export function hasKpiReadAllAccess(user: User | null): boolean {
+  if (!user) return false;
+  return (
+    user.roles.includes(ADMIN_ROLE) ||
+    user.roles.includes(BOSS_ROLE) ||
+    user.roles.includes(KPI_VIEWER_ALL_ROLE)
+  );
 }
 
 /**
@@ -49,7 +70,7 @@ export function getUserDepartments(user: User | null): string[] {
 
 /**
  * Get accessible departments for user
- * - Admin/Boss: All departments
+ * - Admin/Boss/KpiViewerAll: All departments
  * - Other users: All their assigned departments
  */
 export function getAccessibleDepartments(
@@ -58,8 +79,8 @@ export function getAccessibleDepartments(
 ): Department[] {
   if (!user) return [];
 
-  // Admin/Boss: Show all departments
-  if (hasFullKpiAccess(user)) {
+  // Admin/Boss/KpiViewerAll: Show all departments
+  if (hasFullKpiAccess(user) || canViewAllKpi(user)) {
     return allDepartments;
   }
 
@@ -94,8 +115,8 @@ export function canAccessDepartment(
 ): boolean {
   if (!user) return false;
 
-  // Admin/Boss: Full access
-  if (hasFullKpiAccess(user)) return true;
+  // Admin/Boss/KpiViewerAll: Full access (read-only for kpi_viewer_all)
+  if (hasFullKpiAccess(user) || canViewAllKpi(user)) return true;
 
   // Check if department is in user's departments
   const userDeptIds = getUserDepartments(user);
@@ -107,6 +128,8 @@ export function canAccessDepartment(
  */
 export function canCreateKpi(user: User | null): boolean {
   if (!user) return false;
+  // kpi_viewer_all is read-only, cannot create
+  if (canViewAllKpi(user)) return false;
   // Admin/Boss can always create
   if (hasFullKpiAccess(user)) return true;
   // Regular users need at least one department

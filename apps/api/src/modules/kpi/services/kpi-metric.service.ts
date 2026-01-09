@@ -19,6 +19,18 @@ export class KpiMetricService {
   ) {}
 
   async create(dto: CreateKpiMetricDto, user: UserWithDepartments) {
+    // kpi_viewer_all role is read-only, cannot create
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to create KPI metric`,
+        { userId: user.userId, kpiRecordId: dto.kpiRecordId }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot create KPI metrics."
+      );
+    }
+
     // Check parent record's department access
     await this.checkParentRecordAccess(dto.kpiRecordId, user);
 
@@ -46,6 +58,18 @@ export class KpiMetricService {
       );
     }
 
+    // kpi_viewer_all role is read-only, cannot update
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to update KPI metric`,
+        { userId: user.userId, metricId: id }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot update KPI metrics."
+      );
+    }
+
     // Check parent record's department access
     await this.checkParentRecordAccess(metric.kpiRecordId, user);
 
@@ -70,6 +94,18 @@ export class KpiMetricService {
       throw CustomException.notFound(
         ErrorCodes.KPI.METRIC_NOT_FOUND,
         "KPI metric not found"
+      );
+    }
+
+    // kpi_viewer_all role is read-only, cannot delete
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to delete KPI metric`,
+        { userId: user.userId, metricId: id }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot delete KPI metrics."
       );
     }
 
@@ -101,8 +137,8 @@ export class KpiMetricService {
       );
     }
 
-    // Admin/Boss: Full access
-    if (user.isAdmin || user.isBoss) {
+    // Admin/Boss/KpiViewerAll: Full access (read-only for kpi_viewer_all)
+    if (user.isAdmin || user.isBoss || user.isKpiViewerAll) {
       return;
     }
 

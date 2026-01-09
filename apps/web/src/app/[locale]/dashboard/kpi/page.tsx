@@ -34,10 +34,10 @@ import { registerPage } from "@/lib/page-registry";
 import { PageGuard } from "@/components/page-guard";
 import { useAuth } from "@/lib/auth-context";
 import {
-  hasFullKpiAccess,
   getAccessibleDepartments,
   canCreateKpi,
   getUserDepartment,
+  hasKpiReadAllAccess,
 } from "@/lib/kpi-access-helpers";
 import { useToast } from "@/hooks/use-toast";
 import type { Department } from "@/lib/types/department.types";
@@ -1241,7 +1241,7 @@ export default function KpiPage() {
               <p className="text-muted-foreground">{t("subtitle")}</p>
             </div>
             <div className="flex items-center gap-2">
-              {departments.length > 1 || hasFullKpiAccess(user) ? (
+              {departments.length > 1 || hasKpiReadAllAccess(user) ? (
                 <select
                   className="border rounded-md px-2 py-1 text-sm"
                   value={selectedDepartmentId}

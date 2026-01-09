@@ -26,8 +26,8 @@ export class KpiRecordService {
   async findAll(params: FindAllParams, user: UserWithDepartments) {
     const { departmentId, year } = params;
 
-    // Admin/Boss: No restrictions
-    if (user.isAdmin || user.isBoss) {
+    // Admin/Boss/KpiViewerAll: No restrictions (read-only for kpi_viewer_all)
+    if (user.isAdmin || user.isBoss || user.isKpiViewerAll) {
       return this.prisma.kpiRecord.findMany({
         where: {
           departmentId: departmentId || undefined,
@@ -96,6 +96,18 @@ export class KpiRecordService {
   }
 
   async create(dto: CreateKpiRecordDto, user: UserWithDepartments) {
+    // kpi_viewer_all role is read-only, cannot create
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to create KPI record`,
+        { userId: user.userId, departmentId: dto.departmentId }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot create KPI records."
+      );
+    }
+
     // Validate departmentId matches user's departments (unless admin/boss)
     if (!user.isAdmin && !user.isBoss) {
       if (!user.departmentIds || user.departmentIds.length === 0) {
@@ -154,6 +166,18 @@ export class KpiRecordService {
     // Check department access
     this.checkDepartmentAccess(existing.departmentId, user);
 
+    // kpi_viewer_all role is read-only, cannot update
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to update KPI record`,
+        { userId: user.userId, recordId: id }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot update KPI records."
+      );
+    }
+
     // If updating departmentId, validate new department (unless admin/boss)
     if (dto.departmentId && dto.departmentId !== existing.departmentId) {
       if (!user.isAdmin && !user.isBoss) {
@@ -196,6 +220,18 @@ export class KpiRecordService {
       );
     }
 
+    // kpi_viewer_all role is read-only, cannot delete
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to delete KPI record`,
+        { userId: user.userId, recordId: id }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot delete KPI records."
+      );
+    }
+
     // Check department access
     this.checkDepartmentAccess(record.departmentId, user);
 
@@ -212,8 +248,8 @@ export class KpiRecordService {
     recordDepartmentId: string,
     user: UserWithDepartments
   ): void {
-    // Admin/Boss: Full access
-    if (user.isAdmin || user.isBoss) {
+    // Admin/Boss/KpiViewerAll: Full access (read-only for kpi_viewer_all)
+    if (user.isAdmin || user.isBoss || user.isKpiViewerAll) {
       return;
     }
 

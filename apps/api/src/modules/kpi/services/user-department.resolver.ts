@@ -6,6 +6,7 @@ import { ErrorCodes } from "@/common/errors/error-codes";
 export const ROLES = {
   ADMIN: "admin",
   BOSS: "boss",
+  KPI_VIEWER_ALL: "kpi_viewer_all", // Can view all KPI records from all departments (read-only)
 } as const;
 
 export type RoleName = (typeof ROLES)[keyof typeof ROLES];
@@ -17,6 +18,7 @@ export interface UserWithDepartment {
   roles: string[];
   isAdmin: boolean;
   isBoss: boolean;
+  isKpiViewerAll: boolean;
 }
 
 // NEW: Multi-department interface
@@ -26,6 +28,7 @@ export interface UserWithDepartments {
   roles: string[];
   isAdmin: boolean;
   isBoss: boolean;
+  isKpiViewerAll: boolean; // Can view all KPI records (read-only)
 }
 
 @Injectable()
@@ -165,6 +168,7 @@ export class UserDepartmentResolver {
       roles: roleNames,
       isAdmin: roleNames.includes(ROLES.ADMIN),
       isBoss: roleNames.includes(ROLES.BOSS),
+      isKpiViewerAll: roleNames.includes(ROLES.KPI_VIEWER_ALL),
     };
   }
 
@@ -186,6 +190,7 @@ export class UserDepartmentResolver {
       roles: userWithDepts.roles,
       isAdmin: userWithDepts.isAdmin,
       isBoss: userWithDepts.isBoss,
+      isKpiViewerAll: userWithDepts.isKpiViewerAll,
     };
   }
 
@@ -197,5 +202,16 @@ export class UserDepartmentResolver {
    */
   hasFullAccess(roles: string[]): boolean {
     return roles.includes(ROLES.ADMIN) || roles.includes(ROLES.BOSS);
+  }
+
+  /**
+   * Check if user can view all KPI records (kpi_viewer_all role).
+   * This role allows read-only access to all departments' KPI data.
+   *
+   * @param roles - Array of role names
+   * @returns true if user has kpi_viewer_all role
+   */
+  canViewAllKpi(roles: string[]): boolean {
+    return roles.includes(ROLES.KPI_VIEWER_ALL);
   }
 }
