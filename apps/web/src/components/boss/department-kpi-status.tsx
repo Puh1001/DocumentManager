@@ -60,32 +60,15 @@ function isKpiCompleted(record: KpiRecord): boolean {
     return false;
   }
 
-  // Prefer ACTUAL metric when available
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
-  if (actualMetric) {
-    const hasActualData = MONTH_KEYS.some((key) => {
-      const value = actualMetric.values?.[key];
-      // 0 vẫn là dữ liệu hợp lệ (ví dụ 0% trả hàng)
+  // KPI được coi là hoàn thành nếu BẤT KỲ metric nào (TARGET / ACTUAL / CALCULATED)
+  // có ít nhất một tháng đã nhập dữ liệu (null mới là chưa nhập).
+  return record.metrics.some((metric) =>
+    MONTH_KEYS.some((key) => {
+      const value = metric.values?.[key];
+      // 0 cũng là dữ liệu hợp lệ (ví dụ 0% / 0 lần sai)
       return value != null;
-    });
-    if (hasActualData) {
-      return true;
-    }
-  }
-
-  // Fallback: some KPIs chỉ có CALCULATED (hiệu quả %) mà không có ACTUAL rõ ràng
-  const calculatedMetric = record.metrics.find((m) => m.type === "CALCULATED");
-  if (calculatedMetric) {
-    const hasCalculatedData = MONTH_KEYS.some((key) => {
-      const value = calculatedMetric.values?.[key];
-      return value != null;
-    });
-    if (hasCalculatedData) {
-      return true;
-    }
-  }
-
-  return false;
+    })
+  );
 }
 
 // Calculate department KPI status
