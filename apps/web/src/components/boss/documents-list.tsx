@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { ArrowLeft, FileText, Folder } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
-import { getFileIcon, getShortName } from "@/lib/utils";
+import { getFileIcon } from "@/lib/utils";
 
 interface Folder {
   id: string;
@@ -106,13 +106,18 @@ export function DocumentsList({
   if (error) {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center text-fuchsia-400 cyber-text-glow">
-            <p className="font-cyber font-semibold text-lg">{t("error.loadDocumentsFailed")}</p>
+            <p className="font-cyber font-semibold text-lg">
+              {t("error.loadDocumentsFailed")}
+            </p>
             <p className="text-sm mt-2 text-cyan-300/90">{error}</p>
           </div>
         </div>
@@ -122,7 +127,10 @@ export function DocumentsList({
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+      <button
+        onClick={onBack}
+        className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+      >
         <ArrowLeft className="h-4 w-4" />
         {t("actions.back")}
       </button>
@@ -131,7 +139,9 @@ export function DocumentsList({
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center py-12">
             <Folder className="h-16 w-16 mx-auto mb-4 text-cyan-500/50 cyber-text-glow" />
-            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">{t("empty.noFolder")}</p>
+            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">
+              {t("empty.noFolder")}
+            </p>
             <p className="text-sm mt-2 text-cyan-400/60 font-cyber">
               {t("empty.noFolderDescription", { department: departmentName })}
             </p>
@@ -141,8 +151,12 @@ export function DocumentsList({
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center py-12">
             <FileText className="h-16 w-16 mx-auto mb-4 text-cyan-500/50 cyber-text-glow" />
-            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">{t("empty.noDocuments")}</p>
-            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">{t("empty.noDocumentsDescription")}</p>
+            <p className="text-xl font-cyber font-semibold cyber-neon-cyan">
+              {t("empty.noDocuments")}
+            </p>
+            <p className="text-sm mt-2 text-cyan-400/60 font-cyber">
+              {t("empty.noDocumentsDescription")}
+            </p>
           </div>
         </div>
       ) : (
@@ -154,7 +168,9 @@ export function DocumentsList({
               onClick={() => onSelectDocument(doc.id)}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <div className="flex-shrink-0 text-2xl">{getFileIcon(doc.fileType)}</div>
+              <div className="flex-shrink-0 text-2xl">
+                {getFileIcon(doc.fileType)}
+              </div>
               <h3 className="font-cyber font-bold text-base cyber-neon-cyan flex-1 break-words whitespace-normal">
                 {doc.name}
               </h3>
