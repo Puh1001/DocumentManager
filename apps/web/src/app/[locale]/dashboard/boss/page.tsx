@@ -110,7 +110,7 @@ export default function BossPage() {
   // Show department grid if no department selected
   if (!navigation.state.selectedDepartment) {
     return (
-      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+      <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
         <div className="space-y-8 p-6">
           <div className="relative">
             <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
@@ -136,7 +136,7 @@ export default function BossPage() {
   // Show view selector if department selected but no view type
   if (!navigation.state.viewType) {
     return (
-      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+      <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
         <div className="space-y-8 p-6">
           <div className="relative">
             <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
@@ -163,7 +163,7 @@ export default function BossPage() {
   // Show detail views if item is selected
   if (navigation.state.selectedItemId) {
     return (
-      <div className="min-h-screen cyber-bg cyber-grid cyber-scanline">
+      <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
         <div className="space-y-8 p-6">
           <div className="relative">
             <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
@@ -211,7 +211,7 @@ export default function BossPage() {
   };
 
   return (
-    <div className="cyber-bg cyber-grid cyber-scanline">
+    <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
       <div className="space-y-8 p-6">
         <div className="relative">
           <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-mono tracking-wider">
