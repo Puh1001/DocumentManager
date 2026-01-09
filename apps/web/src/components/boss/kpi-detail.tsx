@@ -703,7 +703,19 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
 
   // Use calculated values for chart if available, otherwise use efficiency
   const chartValues = calculatedValues || efficiencyValues;
-  const hasData = chartValues.some((v) => v != null);
+
+  // Determine if we have data for chart rendering
+  // For COUNT tables, especially SINGLE-row tables, we should look at the raw ACTUAL values,
+  // because efficiency can't be calculated without TARGET and would incorrectly hide the chart.
+  let hasData: boolean;
+  if (record.displayType === "COUNT") {
+    const actualValues = Object.values(actualMetric.values || {});
+    hasData = actualValues.some(
+      (v): v is number => v != null && !isNaN(v as number)
+    );
+  } else {
+    hasData = chartValues.some((v) => v != null);
+  }
   const targetAverage = calculateMetricAverage(targetMetric);
   const actualAverage = calculateMetricAverage(actualMetric);
   const calculatedAverage =

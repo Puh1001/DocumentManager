@@ -5,7 +5,9 @@
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Bảo trì",
-    "documents": "Tài liệu"
+    "documents": "Tài liệu",
+    "departments": "Danh sách phòng ban",
+    "kpiStatus": "Trạng thái KPI"
   },
   "actions": {
     "back": "Quay lại"
@@ -63,7 +65,34 @@
     "loadFailed": "Không thể tải danh sách phòng ban",
     "loadKpiFailed": "Không thể tải bản ghi KPI",
     "loadMaintenanceFailed": "Không thể tải thông báo bảo trì",
-    "loadDocumentsFailed": "Không thể tải tài liệu"
+    "loadDocumentsFailed": "Không thể tải tài liệu",
+    "loadKpiStatusFailed": "Không thể tải trạng thái KPI"
+  },
+  "kpiStatus": {
+    "filter": {
+      "all": "Tất cả",
+      "completed": "Hoàn thành",
+      "partial": "Một phần",
+      "incomplete": "Chưa hoàn thành"
+    },
+    "status": {
+      "completed": "Hoàn thành",
+      "partial": "Một phần",
+      "incomplete": "Chưa hoàn thành"
+    },
+    "summary": {
+      "total": "Tổng số",
+      "completed": "Hoàn thành",
+      "partial": "Một phần",
+      "incomplete": "Chưa hoàn thành"
+    },
+    "completion": "Tỷ lệ hoàn thành",
+    "totalKpis": "Tổng KPI",
+    "completedKpis": "Đã hoàn thành",
+    "empty": {
+      "noDepartments": "Không có phòng ban",
+      "noDepartmentsDescription": "Không có phòng ban nào phù hợp với bộ lọc đã chọn."
+    }
   },
   "maintenance": {
     "description": "Mô tả",

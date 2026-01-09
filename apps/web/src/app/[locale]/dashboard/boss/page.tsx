@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useBossNavigation } from "@/components/boss/use-boss-navigation";
 import { Breadcrumb } from "@/components/boss/breadcrumb";
 import { DepartmentGrid } from "@/components/boss/department-grid";
+import { DepartmentKpiStatus } from "@/components/boss/department-kpi-status";
 import { ViewSelector } from "@/components/boss/view-selector";
 import { KpiList } from "@/components/boss/kpi-list";
 import { MaintenanceList } from "@/components/boss/maintenance-list";
@@ -27,6 +28,7 @@ export default function BossPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showKpiStatus, setShowKpiStatus] = useState(false);
 
   // Check if user has boss role
   useEffect(() => {
@@ -58,6 +60,39 @@ export default function BossPage() {
       loadDepartments();
     }
   }, [user, loadDepartments]);
+
+  // Temporarily hide specific departments
+  // Departments to hide: General Manager's Office, PD, Industrial Engineering Department, QC, SD, Production Department
+  const visibleDepartments = useMemo(() => {
+    const hiddenNames = [
+      "General Manager's Office",
+      "PD",
+      "Industrial Engineering Department",
+      "QC",
+      "SD",
+      "Production Department",
+    ];
+    const hiddenCodes = ["PD", "QC", "SD"];
+
+    return departments.filter((dept) => {
+      const nameEn = dept.nameEn?.toLowerCase() || "";
+      const nameVi =
+        dept.nameVi?.toLowerCase() || dept.name?.toLowerCase() || "";
+      const code = dept.code?.toUpperCase() || "";
+
+      // Check if department should be hidden
+      const isHiddenByName = hiddenNames.some(
+        (hiddenName) =>
+          nameEn.includes(hiddenName.toLowerCase()) ||
+          nameVi.includes(hiddenName.toLowerCase())
+      );
+      const isHiddenByCode = hiddenCodes.some(
+        (hiddenCode) => code === hiddenCode.toUpperCase()
+      );
+
+      return !isHiddenByName && !isHiddenByCode;
+    });
+  }, [departments]);
 
   if (isLoading) {
     return (
@@ -122,12 +157,49 @@ export default function BossPage() {
             </p>
           </div>
 
-          <DepartmentGrid
-            departments={departments}
-            onSelectDepartment={handleSelectDepartment}
-            loading={loading}
-            error={error}
-          />
+          {/* Toggle between grid and KPI status */}
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={() => setShowKpiStatus(false)}
+              className={`
+                px-4 py-2 text-sm font-cyber rounded transition-colors
+                ${
+                  !showKpiStatus
+                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
+                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
+                }
+              `}
+            >
+              {t("viewType.departments")}
+            </button>
+            <button
+              onClick={() => setShowKpiStatus(true)}
+              className={`
+                px-4 py-2 text-sm font-cyber rounded transition-colors
+                ${
+                  showKpiStatus
+                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
+                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
+                }
+              `}
+            >
+              {t("viewType.kpiStatus")}
+            </button>
+          </div>
+
+          {showKpiStatus ? (
+            <DepartmentKpiStatus
+              departments={visibleDepartments}
+              onSelectDepartment={handleSelectDepartment}
+            />
+          ) : (
+            <DepartmentGrid
+              departments={visibleDepartments}
+              onSelectDepartment={handleSelectDepartment}
+              loading={loading}
+              error={error}
+            />
+          )}
         </div>
       </div>
     );

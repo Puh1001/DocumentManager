@@ -5,7 +5,9 @@
   "viewType": {
     "kpi": "KPI",
     "maintenance": "维护",
-    "documents": "文档"
+    "documents": "文档",
+    "departments": "部门列表",
+    "kpiStatus": "KPI状态"
   },
   "actions": {
     "back": "返回"
@@ -63,7 +65,34 @@
     "loadFailed": "加载部门失败",
     "loadKpiFailed": "加载 KPI 记录失败",
     "loadMaintenanceFailed": "加载维护通知失败",
-    "loadDocumentsFailed": "加载文档失败"
+    "loadDocumentsFailed": "加载文档失败",
+    "loadKpiStatusFailed": "加载 KPI 状态失败"
+  },
+  "kpiStatus": {
+    "filter": {
+      "all": "全部",
+      "completed": "已完成",
+      "partial": "部分完成",
+      "incomplete": "未完成"
+    },
+    "status": {
+      "completed": "已完成",
+      "partial": "部分完成",
+      "incomplete": "未完成"
+    },
+    "summary": {
+      "total": "总计",
+      "completed": "已完成",
+      "partial": "部分完成",
+      "incomplete": "未完成"
+    },
+    "completion": "完成率",
+    "totalKpis": "总KPI数",
+    "completedKpis": "已完成",
+    "empty": {
+      "noDepartments": "未找到部门",
+      "noDepartmentsDescription": "没有部门符合所选筛选条件。"
+    }
   },
   "maintenance": {
     "description": "描述",

@@ -5,7 +5,9 @@
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Maintenance",
-    "documents": "Documents"
+    "documents": "Documents",
+    "departments": "Department List",
+    "kpiStatus": "KPI Status"
   },
   "actions": {
     "back": "Back"
@@ -63,7 +65,34 @@
     "loadFailed": "Failed to load departments",
     "loadKpiFailed": "Failed to load KPI records",
     "loadMaintenanceFailed": "Failed to load maintenance notices",
-    "loadDocumentsFailed": "Failed to load documents"
+    "loadDocumentsFailed": "Failed to load documents",
+    "loadKpiStatusFailed": "Failed to load KPI status"
+  },
+  "kpiStatus": {
+    "filter": {
+      "all": "All",
+      "completed": "Completed",
+      "partial": "Partial",
+      "incomplete": "Incomplete"
+    },
+    "status": {
+      "completed": "Completed",
+      "partial": "Partial",
+      "incomplete": "Incomplete"
+    },
+    "summary": {
+      "total": "Total",
+      "completed": "Completed",
+      "partial": "Partial",
+      "incomplete": "Incomplete"
+    },
+    "completion": "Completion Rate",
+    "totalKpis": "Total KPIs",
+    "completedKpis": "Completed",
+    "empty": {
+      "noDepartments": "No departments found",
+      "noDepartmentsDescription": "No departments match the selected filter."
+    }
   },
   "maintenance": {
     "description": "Description",
