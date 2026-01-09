@@ -50,6 +50,9 @@ export default function DepartmentsPage() {
   );
   const [formData, setFormData] = useState({
     name: "",
+    nameEn: "",
+    nameVi: "",
+    nameZh: "",
     code: "",
     isActive: true,
   });
@@ -79,7 +82,10 @@ export default function DepartmentsPage() {
     if (department) {
       setEditingDepartment(department);
       setFormData({
-        name: department.name,
+        name: department.name || "",
+        nameEn: department.nameEn || "",
+        nameVi: department.nameVi || "",
+        nameZh: department.nameZh || "",
         code: department.code,
         isActive: department.isActive,
       });
@@ -87,6 +93,9 @@ export default function DepartmentsPage() {
       setEditingDepartment(null);
       setFormData({
         name: "",
+        nameEn: "",
+        nameVi: "",
+        nameZh: "",
         code: "",
         isActive: true,
       });
@@ -99,6 +108,9 @@ export default function DepartmentsPage() {
     setEditingDepartment(null);
     setFormData({
       name: "",
+      nameEn: "",
+      nameVi: "",
+      nameZh: "",
       code: "",
       isActive: true,
     });
@@ -109,10 +121,20 @@ export default function DepartmentsPage() {
     setIsSubmitting(true);
 
     try {
+      // Prepare data with multilingual fields
+      const submitData = {
+        code: formData.code,
+        nameEn: formData.nameEn || undefined,
+        nameVi: formData.nameVi || undefined,
+        nameZh: formData.nameZh || undefined,
+        name: formData.name || formData.nameVi || undefined, // Fallback to nameVi or name
+        isActive: formData.isActive,
+      };
+
       if (editingDepartment) {
-        await departmentApi.update(editingDepartment.id, formData);
+        await departmentApi.update(editingDepartment.id, submitData);
       } else {
-        await departmentApi.create(formData);
+        await departmentApi.create(submitData);
       }
       await loadDepartments();
       handleCloseDialog();
@@ -189,6 +211,25 @@ export default function DepartmentsPage() {
                           <p className="text-sm text-muted-foreground mt-1">
                             {tDept("code")}: {dept.code}
                           </p>
+                          {(dept.nameEn || dept.nameVi || dept.nameZh) && (
+                            <div className="mt-2 space-y-1">
+                              {dept.nameEn && (
+                                <p className="text-xs text-muted-foreground">
+                                  <span className="font-medium">EN:</span> {dept.nameEn}
+                                </p>
+                              )}
+                              {dept.nameVi && (
+                                <p className="text-xs text-muted-foreground">
+                                  <span className="font-medium">VI:</span> {dept.nameVi}
+                                </p>
+                              )}
+                              {dept.nameZh && (
+                                <p className="text-xs text-muted-foreground">
+                                  <span className="font-medium">ZH:</span> {dept.nameZh}
+                                </p>
+                              )}
+                            </div>
+                          )}
                           <div className="mt-2">
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -247,18 +288,6 @@ export default function DepartmentsPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">{tDept("form.name")}</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder={tDept("form.namePlaceholder")}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
                   <Label htmlFor="code">{tDept("code")}</Label>
                   <Input
                     id="code"
@@ -268,6 +297,50 @@ export default function DepartmentsPage() {
                     }
                     placeholder={tDept("form.codePlaceholder")}
                     required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="nameEn">Department Name (English)</Label>
+                  <Input
+                    id="nameEn"
+                    value={formData.nameEn}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nameEn: e.target.value })
+                    }
+                    placeholder="Example: General Manager's Office"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="nameVi">Department Name (Vietnamese)</Label>
+                  <Input
+                    id="nameVi"
+                    value={formData.nameVi}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nameVi: e.target.value })
+                    }
+                    placeholder="Example: Ban Giám Đốc"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="nameZh">Department Name (Chinese)</Label>
+                  <Input
+                    id="nameZh"
+                    value={formData.nameZh}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nameZh: e.target.value })
+                    }
+                    placeholder="Example: 总经办"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="name">{tDept("form.name")} (Legacy/Backward Compatibility)</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder={tDept("form.namePlaceholder")}
                   />
                 </div>
                 <div className="flex items-center space-x-2">
