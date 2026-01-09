@@ -62,7 +62,7 @@ export default function BossPage() {
   }, [user, loadDepartments]);
 
   // Temporarily hide specific departments
-  // Departments to hide: General Manager's Office, PD, Industrial Engineering Department, QC, SD, Production Department
+  // Departments to hide: General Manager's Office, PD, Industrial Engineering Department, QC, SD, Production Department, PR, MG
   const visibleDepartments = useMemo(() => {
     const hiddenNames = [
       "General Manager's Office",
@@ -71,8 +71,10 @@ export default function BossPage() {
       "QC",
       "SD",
       "Production Department",
+      "PR",
+      "MG",
     ];
-    const hiddenCodes = ["PD", "QC", "SD"];
+    const hiddenCodes = ["PD", "QC", "SD", "PR", "MG"];
 
     return departments.filter((dept) => {
       const nameEn = dept.nameEn?.toLowerCase() || "";
