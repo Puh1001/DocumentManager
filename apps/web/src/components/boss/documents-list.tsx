@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { ArrowLeft, FileText, Folder } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
-import { formatFileSize, formatDate, getFileIcon } from "@/lib/utils";
+import { getFileIcon, getShortName } from "@/lib/utils";
 
 interface Folder {
   id: string;
@@ -150,32 +150,14 @@ export function DocumentsList({
           {documents.map((doc, index) => (
             <div
               key={doc.id}
-              className="cyber-card cyber-hologram cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cyber-corner"
+              className="cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 p-4"
               onClick={() => onSelectDocument(doc.id)}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <div className="p-5 relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">{getFileIcon(doc.fileType)}</div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-cyber font-bold text-base mb-1 truncate cyber-neon-cyan">
-                      {doc.name}
-                    </h3>
-                    <p className="text-sm font-cyber text-cyan-300/80 truncate mb-2">
-                      {doc.fileName}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs font-cyber text-cyan-400/70">
-                      <span className="bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                        {doc.fileType.toUpperCase()}
-                      </span>
-                      <span className="text-cyan-500/50">•</span>
-                      <span>{formatFileSize(doc.fileSize)}</span>
-                      <span className="text-cyan-500/50">•</span>
-                      <span>{formatDate(doc.updatedAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div className="flex-shrink-0 text-2xl">{getFileIcon(doc.fileType)}</div>
+              <h3 className="font-cyber font-bold text-base cyber-neon-cyan truncate flex-1">
+                {getShortName(doc.name, 25)}
+              </h3>
             </div>
           ))}
         </div>

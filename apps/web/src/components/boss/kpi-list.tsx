@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
-import { ArrowLeft, BarChart2, Calendar } from "lucide-react";
+import { ArrowLeft, BarChart2 } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
+import { getShortName } from "@/lib/utils";
 
 interface KpiRecord {
   id: string;
@@ -26,7 +27,6 @@ interface KpiListProps {
 export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const t = useTranslations("boss");
   const tCommon = useTranslations("common");
-  const locale = useLocale();
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,31 +132,16 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
           {records.map((record, index) => (
             <div
               key={record.id}
-              className="cyber-card cyber-hologram cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 cyber-corner"
+              className="cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-3 p-4"
               onClick={() => onSelectKpi(record.id)}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="p-6 relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 cyber-border rounded-lg bg-cyan-500/10">
-                    <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
-                  </div>
-                  <span className="text-xs font-cyber text-cyan-400/70 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
-                    {record.year}
-                  </span>
-                </div>
-                <h3 className="font-cyber font-bold text-lg mb-3 line-clamp-2 cyber-neon-cyan">
-                  {record.title || t("kpi.untitled")}
-                </h3>
-                <div className="space-y-2 pt-3 border-t border-cyan-500/20">
-                  <div className="flex items-center gap-2 text-xs font-cyber text-cyan-400/70">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>
-                      {new Date(record.updatedAt).toLocaleDateString(locale)}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex-shrink-0">
+                <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
               </div>
+              <h3 className="font-cyber font-bold text-base cyber-neon-cyan truncate flex-1">
+                {getShortName(record.title || t("kpi.untitled"), 25)}
+              </h3>
             </div>
           ))}
         </div>

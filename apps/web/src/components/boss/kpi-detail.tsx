@@ -39,6 +39,8 @@ interface KpiMetric {
   type: "TARGET" | "ACTUAL" | "CALCULATED";
   sortOrder: number;
   values: Record<string, number | null>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 type DisplayType = "PERCENTAGE" | "COUNT";
@@ -76,9 +78,41 @@ interface KpiDetailProps {
   onBack: () => void;
 }
 
+// Helper function to get the best metric (prioritize non-empty names, then most recently updated)
+function getBestMetricFromRecord(
+  record: KpiRecord,
+  type: "TARGET" | "ACTUAL" | "CALCULATED"
+): KpiMetric | undefined {
+  const metricsOfType = record.metrics.filter((m) => m.type === type);
+  if (metricsOfType.length === 0) return undefined;
+
+  // Prioritize metrics with non-empty names
+  const metricsWithName = metricsOfType.filter(
+    (m) => m.name && m.name.trim() !== ""
+  );
+
+  if (metricsWithName.length > 0) {
+    // If multiple metrics with names, prefer the most recently updated one
+    return metricsWithName.sort((a, b) => {
+      const dateA =
+        a.updatedAt || a.createdAt
+          ? new Date(a.updatedAt || a.createdAt!).getTime()
+          : 0;
+      const dateB =
+        b.updatedAt || b.createdAt
+          ? new Date(b.updatedAt || b.createdAt!).getTime()
+          : 0;
+      return dateB - dateA; // Most recent first
+    })[0];
+  }
+
+  // Fallback to first metric if none have names
+  return metricsOfType[0];
+}
+
 function calculateEfficiency(record: KpiRecord): (number | null)[] {
-  const targetMetric = record.metrics.find((m) => m.type === "TARGET");
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const targetMetric = getBestMetricFromRecord(record, "TARGET");
+  const actualMetric = getBestMetricFromRecord(record, "ACTUAL");
 
   if (!targetMetric || !actualMetric) {
     return Array(13).fill(null);
@@ -125,7 +159,7 @@ function getChartDataForCountSingle(
   record: KpiRecord,
   tTable: (key: string) => string
 ) {
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const actualMetric = getBestMetricFromRecord(record, "ACTUAL");
   const actualData = MONTH_KEYS.map(
     (key) => actualMetric?.values?.[key] ?? null
   );
@@ -159,8 +193,8 @@ function getChartDataForCount(
   record: KpiRecord,
   tTable: (key: string) => string
 ) {
-  const targetMetric = record.metrics.find((m) => m.type === "TARGET");
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const targetMetric = getBestMetricFromRecord(record, "TARGET");
+  const actualMetric = getBestMetricFromRecord(record, "ACTUAL");
 
   const actualData = MONTH_KEYS.map(
     (key) => actualMetric?.values?.[key] ?? null
@@ -257,7 +291,7 @@ function getChartData(
 
 // Helper function to get chart options for COUNT SINGLE table
 function getChartOptionsForCountSingle(record: KpiRecord) {
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const actualMetric = getBestMetricFromRecord(record, "ACTUAL");
   const actualData = MONTH_KEYS.map(
     (key) => actualMetric?.values?.[key] ?? null
   );
@@ -328,8 +362,8 @@ function getChartOptionsForCountSingle(record: KpiRecord) {
 
 // Helper function to get chart options for COUNT DOUBLE table
 function getChartOptionsForCount(record: KpiRecord) {
-  const targetMetric = record.metrics.find((m) => m.type === "TARGET");
-  const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  const targetMetric = getBestMetricFromRecord(record, "TARGET");
+  const actualMetric = getBestMetricFromRecord(record, "ACTUAL");
 
   const actualData = MONTH_KEYS.map(
     (key) => actualMetric?.values?.[key] ?? null
@@ -510,7 +544,7 @@ function getChartOptions(
         callbacks: {
           label: (context: { parsed: { y: number | null } }) => {
             const value = context.parsed.y;
-            return value != null ? `${value.toFixed(0)}%` : "N/A";
+            return value != null ? `${value.toFixed(2)}%` : "N/A";
           },
         },
       },
@@ -616,9 +650,16 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
     );
   }
 
-  // Ensure we have TARGET and ACTUAL metrics
-  let targetMetric = record.metrics.find((m) => m.type === "TARGET");
-  let actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
+  // Helper function to get the best metric (prioritize non-empty names, then most recently updated)
+  const getBestMetric = (
+    type: "TARGET" | "ACTUAL" | "CALCULATED"
+  ): KpiMetric | undefined => {
+    return getBestMetricFromRecord(record, type);
+  };
+
+  // Ensure we have TARGET and ACTUAL metrics (prioritize those with names)
+  let targetMetric = getBestMetric("TARGET");
+  let actualMetric = getBestMetric("ACTUAL");
 
   if (!targetMetric) {
     const emptyValues: Record<string, number | null> = {};
@@ -649,7 +690,7 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
   }
 
   const efficiencyValues = calculateEfficiency(record);
-  const calculatedMetric = record.metrics.find((m) => m.type === "CALCULATED");
+  const calculatedMetric = getBestMetric("CALCULATED");
 
   // Calculate calculated values (100% - Efficiency) if calculated metric exists
   const calculateCalculatedValues = (record: KpiRecord): (number | null)[] => {
@@ -740,7 +781,9 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                       >
                         {targetMetric.values?.[key] == null
                           ? "-"
-                          : targetMetric.values[key]}
+                          : typeof targetMetric.values[key] === "number"
+                            ? targetMetric.values[key].toFixed(2)
+                            : targetMetric.values[key]}
                       </td>
                     ))}
                     <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
@@ -763,7 +806,9 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                     >
                       {actualMetric.values?.[key] == null
                         ? "-"
-                        : actualMetric.values[key]}
+                        : typeof actualMetric.values[key] === "number"
+                          ? actualMetric.values[key].toFixed(2)
+                          : actualMetric.values[key]}
                     </td>
                   ))}
                   <td className="border border-cyan-500/20 px-2 py-2 text-center text-xs font-semibold text-cyan-200">
@@ -782,13 +827,13 @@ export function KpiDetail({ kpiId, onBack }: KpiDetailProps) {
                         key={MONTH_KEYS[idx]}
                         className="border border-cyan-500/30 px-2 py-2 text-center text-xs text-cyan-200 font-semibold"
                       >
-                        {v == null ? "-" : `${v.toFixed(0)}%`}
+                        {v == null ? "-" : `${v.toFixed(2)}%`}
                       </td>
                     ))}
                     <td className="border border-cyan-500/30 px-2 py-2 text-center text-xs font-bold text-cyan-300 cyber-text-glow">
                       {efficiencyValues[12] == null
                         ? "-"
-                        : `${efficiencyValues[12]!.toFixed(0)}%`}
+                        : `${efficiencyValues[12]!.toFixed(2)}%`}
                     </td>
                   </tr>
                 )}

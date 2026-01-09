@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { maintenanceApi, type MaintenanceNotice } from "@/lib/api";
-import { ArrowLeft, Wrench, Calendar } from "lucide-react";
+import { ArrowLeft, Wrench } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
+import { getShortName } from "@/lib/utils";
 
 interface MaintenanceListProps {
   departmentId: string;
   onSelectMaintenance: (maintenanceId: string) => void;
   onBack: () => void;
 }
-
-// formatDate will be defined inside component to use locale
 
 export function MaintenanceList({
   departmentId,
@@ -21,14 +20,6 @@ export function MaintenanceList({
 }: MaintenanceListProps) {
   const t = useTranslations("boss");
   const tCommon = useTranslations("common");
-  const locale = useLocale();
-
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   const [notices, setNotices] = useState<MaintenanceNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,38 +107,16 @@ export function MaintenanceList({
           {sortedNotices.map((notice, index) => (
             <div
               key={notice.id}
-              className="cyber-card cyber-hologram cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cyber-corner"
+              className="cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-3 p-4"
               onClick={() => onSelectMaintenance(notice.id)}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <div className="p-5 relative z-10">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="p-3 cyber-border rounded-lg bg-fuchsia-500/10 mt-0.5">
-                      <Wrench className="h-5 w-5 text-fuchsia-400 cyber-text-glow" />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <h3 className="font-cyber font-bold text-base cyber-neon-magenta">
-                        {notice.title}
-                      </h3>
-                      {notice.description && (
-                        <p className="text-sm font-cyber text-cyan-300/80 line-clamp-2">
-                          {notice.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 text-xs font-cyber text-cyan-400/70 mt-3 pt-2 border-t border-cyan-500/20">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>
-                            {formatDate(notice.startDate)} -{" "}
-                            {formatDate(notice.endDate)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex-shrink-0">
+                <Wrench className="h-6 w-6 text-fuchsia-400 cyber-text-glow" />
               </div>
+              <h3 className="font-cyber font-bold text-base cyber-neon-magenta truncate flex-1">
+                {getShortName(notice.title, 25)}
+              </h3>
             </div>
           ))}
         </div>

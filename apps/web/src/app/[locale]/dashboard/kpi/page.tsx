@@ -79,6 +79,8 @@ interface KpiMetric {
   type: MetricType;
   sortOrder: number;
   values: Record<string, number | null>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 type DisplayType = "PERCENTAGE" | "COUNT";
@@ -1315,13 +1317,40 @@ export default function KpiPage() {
 
           <div className="space-y-6">
             {records.map((record) => {
+              // Helper to get best metric (prioritize non-empty names, then most recently updated)
+              const getBestMetric = (
+                type: "TARGET" | "ACTUAL" | "CALCULATED"
+              ): KpiMetric | undefined => {
+                const metricsOfType = record.metrics.filter(
+                  (m) => m.type === type
+                );
+                if (metricsOfType.length === 0) return undefined;
+
+                const metricsWithName = metricsOfType.filter(
+                  (m) => m.name && m.name.trim() !== ""
+                );
+
+                if (metricsWithName.length > 0) {
+                  // If multiple metrics with names, prefer the most recently updated one
+                  return metricsWithName.sort((a, b) => {
+                    const dateA =
+                      a.updatedAt || a.createdAt
+                        ? new Date(a.updatedAt || a.createdAt!).getTime()
+                        : 0;
+                    const dateB =
+                      b.updatedAt || b.createdAt
+                        ? new Date(b.updatedAt || b.createdAt!).getTime()
+                        : 0;
+                    return dateB - dateA; // Most recent first
+                  })[0];
+                }
+
+                return metricsOfType[0];
+              };
+
               // Ensure we always have TARGET and ACTUAL metrics (create empty if missing)
-              let targetMetric = record.metrics.find(
-                (m) => m.type === "TARGET"
-              );
-              let actualMetric = record.metrics.find(
-                (m) => m.type === "ACTUAL"
-              );
+              let targetMetric = getBestMetric("TARGET");
+              let actualMetric = getBestMetric("ACTUAL");
 
               // Create empty metrics if they don't exist (for rendering)
               if (!targetMetric) {
