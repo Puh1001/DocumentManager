@@ -215,17 +215,20 @@ export default function DepartmentsPage() {
                             <div className="mt-2 space-y-1">
                               {dept.nameEn && (
                                 <p className="text-xs text-muted-foreground">
-                                  <span className="font-medium">EN:</span> {dept.nameEn}
+                                  <span className="font-medium">EN:</span>{" "}
+                                  {dept.nameEn}
                                 </p>
                               )}
                               {dept.nameVi && (
                                 <p className="text-xs text-muted-foreground">
-                                  <span className="font-medium">VI:</span> {dept.nameVi}
+                                  <span className="font-medium">VI:</span>{" "}
+                                  {dept.nameVi}
                                 </p>
                               )}
                               {dept.nameZh && (
                                 <p className="text-xs text-muted-foreground">
-                                  <span className="font-medium">ZH:</span> {dept.nameZh}
+                                  <span className="font-medium">ZH:</span>{" "}
+                                  {dept.nameZh}
                                 </p>
                               )}
                             </div>
@@ -333,7 +336,9 @@ export default function DepartmentsPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="name">{tDept("form.name")} (Legacy/Backward Compatibility)</Label>
+                  <Label htmlFor="name">
+                    {tDept("form.name")} (Legacy/Backward Compatibility)
+                  </Label>
                   <Input
                     id="name"
                     value={formData.name}
