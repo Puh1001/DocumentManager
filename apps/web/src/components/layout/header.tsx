@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { authApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { toApiError } from "@/lib/types/api-error.types";
 
 export function Header() {
   const tLogout = useTranslations("auth.logout");
@@ -64,8 +65,9 @@ export function Header() {
       setNewPassword("");
       setConfirmNewPassword("");
       setIsDialogOpen(false);
-    } catch (error: any) {
-      const errorCode = error?.errorCode;
+    } catch (error: unknown) {
+      const apiError = toApiError(error);
+      const errorCode = apiError.errorCode;
       if (errorCode === "auth.change_password.invalid_current") {
         toast({
           variant: "destructive",
