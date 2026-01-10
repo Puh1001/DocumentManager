@@ -262,6 +262,62 @@ describe("AuthService", () => {
 });
 ```
 
+## KPI Attachment Patterns
+
+### Backend: File Deletion with Move to Delete Folder
+
+```typescript
+// ✅ Good - Move file to delete folder instead of hard deletion
+async deleteAttachment(attachmentId: string, user: UserWithDepartments) {
+  // Load document and folder
+  const document = await this.documentService.findById(attachment.documentId);
+  const currentFolder = await this.folderService.findById(document.folderId);
+  
+  // Find or create "delete files" folder in department
+  const deleteFolder = await this.findOrCreateDeleteFolder(
+    departmentId,
+    currentFolder
+  );
+  
+  // Move file physically
+  await this.smbService.rename(oldFilePath, newFilePath);
+  
+  // Update document record
+  await this.prisma.document.update({
+    where: { id: document.id },
+    data: {
+      folderId: deleteFolder.id,
+      filePath: newFilePath,
+      status: "DELETED",
+    },
+  });
+}
+```
+
+### Frontend: Component Variant Pattern
+
+```typescript
+// ✅ Good - Support multiple styling variants
+interface KpiAttachmentListProps {
+  variant?: "default" | "cyber"; // Style variant
+}
+
+export function KpiAttachmentList({
+  variant = "default",
+  ...props
+}: KpiAttachmentListProps) {
+  const containerClass = variant === "cyber"
+    ? "cyber-themed-classes"
+    : "standard-classes";
+    
+  return <div className={containerClass}>...</div>;
+}
+
+// Usage
+<KpiAttachmentList variant="cyber" />  // Boss UI
+<KpiAttachmentList />                  // Regular UI (default)
+```
+
 ## Authorization Patterns
 
 ### Backend: CASL Ability Usage

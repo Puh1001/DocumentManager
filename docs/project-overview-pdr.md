@@ -3,8 +3,8 @@
 **Project Name:** ISO Document Management System (Librarian Model)  
 **Version:** 1.0.0  
 **Created:** 2024-12-18  
-**Last Updated:** 2025-01-XX  
-**Status:** 🟢 In Development (Phase 1-4 Complete, Additional Features Added - 75%)
+**Last Updated:** 2026-01-10  
+**Status:** 🟢 In Development (Phase 1-4 Complete, Additional Features Added - 80%)
 
 ---
 
@@ -73,6 +73,12 @@ Xây dựng web-based document management system:
 - Excel export functionality
 - Real-time data updates
 - Support for data entry for specific years (e.g., 2025)
+- **PDF Attachments**: Upload, view, and manage PDF files attached to KPI records
+  - Upload PDF files to KPI records
+  - View PDF attachments in modal viewer
+  - Delete attachments (moves file to "delete files" folder)
+  - Permission-based access control (view, create, delete)
+- **File Deletion**: When deleting KPI attachments, files are moved to a "delete files" folder in the department folder instead of hard deletion
 
 ### 1.7. Maintenance Notices
 

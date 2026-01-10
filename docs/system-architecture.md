@@ -1,7 +1,7 @@
 # System Architecture
 
-**Last Updated:** 2025-01-XX  
-**Status:** Phase 1-4 Complete, Additional Features Added (75%)
+**Last Updated:** 2026-01-10  
+**Status:** Phase 1-4 Complete, Additional Features Added (80%)
 
 ---
 
@@ -104,8 +104,10 @@ apps/api/
 │   │   ├── KPI Record service (by department/year)
 │   │   ├── KPI Metric service (monthly values)
 │   │   ├── KPI Export service (Excel)
+│   │   ├── KPI Attachment service (PDF upload/view/delete)
 │   │   ├── Calculation logic (efficiency, averages)
-│   │   └── Year selector support (current year ± 5 years)
+│   │   ├── Year selector support (current year ± 5 years)
+│   │   └── File deletion with move to "delete files" folder
 │   │
 │   ├── Maintenance
 │   │   ├── Maintenance notice service
@@ -329,8 +331,16 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   │           ├── v001_20241218_103000_userId.pdf
 │   │           └── v002_20241218_153000_userId.pdf
 │   │
-│   ├── KPI/
-│   └── Bảo trì thiết bị/
+│   ├── kpi/
+│   │   └── current/
+│   │       └── kpi-attachment.pdf
+│   │
+│   ├── maintenance/
+│   │
+│   ├── documents/
+│   │
+│   └── delete files/          # Files moved here when deleted
+│       └── deleted-file.pdf
 │
 └── ...
 ```
@@ -456,7 +466,13 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   │   ├── POST   /          # Create (with year field)
 │   │   ├── PATCH  /:id       # Update
 │   │   ├── DELETE /:id       # Delete
-│   │   └── GET    /:id/export # Export to Excel
+│   │   ├── GET    /:id/export # Export to Excel
+│   │   ├── POST   /:id/attachments # Upload PDF attachment
+│   │   └── GET    /:id/attachments # List attachments
+│   ├── /attachments
+│   │   ├── GET    /:id/stream     # Stream PDF for viewer
+│   │   ├── GET    /:id/download   # Download PDF
+│   │   └── DELETE /:id            # Delete (moves to "delete files" folder)
 │   └── /metrics
 │       ├── POST   /          # Add metric
 │       ├── PATCH  /:id       # Update metric

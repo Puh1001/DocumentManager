@@ -15,6 +15,8 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 🏢 **Department Management**: Quản lý phòng ban với CRUD operations
 - 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
   - **Year Selector**: Chọn năm để xem/chỉnh sửa dữ liệu KPI (năm hiện tại ± 5 năm)
+  - **PDF Attachments**: Upload, xem và quản lý file PDF đính kèm cho KPI records
+  - **File Deletion**: Xóa file sẽ di chuyển vào thư mục "delete files" trong cùng thư mục bộ phận
 - 🔧 **Maintenance Notices**: Quản lý thông báo bảo trì theo phòng ban
 - 🌐 **Internationalization**: Hỗ trợ đa ngôn ngữ (English, Vietnamese, Chinese)
 - 🔒 **Phân quyền RBAC + ABAC**: Role-based + Attribute-based access control
@@ -166,6 +168,11 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 | POST   | /departments                    | Create department        |
 | GET    | /kpi/records                    | List KPI records         |
 | GET    | /kpi/records/:id/export         | Export KPI to Excel      |
+| POST   | /kpi/records/:id/attachments    | Upload KPI PDF attachment |
+| GET    | /kpi/records/:id/attachments    | List KPI attachments     |
+| GET    | /kpi/attachments/:id/stream     | Stream PDF attachment    |
+| GET    | /kpi/attachments/:id/download   | Download PDF attachment  |
+| DELETE | /kpi/attachments/:id            | Delete KPI attachment   |
 | GET    | /permissions                    | List all permissions     |
 | GET    | /permissions/roles/:id          | Get role permissions     |
 | POST   | /permissions/roles/:id          | Assign role permissions  |
@@ -225,7 +232,7 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 
 ## 📊 Current Status
 
-**Phase 1-4 + Additional Features Complete (75%)**
+**Phase 1-4 + Additional Features Complete (80%)**
 
 - ✅ Project setup & infrastructure
 - ✅ Authentication & user management
@@ -248,6 +255,9 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Monthly metric tracking
   - ✅ Chart visualization
   - ✅ Excel export
+  - ✅ PDF attachment upload/view/delete (2026-01-10)
+  - ✅ File deletion with move to "delete files" folder (2026-01-10)
+  - ✅ UI improvements (upload button, file display, alignment fixes)
 - ✅ Maintenance Notices
   - ✅ Notice creation and management
   - ✅ Department filtering

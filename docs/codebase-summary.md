@@ -35,6 +35,18 @@ src/
     ├── users/             # User management
     ├── department/        # Department management
     ├── kpi/               # KPI tracking and metrics
+    │   ├── controllers/
+    │   │   ├── kpi-record.controller.ts
+    │   │   ├── kpi-metric.controller.ts
+    │   │   ├── kpi-export.controller.ts
+    │   │   └── kpi-attachment.controller.ts  # PDF attachments
+    │   ├── services/
+    │   │   ├── kpi-record.service.ts
+    │   │   ├── kpi-metric.service.ts
+    │   │   ├── kpi-export.service.ts
+    │   │   └── kpi-attachment.service.ts     # PDF attachment management
+    │   └── dto/
+    │       └── create-kpi-attachment.dto.ts
     ├── maintenance/       # Maintenance notices
     ├── authorization/     # RBAC + ABAC permissions (CASL)
     │   ├── factories/     # CASL ability factory
@@ -82,6 +94,9 @@ src/
 │   ├── layout/            # Sidebar, Header
 │   ├── documents/         # Document components
 │   ├── boss/              # Boss role components
+│   │   ├── kpi-attachment-upload.tsx    # KPI PDF upload
+│   │   ├── kpi-attachment-list.tsx      # KPI attachment list
+│   │   └── kpi-attachment-viewer.tsx    # KPI PDF viewer
 │   ├── access-denied.tsx  # Access denied component
 │   ├── page-guard.tsx     # Automatic page permission guard
 │   └── viewers/           # PDF/DOCX viewers
@@ -164,6 +179,11 @@ src/
 - Chart visualization (Chart.js)
 - Excel export functionality
 - Support for historical and future year data entry (e.g., 2025)
+- **PDF Attachments**: Upload, view, and delete PDF files for KPI records
+  - Upload component with permission checks
+  - Attachment list with delete functionality
+  - PDF viewer modal with download/print support
+  - File deletion moves files to "delete files" folder in department
 
 ### 2.7. Maintenance Notices
 
@@ -231,6 +251,7 @@ src/
 - **Department**: Department information
 - **KpiRecord**: KPI records by department and year
 - **KpiMetric**: KPI metric values (monthly)
+- **KpiAttachment**: PDF attachments linked to KPI records
 - **Permission**: Action definitions
 - **FolderPermission**: Folder-level access
 - **DocumentPermission**: Document-level access
@@ -316,3 +337,9 @@ docker-compose -f docker-compose.prod.yml up -d
   - PageGuard component for automatic permission checks
   - Subject validation utilities
   - Dynamic sidebar generation from page registry
+- **KPI PDF Attachments** (2026-01-10):
+  - Upload PDF files to KPI records with permission checks
+  - View PDF attachments in modal viewer
+  - Delete attachments (moves file to "delete files" folder)
+  - UI components with variant support (default/cyber styling)
+  - File deletion moves files to department "delete files" folder instead of hard deletion

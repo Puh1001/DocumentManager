@@ -1,6 +1,6 @@
 # Project Roadmap
 
-**Last Updated:** 2026-01-06  
+**Last Updated:** 2026-01-10  
 **Current Phase:** Phase 1-4 Complete, Additional Features Added (75%)
 
 ---
@@ -157,7 +157,7 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 
 ### Completed Tasks
 
-- [x] KPI database schema (Department, KpiRecord, KpiMetric)
+- [x] KPI database schema (Department, KpiRecord, KpiMetric, KpiAttachment)
 - [x] KPI API module (NestJS)
 - [x] KPI record CRUD operations
 - [x] KPI metric management
@@ -167,6 +167,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [x] KPI management UI
 - [x] **Year selector dropdown** (current year ± 5 years)
 - [x] Support for historical and future year data entry
+- [x] **PDF attachment upload/view/delete** (2026-01-10)
+- [x] **File deletion with move to "delete files" folder** (2026-01-10)
 
 ### Deliverables
 
@@ -175,6 +177,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - ✅ Excel export
 - ✅ KPI management UI
 - ✅ Year selector for viewing/editing data by year
+- ✅ PDF attachment management (upload, view, delete)
+- ✅ File deletion with move to "delete files" folder
 
 ---
 
@@ -376,7 +380,7 @@ Week 5-6: Phase 7-8 (Integration & QA) 🔲
 ```
 
 **Total Estimated Duration:** ~6 weeks (extended due to additional features)  
-**Current Progress:** 75% complete
+**Current Progress:** 80% complete
 
 ---
 
