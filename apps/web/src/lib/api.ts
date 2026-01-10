@@ -177,9 +177,18 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Request failed" }));
+      let error: { message?: string; errorCode?: string; statusCode?: number };
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          error = await response.json();
+        } else {
+          const text = await response.text();
+          error = { message: text || `HTTP ${response.status} Error` };
+        }
+      } catch {
+        error = { message: `HTTP ${response.status} Error` };
+      }
 
       // Create error object with errorCode if available
       const errorObj = new Error(
@@ -190,7 +199,30 @@ class ApiClient {
       throw errorObj;
     }
 
-    return response.json();
+    // Handle empty responses (e.g., 204 No Content for DELETE)
+    if (response.status === 204) {
+      return { success: true } as T;
+    }
+
+    // Check content type before parsing
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      // For non-JSON responses, return success object
+      return { success: true } as T;
+    }
+
+    // Try to parse JSON, but handle empty responses gracefully
+    const text = await response.text();
+    if (!text || text.trim() === "") {
+      return { success: true } as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      // If parsing fails, return the text as-is (shouldn't happen for valid JSON)
+      return { success: true, data: text } as T;
+    }
   }
 
   get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
@@ -825,4 +857,40 @@ export const moduleApi = {
   update: (id: string, data: UpdateModuleDto) =>
     api.patch<Module>(`/modules/${id}`, data),
   delete: (id: string) => api.delete(`/modules/${id}`),
+};
+
+// KPI Attachment types and API methods
+export interface KpiAttachment {
+  id: string;
+  documentId: string;
+  fileName: string;
+  uploadedBy: string;
+  createdAt: string;
+  description?: string | null;
+}
+
+export const kpiAttachmentApi = {
+  getAttachments: (kpiRecordId: string) =>
+    api.get<KpiAttachment[]>(`/kpi/records/${kpiRecordId}/attachments`),
+  getAttachmentStreamUrl: (attachmentId: string) =>
+    `/kpi/attachments/${attachmentId}/stream`,
+  downloadAttachment: (attachmentId: string) =>
+    api.fetchFileAsArrayBuffer(`/kpi/attachments/${attachmentId}/download`),
+  uploadAttachment: (
+    kpiRecordId: string,
+    file: File,
+    folderId: string,
+    description?: string
+  ) =>
+    api.upload<{
+      id: string;
+      documentId: string;
+      description?: string | null;
+      createdAt: string;
+    }>(`/kpi/records/${kpiRecordId}/attachments`, file, {
+      folderId,
+      ...(description && { description }),
+    }),
+  deleteAttachment: (attachmentId: string) =>
+    api.delete<{ success: boolean }>(`/kpi/attachments/${attachmentId}`),
 };

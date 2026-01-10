@@ -46,7 +46,23 @@
     "target": "目标",
     "kpiTitle": "KPI 标题",
     "efficiency": "效率 (%)",
-    "chartTitle": "KPI / 效率 (%)"
+    "chartTitle": "KPI / 效率 (%)",
+    "attachments": {
+      "title": "附件",
+      "noAttachments": "无附件",
+      "moreFiles": "+{count} 个其他文件",
+      "upload": "上传 PDF",
+      "delete": "删除文件",
+      "deleteConfirm": "您确定要删除此文件吗？",
+      "viewer": {
+        "title": "查看 PDF",
+        "download": "下载",
+        "print": "打印",
+        "close": "关闭",
+        "loadError": "无法加载文档。请重试。",
+        "notSupported": "您的浏览器不支持查看 PDF。"
+      }
+    }
   },
   "year": "年",
   "empty": {

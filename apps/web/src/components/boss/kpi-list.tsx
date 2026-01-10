@@ -2,9 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
+import { api, kpiAttachmentApi, KpiAttachment } from "@/lib/api";
 import { ArrowLeft, BarChart2 } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
+import { useCanAccess } from "@/hooks/use-can-access";
+import { KpiAttachmentList } from "./kpi-attachment-list";
+import { KpiAttachmentViewer } from "./kpi-attachment-viewer";
+import { KpiAttachmentUpload } from "./kpi-attachment-upload";
 
 interface KpiRecord {
   id: string;
@@ -29,6 +33,12 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attachmentsMap, setAttachmentsMap] = useState<Map<string, KpiAttachment[]>>(new Map());
+  const [viewerState, setViewerState] = useState<{ attachmentId: string; fileName: string } | null>(null);
+  const [departmentFolderId, setDepartmentFolderId] = useState<string | null>(null);
+
+  const canViewAttachments = useCanAccess("view", "Kpi");
+  const canDeleteAttachments = useCanAccess("delete", "Kpi");
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear - 1);
@@ -41,13 +51,52 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
         `/kpi/records?departmentId=${departmentId}&year=${selectedYear}`
       );
       setRecords(data);
+
+      // Load attachments for each KPI if user has view permission
+      if (canViewAttachments) {
+        const attachmentsPromises = data.map(async (record) => {
+          try {
+            const attachments = await kpiAttachmentApi.getAttachments(record.id);
+            return { kpiId: record.id, attachments };
+          } catch (err) {
+            console.warn(`Failed to load attachments for KPI ${record.id}:`, err);
+            return { kpiId: record.id, attachments: [] };
+          }
+        });
+
+        const attachmentsResults = await Promise.all(attachmentsPromises);
+        const newMap = new Map<string, KpiAttachment[]>();
+        attachmentsResults.forEach(({ kpiId, attachments }) => {
+          newMap.set(kpiId, attachments);
+        });
+        setAttachmentsMap(newMap);
+      }
     } catch (err) {
       console.error("Failed to load KPI records:", err);
       setError(getErrorMessage(err, (key: string) => tCommon(key)));
     } finally {
       setLoading(false);
     }
-  }, [departmentId, selectedYear, tCommon]);
+  }, [departmentId, selectedYear, tCommon, canViewAttachments]);
+
+  // Load department folder ID
+  useEffect(() => {
+    const loadFolderId = async () => {
+      try {
+        const folders = await api.get<Array<{ id: string; name: string; children?: unknown[] }>>(
+          `/storage/folders/tree/with-documents?departmentId=${departmentId}`
+        );
+        if (folders && folders.length > 0) {
+          setDepartmentFolderId(folders[0].id);
+        }
+      } catch (err) {
+        console.warn("Failed to load department folder:", err);
+      }
+    };
+    if (departmentId) {
+      loadFolderId();
+    }
+  }, [departmentId]);
 
   useEffect(() => {
     loadRecords();
@@ -128,22 +177,76 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {records.map((record, index) => (
-            <div
-              key={record.id}
-              className="w-full cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5"
-              onClick={() => onSelectKpi(record.id)}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <div className="flex-shrink-0">
-                <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
+          {records.map((record, index) => {
+            const attachments = attachmentsMap.get(record.id) || [];
+            return (
+              <div
+                key={record.id}
+                className="w-full cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-start gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5"
+                onClick={() => onSelectKpi(record.id)}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  <BarChart2 className="h-6 w-6 text-cyan-300 cyber-text-glow" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-cyber font-bold text-base cyber-neon-cyan break-words whitespace-normal flex-1">
+                      {record.title || t("kpi.untitled")}
+                    </h3>
+                    {departmentFolderId && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <KpiAttachmentUpload
+                          kpiRecordId={record.id}
+                          folderId={departmentFolderId}
+                          onUploadSuccess={(attachment) => {
+                            const currentAttachments = attachmentsMap.get(record.id) || [];
+                            setAttachmentsMap(
+                              new Map(attachmentsMap.set(record.id, [attachment, ...currentAttachments]))
+                            );
+                          }}
+                          variant="cyber"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <KpiAttachmentList
+                    attachments={attachments}
+                    onAttachmentClick={(attachmentId) => {
+                      const attachment = attachments.find((a) => a.id === attachmentId);
+                      if (attachment) {
+                        setViewerState({ attachmentId, fileName: attachment.fileName });
+                      }
+                    }}
+                    onAttachmentDelete={async (attachmentId) => {
+                      try {
+                        await kpiAttachmentApi.deleteAttachment(attachmentId);
+                        const currentAttachments = attachmentsMap.get(record.id) || [];
+                        setAttachmentsMap(
+                          new Map(attachmentsMap.set(record.id, currentAttachments.filter((a) => a.id !== attachmentId)))
+                        );
+                      } catch (error) {
+                        console.error("Failed to delete attachment:", error);
+                      }
+                    }}
+                    canView={canViewAttachments}
+                    canDelete={canDeleteAttachments}
+                    variant="cyber"
+                  />
+                </div>
               </div>
-              <h3 className="font-cyber font-bold text-base cyber-neon-cyan flex-1 break-words whitespace-normal">
-                {record.title || t("kpi.untitled")}
-              </h3>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+
+      {/* Attachment Viewer Modal */}
+      {viewerState && (
+        <KpiAttachmentViewer
+          attachmentId={viewerState.attachmentId}
+          fileName={viewerState.fileName}
+          onClose={() => setViewerState(null)}
+        />
       )}
     </div>
   );

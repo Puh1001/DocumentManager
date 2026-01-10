@@ -43,6 +43,11 @@ import { useToast } from "@/hooks/use-toast";
 import type { Department } from "@/lib/types/department.types";
 import { handleKpiApiError } from "@/lib/utils/kpi-error-handler";
 import { toApiError } from "@/lib/types/api-error.types";
+import { KpiAttachmentUpload } from "@/components/boss/kpi-attachment-upload";
+import { KpiAttachmentList } from "@/components/boss/kpi-attachment-list";
+import { KpiAttachmentViewer } from "@/components/boss/kpi-attachment-viewer";
+import { kpiAttachmentApi, KpiAttachment } from "@/lib/api";
+import { useCanAccess } from "@/hooks/use-can-access";
 
 export const pageMetadata: PageMetadata = {
   path: "/dashboard/kpi",
@@ -181,6 +186,12 @@ export default function KpiPage() {
   const [selectedDisplayType, setSelectedDisplayType] =
     useState<DisplayType>("PERCENTAGE");
   const [selectedRowMode, setSelectedRowMode] = useState<RowMode>("DOUBLE");
+  const [departmentFolderId, setDepartmentFolderId] = useState<string | null>(null);
+  const [attachmentsMap, setAttachmentsMap] = useState<Map<string, KpiAttachment[]>>(new Map());
+  const [viewerState, setViewerState] = useState<{ attachmentId: string; fileName: string } | null>(null);
+
+  const canViewAttachments = useCanAccess("view", "Kpi");
+  const canDeleteAttachments = useCanAccess("delete", "Kpi");
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -392,6 +403,26 @@ export default function KpiPage() {
         setHasUnsavedChanges(false);
         setLastSavedAt(new Date());
 
+        // Load attachments for each KPI if user has view permission
+        if (canViewAttachments) {
+          const attachmentsPromises = recordsWithMetrics.map(async (record) => {
+            try {
+              const attachments = await kpiAttachmentApi.getAttachments(record.id);
+              return { kpiId: record.id, attachments };
+            } catch (err) {
+              console.warn(`Failed to load attachments for KPI ${record.id}:`, err);
+              return { kpiId: record.id, attachments: [] };
+            }
+          });
+
+          const attachmentsResults = await Promise.all(attachmentsPromises);
+          const newMap = new Map<string, KpiAttachment[]>();
+          attachmentsResults.forEach(({ kpiId, attachments }) => {
+            newMap.set(kpiId, attachments);
+          });
+          setAttachmentsMap(newMap);
+        }
+
         // Clear backup after successful load
         if (typeof window !== "undefined") {
           const backupKey = getKpiBackupKey(selectedDepartmentId, selectedYear);
@@ -437,7 +468,30 @@ export default function KpiPage() {
     toast,
     canCreate,
     hasAttemptedAutoCreate,
+    canViewAttachments,
   ]);
+
+  // Load department folder ID
+  useEffect(() => {
+    const loadFolderId = async () => {
+      if (!selectedDepartmentId) {
+        setDepartmentFolderId(null);
+        return;
+      }
+      try {
+        const folders = await api.get<Array<{ id: string; name: string; children?: unknown[] }>>(
+          `/storage/folders/tree/with-documents?departmentId=${selectedDepartmentId}`
+        );
+        if (folders && folders.length > 0) {
+          setDepartmentFolderId(folders[0].id);
+        }
+      } catch (err) {
+        console.warn("Failed to load department folder:", err);
+        setDepartmentFolderId(null);
+      }
+    };
+    loadFolderId();
+  }, [selectedDepartmentId]);
 
   // Helper function to calculate average for a metric
   const calculateMetricAverage = (metric: KpiMetric | null | undefined) => {
@@ -1406,7 +1460,7 @@ export default function KpiPage() {
                 >
                   {/* Table Card */}
                   <Card className="p-4 space-y-4">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
                         <label className="block text-sm font-medium">
                           {t("kpiTitle")}
@@ -1425,6 +1479,43 @@ export default function KpiPage() {
                           disabled={!isEditMode}
                           placeholder={t("kpiTitle")}
                         />
+                        {canViewAttachments && (
+                          <KpiAttachmentList
+                            attachments={attachmentsMap.get(record.id) || []}
+                            onAttachmentClick={(attachmentId) => {
+                              const attachments = attachmentsMap.get(record.id) || [];
+                              const attachment = attachments.find((a) => a.id === attachmentId);
+                              if (attachment) {
+                                setViewerState({ attachmentId, fileName: attachment.fileName });
+                              }
+                            }}
+                            onAttachmentDelete={async (attachmentId) => {
+                              try {
+                                await kpiAttachmentApi.deleteAttachment(attachmentId);
+                                const currentAttachments = attachmentsMap.get(record.id) || [];
+                                setAttachmentsMap(
+                                  new Map(attachmentsMap.set(record.id, currentAttachments.filter((a) => a.id !== attachmentId)))
+                                );
+                                toast({
+                                  title: "Thành công",
+                                  description: "Đã xóa file thành công",
+                                  variant: "default",
+                                });
+                              } catch (error: unknown) {
+                                console.error("Failed to delete attachment:", error);
+                                const errorMessage =
+                                  error instanceof Error ? error.message : "Không thể xóa file";
+                                toast({
+                                  title: "Lỗi",
+                                  description: errorMessage,
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            canView={canViewAttachments}
+                            canDelete={canDeleteAttachments}
+                          />
+                        )}
                       </div>
                       <div className="w-56 space-y-2">
                         <label className="block text-sm font-medium">
@@ -1781,6 +1872,18 @@ export default function KpiPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
+                        {departmentFolderId && (
+                          <KpiAttachmentUpload
+                            kpiRecordId={record.id}
+                            folderId={departmentFolderId}
+                            onUploadSuccess={(attachment) => {
+                              const currentAttachments = attachmentsMap.get(record.id) || [];
+                              setAttachmentsMap(
+                                new Map(attachmentsMap.set(record.id, [attachment, ...currentAttachments]))
+                              );
+                            }}
+                          />
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1962,6 +2065,15 @@ export default function KpiPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Attachment Viewer Modal */}
+      {viewerState && (
+        <KpiAttachmentViewer
+          attachmentId={viewerState.attachmentId}
+          fileName={viewerState.fileName}
+          onClose={() => setViewerState(null)}
+        />
+      )}
     </PageGuard>
   );
 }

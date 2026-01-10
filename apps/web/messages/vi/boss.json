@@ -46,7 +46,23 @@
     "target": "Mục tiêu",
     "kpiTitle": "Tiêu đề KPI",
     "efficiency": "Hiệu quả (%)",
-    "chartTitle": "KPI / Hiệu quả (%)"
+    "chartTitle": "KPI / Hiệu quả (%)",
+    "attachments": {
+      "title": "Tệp đính kèm",
+      "noAttachments": "Không có tệp đính kèm",
+      "moreFiles": "+{count} tệp khác",
+      "upload": "Tải lên PDF",
+      "delete": "Xóa file",
+      "deleteConfirm": "Bạn có chắc muốn xóa file này?",
+      "viewer": {
+        "title": "Xem PDF",
+        "download": "Tải xuống",
+        "print": "In",
+        "close": "Đóng",
+        "loadError": "Không thể tải tài liệu. Vui lòng thử lại.",
+        "notSupported": "Trình duyệt của bạn không hỗ trợ xem PDF."
+      }
+    }
   },
   "year": "Năm",
   "empty": {

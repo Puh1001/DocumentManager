@@ -4,6 +4,7 @@ export type Actions =
   | "view"
   | "download"
   | "print"
+  | "copy"
   | "edit"
   | "create"
   | "delete"

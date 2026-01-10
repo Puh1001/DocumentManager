@@ -392,5 +392,181 @@ describe("CaslAbilityFactory", () => {
       // But not manage access
       expect(ability.can("manage", "User")).toBe(false);
     });
+
+    it("should apply KPI permissions from role permissions", async () => {
+      const userId = "user-1";
+      const userRoles = ["editor"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "User" },
+        { name: "Kpi" },
+      ]);
+
+      // Mock role permissions with KPI permissions
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "view:Kpi" },
+        },
+        {
+          roleId,
+          permission: { name: "download:Kpi" },
+        },
+        {
+          roleId,
+          permission: { name: "print:Kpi" },
+        },
+        {
+          roleId,
+          permission: { name: "copy:Kpi" },
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Should have KPI permissions
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("download", "Kpi")).toBe(true);
+      expect(ability.can("print", "Kpi")).toBe(true);
+      expect(ability.can("copy", "Kpi")).toBe(true);
+      // Should NOT have edit permission (not granted)
+      expect(ability.can("edit", "Kpi")).toBe(false);
+    });
+
+    it("should not grant KPI permissions if not assigned", async () => {
+      const userId = "user-1";
+      const userRoles = ["editor"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "User" },
+        { name: "Kpi" },
+      ]);
+
+      // Mock role permissions without KPI permissions
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "view:User" },
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Should NOT have any KPI permissions
+      expect(ability.can("view", "Kpi")).toBe(false);
+      expect(ability.can("download", "Kpi")).toBe(false);
+      expect(ability.can("print", "Kpi")).toBe(false);
+      expect(ability.can("copy", "Kpi")).toBe(false);
+    });
+
+    it("should handle KPI permissions with partial actions", async () => {
+      const userId = "user-1";
+      const userRoles = ["viewer"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "Kpi" },
+      ]);
+
+      // Mock role permissions with only view permission
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "view:Kpi" },
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Should have view permission
+      expect(ability.can("view", "Kpi")).toBe(true);
+      // Should NOT have other permissions
+      expect(ability.can("download", "Kpi")).toBe(false);
+      expect(ability.can("print", "Kpi")).toBe(false);
+      expect(ability.can("copy", "Kpi")).toBe(false);
+      expect(ability.can("create", "Kpi")).toBe(false);
+    });
+
+    it("should grant admin full access to KPI", async () => {
+      const userId = "user-1";
+      const userRoles = ["admin"];
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Admin should have all KPI permissions via manage:all
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("download", "Kpi")).toBe(true);
+      expect(ability.can("print", "Kpi")).toBe(true);
+      expect(ability.can("copy", "Kpi")).toBe(true);
+      expect(ability.can("create", "Kpi")).toBe(true);
+      expect(ability.can("edit", "Kpi")).toBe(true);
+      expect(ability.can("delete", "Kpi")).toBe(true);
+    });
+
+    it("should grant boss read-only access to KPI via all subject", async () => {
+      const userId = "user-1";
+      const userRoles = ["boss"];
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Boss should have view/download/print via "all" subject
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("download", "Kpi")).toBe(true);
+      expect(ability.can("print", "Kpi")).toBe(true);
+      // But not copy/create/edit/delete (not explicitly granted)
+      expect(ability.can("copy", "Kpi")).toBe(false);
+      expect(ability.can("create", "Kpi")).toBe(false);
+      expect(ability.can("edit", "Kpi")).toBe(false);
+    });
+
+    it("should ignore invalid KPI permission formats", async () => {
+      const userId = "user-1";
+      const userRoles = ["editor"];
+      const roleId = "role-1";
+
+      mockPrismaService.role.findMany.mockResolvedValue([{ id: roleId }]);
+      mockPrismaService.module.findMany.mockResolvedValue([
+        { name: "Kpi" },
+      ]);
+
+      // Mock role permissions with invalid KPI permission formats
+      mockPrismaService.rolePermission.findMany.mockResolvedValue([
+        {
+          roleId,
+          permission: { name: "view:Kpi:invalid" }, // Too many parts
+        },
+        {
+          roleId,
+          permission: { name: "viewKpi" }, // Missing colon
+        },
+        {
+          roleId,
+          permission: { name: "view:Kpi" }, // Valid one
+        },
+      ]);
+
+      mockPrismaService.folderPermission.findMany.mockResolvedValue([]);
+      mockPrismaService.documentPermission.findMany.mockResolvedValue([]);
+
+      const ability = await factory.createForUser(userId, userRoles);
+
+      // Only valid permission should be applied
+      expect(ability.can("view", "Kpi")).toBe(true);
+      expect(ability.can("download", "Kpi")).toBe(false);
+    });
   });
 });

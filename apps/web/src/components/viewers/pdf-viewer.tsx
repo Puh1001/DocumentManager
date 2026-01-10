@@ -1,15 +1,32 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
+import { useCopyProtection } from "@/hooks/use-copy-protection";
 
 interface PdfViewerProps {
   fileUrl: string;
   canDownload: boolean;
   canPrint: boolean;
+  canCopy?: boolean;
 }
 
-export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
+export function PdfViewer({
+  fileUrl,
+  canDownload,
+  canPrint,
+  canCopy = true,
+}: PdfViewerProps) {
+  const t = useTranslations("boss.kpi.attachments.viewer");
+
+  /**
+   * Enable copy protection (best-effort, not foolproof)
+   * Note: Can be bypassed via browser DevTools or screenshots
+   * For sensitive documents, consider watermarking
+   */
+  useCopyProtection(!canCopy);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blobUrlRef = useRef<string | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -38,7 +55,7 @@ export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
         setBlobUrl(url);
       } catch (err) {
         console.error("Failed to load PDF:", err);
-        setError("Không thể tải tài liệu. Vui lòng thử lại.");
+        setError(t("loadError"));
       } finally {
         setLoading(false);
       }
@@ -53,7 +70,7 @@ export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
         blobUrlRef.current = null;
       }
     };
-  }, [fileUrl]);
+  }, [fileUrl, t]);
 
   useEffect(() => {
     if (!blobUrl) return;
@@ -94,7 +111,7 @@ export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
   if (error || !blobUrl) {
     return (
       <div className="flex items-center justify-center h-full text-red-500">
-        {error || "Không thể tải tài liệu"}
+        {error || t("loadError")}
       </div>
     );
   }
@@ -125,7 +142,7 @@ export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
           }}
         />
         <p className="text-center p-4 text-muted-foreground">
-          Trình duyệt của bạn không hỗ trợ xem PDF.{" "}
+          {t("notSupported")}{" "}
           <a
             href={blobUrl}
             download
@@ -133,7 +150,7 @@ export function PdfViewer({ fileUrl, canDownload, canPrint }: PdfViewerProps) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Tải xuống để xem
+            {t("download")}
           </a>
         </p>
       </object>

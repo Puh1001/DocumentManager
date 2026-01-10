@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { createMongoAbility, AbilityBuilder } from "@casl/ability";
 import { AppAbility, Actions } from "../types/ability.types";
+import {
+  PERMISSION_ACTIONS,
+  PERMISSION_SUBJECTS,
+} from "../constants/permissions.constants";
 
 interface FolderPermission {
   folderId: string;
@@ -18,6 +22,11 @@ interface ModulePermission {
   permissionName: string;
   action: Actions;
   module: string;
+}
+
+interface KpiPermission {
+  permissionName: string;
+  action: Actions;
 }
 
 @Injectable()
@@ -55,8 +64,8 @@ export class CaslAbilityFactory {
     });
     const moduleNames = new Set(activeModules.map((m) => m.name));
 
-    // Load module permissions (for page access control) - pass moduleNames to avoid duplicate query
-    const modulePerms = await this.loadModulePermissions(
+    // Load module and KPI permissions together (optimized: single query)
+    const { modulePerms, kpiPerms } = await this.loadModuleAndKpiPermissions(
       userId,
       roleIds,
       moduleNames
@@ -77,6 +86,12 @@ export class CaslAbilityFactory {
         // @ts-expect-error - Module names are validated at runtime, type system can't know all possible modules
         can(perm.action, perm.module);
       }
+    }
+
+    // Apply KPI permissions (for KPI attachment access)
+    for (const perm of kpiPerms) {
+      // Apply to "Kpi" subject - permissions are stored as "action:Kpi" format
+      can(perm.action, "Kpi");
     }
 
     // Apply folder permissions
@@ -154,14 +169,24 @@ export class CaslAbilityFactory {
     }));
   }
 
-  private async loadModulePermissions(
+  /**
+   * Load module and KPI permissions together (optimized: single query)
+   * Parses permissions in "action:Subject" format (e.g., "view:User", "download:Kpi")
+   * @param userId - User ID (currently unused but kept for consistency)
+   * @param roleIds - Array of role IDs assigned to user
+   * @param moduleNames - Set of valid module names from database
+   * @returns Object containing module and KPI permissions
+   */
+  private async loadModuleAndKpiPermissions(
     userId: string,
     roleIds: string[],
     moduleNames: Set<string>
-  ): Promise<ModulePermission[]> {
-    if (roleIds.length === 0) return [];
+  ): Promise<{ modulePerms: ModulePermission[]; kpiPerms: KpiPermission[] }> {
+    if (roleIds.length === 0) {
+      return { modulePerms: [], kpiPerms: [] };
+    }
 
-    // Load all permissions assigned to user's roles
+    // Load all permissions assigned to user's roles (single query)
     const rolePermissions = await this.prisma.rolePermission.findMany({
       where: {
         roleId: { in: roleIds },
@@ -172,26 +197,78 @@ export class CaslAbilityFactory {
     });
 
     const modulePerms: ModulePermission[] = [];
-    const validActions = ["view", "manage", "create", "edit", "delete"];
+    const kpiPerms: KpiPermission[] = [];
 
-    // Parse permissions that match module pattern (e.g., "view:User", "manage:Department")
+    // Module permissions use these actions
+    const moduleValidActions: string[] = [
+      PERMISSION_ACTIONS.VIEW,
+      PERMISSION_ACTIONS.MANAGE,
+      PERMISSION_ACTIONS.CREATE,
+      PERMISSION_ACTIONS.EDIT,
+      PERMISSION_ACTIONS.DELETE,
+    ];
+
+    // KPI permissions use these actions
+    const kpiValidActions: string[] = [
+      PERMISSION_ACTIONS.VIEW,
+      PERMISSION_ACTIONS.DOWNLOAD,
+      PERMISSION_ACTIONS.PRINT,
+      PERMISSION_ACTIONS.COPY,
+      PERMISSION_ACTIONS.EDIT,
+      PERMISSION_ACTIONS.CREATE,
+      PERMISSION_ACTIONS.DELETE,
+    ];
+
+    // Parse permissions that match "action:Subject" pattern
     for (const rp of rolePermissions) {
-      const permName = rp.permission.name;
-      const parts = permName.split(":");
+      const parsed = this.parsePermissionName(rp.permission.name);
 
-      if (parts.length === 2) {
-        const [action, module] = parts;
-        // Validate action and module dynamically from database
-        if (validActions.includes(action) && moduleNames.has(module)) {
-          modulePerms.push({
-            permissionName: permName,
-            action: action as Actions,
-            module,
-          });
-        }
+      if (!parsed) continue;
+
+      const { action, subject } = parsed;
+
+      // Check for module permissions (e.g., "view:User", "manage:Department")
+      if (
+        moduleValidActions.includes(action) &&
+        moduleNames.has(subject)
+      ) {
+        modulePerms.push({
+          permissionName: rp.permission.name,
+          action: action as Actions,
+          module: subject,
+        });
+      }
+
+      // Check for KPI permissions (e.g., "view:Kpi", "download:Kpi")
+      if (
+        kpiValidActions.includes(action) &&
+        subject === PERMISSION_SUBJECTS.KPI
+      ) {
+        kpiPerms.push({
+          permissionName: rp.permission.name,
+          action: action as Actions,
+        });
       }
     }
 
-    return modulePerms;
+    return { modulePerms, kpiPerms };
+  }
+
+  /**
+   * Parse permission name in "action:Subject" format
+   * @param permName - Permission name (e.g., "view:User", "download:Kpi")
+   * @returns Parsed action and subject, or null if format is invalid
+   */
+  private parsePermissionName(
+    permName: string
+  ): { action: string; subject: string } | null {
+    const parts = permName.split(":");
+
+    if (parts.length !== 2) {
+      return null;
+    }
+
+    const [action, subject] = parts;
+    return { action, subject };
   }
 }

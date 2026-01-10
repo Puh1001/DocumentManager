@@ -32,6 +32,7 @@ model User {
   docPermissions     DocumentPermission[] @relation("UserDocumentPermissions")
   maintenanceNotices MaintenanceNotice[]  @relation("MaintenanceNoticeCreator")
   departments        UserDepartment[] // NEW: Many-to-many relation with departments
+  kpiAttachments     KpiAttachment[]      @relation("UserKpiAttachments")
 
   @@index([username])
   @@index([email])
@@ -175,6 +176,7 @@ model Document {
   folder      Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
   versions    DocumentVersion[]
   permissions DocumentPermission[]
+  kpiAttachments KpiAttachment[]    @relation("DocumentKpiAttachments")
 
   @@index([folderId])
   @@index([status])
@@ -339,6 +341,7 @@ model KpiRecord {
 
   department Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   metrics    KpiMetric[]
+  attachments KpiAttachment[]       @relation("KpiRecordAttachments")
 
   @@unique([departmentId, year, title])
   @@index([departmentId])
@@ -377,6 +380,24 @@ model KpiMetric {
 
   @@index([kpiRecordId])
   @@map("kpi_metrics")
+}
+
+model KpiAttachment {
+  id           String   @id @default(uuid())
+  kpiRecordId  String   @map("kpi_record_id")
+  documentId   String   @map("document_id")
+  description  String?
+  createdById  String   @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  kpiRecord KpiRecord @relation("KpiRecordAttachments", fields: [kpiRecordId], references: [id], onDelete: Cascade)
+  document  Document  @relation("DocumentKpiAttachments", fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("UserKpiAttachments", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([kpiRecordId])
+  @@index([documentId])
+  @@index([createdById])
+  @@map("kpi_attachments")
 }
 
 // =====================

@@ -46,7 +46,23 @@
     "target": "Target",
     "kpiTitle": "KPI Title",
     "efficiency": "Efficiency (%)",
-    "chartTitle": "KPI / Efficiency (%)"
+    "chartTitle": "KPI / Efficiency (%)",
+    "attachments": {
+      "title": "Attached file",
+      "noAttachments": "No attachments",
+      "moreFiles": "+{count} more",
+      "upload": "Upload PDF",
+      "delete": "Delete file",
+      "deleteConfirm": "Are you sure you want to delete this file?",
+      "viewer": {
+        "title": "View PDF",
+        "download": "Download",
+        "print": "Print",
+        "close": "Close",
+        "loadError": "Unable to load document. Please try again.",
+        "notSupported": "Your browser does not support viewing PDFs."
+      }
+    }
   },
   "year": "Year",
   "empty": {
