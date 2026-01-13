@@ -1,7 +1,7 @@
 # Project Roadmap
 
-**Last Updated:** 2026-01-10  
-**Current Phase:** Phase 1-4 Complete, Additional Features Added (75%)
+**Last Updated:** 2026-01-12  
+**Current Phase:** Phase 1-4 Complete, Additional Features Added (80%)
 
 ---
 
@@ -153,7 +153,7 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 **Status:** Complete  
 **Duration:** 3-4 days  
 **Completed:** 2024-12-XX  
-**Updated:** 2026-01-06
+**Updated:** 2026-01-12
 
 ### Completed Tasks
 
@@ -168,7 +168,10 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [x] **Year selector dropdown** (current year ± 5 years)
 - [x] Support for historical and future year data entry
 - [x] **PDF attachment upload/view/delete** (2026-01-10)
+- [x] **Auto-folder creation** for department KPI structure (2026-01-12)
+- [x] **Optional folderId** with backend auto-creation (2026-01-12)
 - [x] **File deletion with move to "delete files" folder** (2026-01-10)
+- [x] **Translation fixes** (common.cancel, common.save, common.saving) (2026-01-12)
 
 ### Deliverables
 
@@ -178,6 +181,8 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - ✅ KPI management UI
 - ✅ Year selector for viewing/editing data by year
 - ✅ PDF attachment management (upload, view, delete)
+- ✅ Auto-folder creation (Department/KPI/current structure)
+- ✅ Optional folderId with backend auto-creation
 - ✅ File deletion with move to "delete files" folder
 
 ---

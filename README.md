@@ -16,7 +16,9 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
   - **Year Selector**: Chọn năm để xem/chỉnh sửa dữ liệu KPI (năm hiện tại ± 5 năm)
   - **PDF Attachments**: Upload, xem và quản lý file PDF đính kèm cho KPI records
-  - **File Deletion**: Xóa file sẽ di chuyển vào thư mục "delete files" trong cùng thư mục bộ phận
+    - **Auto-folder Creation**: Tự động tạo cấu trúc thư mục `Department/KPI/current` nếu chưa tồn tại
+    - **Optional folderId**: `folderId` là tùy chọn, backend sẽ tự động tạo thư mục nếu không được cung cấp
+    - **File Deletion**: Xóa file sẽ di chuyển vào thư mục "delete files" trong cùng thư mục bộ phận
 - 🔧 **Maintenance Notices**: Quản lý thông báo bảo trì theo phòng ban
 - 🌐 **Internationalization**: Hỗ trợ đa ngôn ngữ (English, Vietnamese, Chinese)
 - 🔒 **Phân quyền RBAC + ABAC**: Role-based + Attribute-based access control
@@ -256,8 +258,11 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Chart visualization
   - ✅ Excel export
   - ✅ PDF attachment upload/view/delete (2026-01-10)
+  - ✅ Auto-folder creation for department KPI structure (2026-01-12)
+  - ✅ Optional folderId with backend auto-creation (2026-01-12)
   - ✅ File deletion with move to "delete files" folder (2026-01-10)
   - ✅ UI improvements (upload button, file display, alignment fixes)
+  - ✅ Translation fixes (common.cancel, common.save, common.saving) (2026-01-12)
 - ✅ Maintenance Notices
   - ✅ Notice creation and management
   - ✅ Department filtering

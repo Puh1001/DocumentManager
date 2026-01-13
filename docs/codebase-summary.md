@@ -181,6 +181,9 @@ src/
 - Support for historical and future year data entry (e.g., 2025)
 - **PDF Attachments**: Upload, view, and delete PDF files for KPI records
   - Upload component with permission checks
+  - **Auto-folder creation**: Backend automatically creates `Department/KPI/current` folder structure if not exists
+  - **Optional folderId**: `folderId` parameter is optional; backend handles auto-creation when omitted
+  - **Race condition handling**: Robust folder creation with unique constraint error handling (P2002)
   - Attachment list with delete functionality
   - PDF viewer modal with download/print support
   - File deletion moves files to "delete files" folder in department
@@ -305,6 +308,13 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Recent Updates
 
+### Latest Updates (2026-01-12)
+
+- **KPI Attachment Auto-Folder Creation**: Backend now automatically creates `Department/KPI/current` folder structure when `folderId` is not provided during upload
+- **Optional folderId Parameter**: `folderId` is now optional in KPI attachment upload DTO; backend handles auto-creation with race condition protection
+- **Robust Folder Management**: Improved folder creation logic with unique constraint error handling (P2002) to prevent race conditions
+- **Translation Support**: Added missing translation keys (common.cancel, common.save, common.saving) for all locales (en, vi, zh)
+
 ### New Features (2024-2025)
 
 - **Department Management Module**: Full CRUD operations for departments
@@ -337,9 +347,12 @@ docker-compose -f docker-compose.prod.yml up -d
   - PageGuard component for automatic permission checks
   - Subject validation utilities
   - Dynamic sidebar generation from page registry
-- **KPI PDF Attachments** (2026-01-10):
+- **KPI PDF Attachments** (2026-01-10, updated 2026-01-12):
   - Upload PDF files to KPI records with permission checks
+  - **Auto-folder creation**: Backend automatically creates department KPI folder structure (`Department/KPI/current`) when `folderId` is not provided
+  - **Optional folderId**: DTO accepts optional `folderId`; backend handles auto-creation with race condition protection
   - View PDF attachments in modal viewer
   - Delete attachments (moves file to "delete files" folder)
   - UI components with variant support (default/cyber styling)
   - File deletion moves files to department "delete files" folder instead of hard deletion
+  - Translation support for common actions (cancel, save, saving)

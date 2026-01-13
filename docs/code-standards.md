@@ -264,6 +264,76 @@ describe("AuthService", () => {
 
 ## KPI Attachment Patterns
 
+### Backend: Auto-Folder Creation
+
+```typescript
+// ✅ Good - Auto-create department KPI folder structure if folderId not provided
+async uploadAttachment(
+  kpiRecordId: string,
+  file: Express.Multer.File,
+  folderId: string | undefined, // Optional - backend will auto-create if not provided
+  description: string | undefined,
+  user: UserWithDepartments
+) {
+  // Find or create folder for department if folderId is not provided
+  let targetFolderId = folderId;
+  if (!targetFolderId) {
+    targetFolderId = await this.findOrCreateDepartmentKpiFolder(
+      record.departmentId
+    );
+  }
+  
+  // Continue with upload...
+}
+
+// ✅ Good - Handle race conditions when creating folders
+private async findOrCreateDepartmentKpiFolder(departmentId: string) {
+  // Try to find by path first (more reliable than departmentId)
+  let departmentFolder = await this.prisma.folder.findUnique({
+    where: { path: folderPath },
+  });
+
+  if (!departmentFolder) {
+    await this.smbService.createDirectory(folderPath);
+    
+    try {
+      departmentFolder = await this.prisma.folder.create({
+        data: { name, path: folderPath, parentId, departmentId },
+      });
+    } catch (error) {
+      // Handle race condition: folder might have been created by another request
+      if (error.code === "P2002") {
+        // Fetch the existing folder
+        departmentFolder = await this.prisma.folder.findUnique({
+          where: { path: folderPath },
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  // Find or create subfolders (KPI -> current)
+  // ...
+}
+```
+
+### Backend: Optional folderId in DTO
+
+```typescript
+// ✅ Good - Make folderId optional with conditional validation
+export class CreateKpiAttachmentDto {
+  @ApiProperty({
+    description: "Target folder ID. If not provided, will auto-create department/KPI/current folder structure",
+    required: false,
+  })
+  @ValidateIf((o) => o.folderId !== undefined && o.folderId !== null && o.folderId !== "")
+  @IsUUID()
+  @IsOptional()
+  folderId?: string;
+}
+```
+
 ### Backend: File Deletion with Move to Delete Folder
 
 ```typescript
@@ -292,6 +362,44 @@ async deleteAttachment(attachmentId: string, user: UserWithDepartments) {
     },
   });
 }
+```
+
+### Frontend: Optional folderId Handling
+
+```typescript
+// ✅ Good - Pass undefined instead of empty string when folderId is not available
+const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setUploading(true);
+  try {
+    const result = await kpiAttachmentApi.uploadAttachment(
+      kpiRecordId,
+      file,
+      folderId, // Can be undefined - backend will auto-create folder
+      undefined
+    );
+    // ...
+  } catch (error) {
+    // ...
+  }
+};
+
+// ✅ Good - Conditionally include folderId in API request
+export const kpiAttachmentApi = {
+  uploadAttachment: (
+    kpiRecordId: string,
+    file: File,
+    folderId: string | undefined,
+    description?: string
+  ) =>
+    api.upload(`/kpi/records/${kpiRecordId}/attachments`, file, {
+      // Only include folderId if it's a valid non-empty string
+      ...(folderId && folderId.trim() !== "" && { folderId }),
+      ...(description && { description }),
+    }),
+};
 ```
 
 ### Frontend: Component Variant Pattern

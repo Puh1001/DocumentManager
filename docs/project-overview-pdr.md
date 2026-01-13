@@ -3,7 +3,7 @@
 **Project Name:** ISO Document Management System (Librarian Model)  
 **Version:** 1.0.0  
 **Created:** 2024-12-18  
-**Last Updated:** 2026-01-10  
+**Last Updated:** 2026-01-12  
 **Status:** 🟢 In Development (Phase 1-4 Complete, Additional Features Added - 80%)
 
 ---
@@ -75,6 +75,9 @@ Xây dựng web-based document management system:
 - Support for data entry for specific years (e.g., 2025)
 - **PDF Attachments**: Upload, view, and manage PDF files attached to KPI records
   - Upload PDF files to KPI records
+  - **Auto-folder Creation**: Backend automatically creates `Department/KPI/current` folder structure if not exists
+  - **Optional folderId**: `folderId` parameter is optional; backend handles auto-creation when omitted
+  - **Robust Folder Management**: Handles race conditions and unique constraint errors during folder creation
   - View PDF attachments in modal viewer
   - Delete attachments (moves file to "delete files" folder)
   - Permission-based access control (view, create, delete)

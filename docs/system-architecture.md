@@ -105,9 +105,13 @@ apps/api/
 │   │   ├── KPI Metric service (monthly values)
 │   │   ├── KPI Export service (Excel)
 │   │   ├── KPI Attachment service (PDF upload/view/delete)
+│   │   │   ├── Auto-folder creation (Department/KPI/current structure)
+│   │   │   ├── Optional folderId with backend auto-creation
+│   │   │   ├── Race condition handling (unique constraint errors)
+│   │   │   └── File deletion with move to "delete files" folder
 │   │   ├── Calculation logic (efficiency, averages)
 │   │   ├── Year selector support (current year ± 5 years)
-│   │   └── File deletion with move to "delete files" folder
+│   │   └── Folder management utilities (findOrCreateDepartmentKpiFolder)
 │   │
 │   ├── Maintenance
 │   │   ├── Maintenance notice service
@@ -331,7 +335,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   │           ├── v001_20241218_103000_userId.pdf
 │   │           └── v002_20241218_153000_userId.pdf
 │   │
-│   ├── kpi/
+│   ├── KPI/
 │   │   └── current/
 │   │       └── kpi-attachment.pdf
 │   │
@@ -467,7 +471,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   │   ├── PATCH  /:id       # Update
 │   │   ├── DELETE /:id       # Delete
 │   │   ├── GET    /:id/export # Export to Excel
-│   │   ├── POST   /:id/attachments # Upload PDF attachment
+│   │   ├── POST   /:id/attachments # Upload PDF attachment (folderId optional, auto-creates folder)
 │   │   └── GET    /:id/attachments # List attachments
 │   ├── /attachments
 │   │   ├── GET    /:id/stream     # Stream PDF for viewer
