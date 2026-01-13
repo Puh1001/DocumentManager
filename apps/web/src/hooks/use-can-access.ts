@@ -21,6 +21,11 @@ export function useCanAccess(action: Actions, subject: Subjects): boolean {
     return true;
   }
 
+  // Check action on "all" subject (if user has action:all, they can perform action on any subject)
+  if (ability.can(action, "all")) {
+    return true;
+  }
+
   // Check specific action on subject
   if (ability.can(action, subject)) {
     return true;
