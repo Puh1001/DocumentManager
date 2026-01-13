@@ -13,6 +13,7 @@
 **Secondary Issue:** UserDepartmentResolver cannot find department "Management" in database (multiple warnings).
 
 **Error Logs:**
+
 ```
 [Nest] ERROR [SmbService] SMB connection test error: ENOENT: no such file or directory, access '/shared/IT-Information Technology Dept/devTest'
 [Nest] ERROR [SmbService] SMB basePath: /shared/IT-Information Technology Dept/devTest, platform: linux
@@ -29,12 +30,14 @@
 ### Why 1: Why is the path `/shared/IT-Information Technology Dept/devTest` not accessible?
 
 **Answer:** The path doesn't exist because either:
+
 1. The SMB share is not mounted on the host at `/mnt/smb`
 2. The Docker volume mount (`/mnt/smb:/shared`) is not working
 3. The subfolder `IT-Information Technology Dept/devTest` doesn't exist in the mounted share
 4. The `SMB_BASE_PATH` environment variable is set incorrectly
 
 **Evidence:**
+
 - Error: `ENOENT: no such file or directory, access '/shared/IT-Information Technology Dept/devTest'`
 - Platform: Linux (production environment)
 - Code constructs path: `/shared` + `IT-Information Technology Dept/devTest`
@@ -44,10 +47,12 @@
 **Answer:** The systemd service that mounts the SMB share may not be running, or the mount failed.
 
 **Evidence:**
+
 - Warning message: "Make sure SMB share is mounted on host: /mnt/smb"
 - The code expects the mount at `/mnt/smb` on the host, which should be mapped to `/shared` in the container
 
 **Check Required:**
+
 ```bash
 # On host
 mount | grep smb
@@ -60,6 +65,7 @@ systemctl status smb-mount.service
 **Answer:** The volume mount in `docker-compose.prod.yml` may not be configured correctly, or the host path doesn't exist.
 
 **Evidence from code:**
+
 ```yaml
 # docker-compose.prod.yml:37
 volumes:
@@ -67,6 +73,7 @@ volumes:
 ```
 
 **Check Required:**
+
 ```bash
 # Check if environment variable is set
 echo $SMB_MOUNT_PATH_HOST  # Should be /mnt/smb
@@ -80,6 +87,7 @@ docker-compose -f docker-compose.prod.yml exec api ls /shared
 **Answer:** The `SMB_BASE_PATH` environment variable might be set incorrectly, or the folder structure on the SMB share is different than expected.
 
 **Evidence from code:**
+
 ```typescript
 // apps/api/src/modules/storage/services/smb.service.ts:80-91
 const basePath = this.configService.get<string>("SMB_BASE_PATH", "");
@@ -90,11 +98,13 @@ if (basePath) {
 ```
 
 **Expected Path Construction:**
+
 - `SMB_MOUNT_PATH` = `/shared` (default)
 - `SMB_BASE_PATH` = `IT-Information Technology Dept/devTest` (from env)
 - Final path: `/shared/IT-Information Technology Dept/devTest`
 
 **Check Required:**
+
 ```bash
 # Check environment variable in container
 docker-compose -f docker-compose.prod.yml exec api env | grep SMB_BASE_PATH
@@ -108,6 +118,7 @@ ls -la /mnt/smb/IT-Information\ Technology\ Dept/devTest
 **Answer:** The folder name contains spaces (`IT-Information Technology Dept`), which is valid but requires proper path handling. The code uses `path.join()` which should handle this correctly, but the actual folder might not exist or have a different name.
 
 **Evidence:**
+
 - Path contains: `IT-Information Technology Dept/devTest`
 - Code normalizes backslashes to forward slashes for Linux
 - Uses `path.join()` which should handle spaces correctly
@@ -121,6 +132,7 @@ ls -la /mnt/smb/IT-Information\ Technology\ Dept/devTest
 **File:** `apps/api/src/modules/storage/services/smb.service.ts`
 
 **Linux Path Construction (Lines 74-101):**
+
 ```typescript
 } else {
   // Production: Linux mounted path (from Docker volume)
@@ -150,6 +162,7 @@ ls -la /mnt/smb/IT-Information\ Technology\ Dept/devTest
 ```
 
 **Connection Test (Lines 149-178):**
+
 ```typescript
 async testConnection(): Promise<boolean> {
   try {
@@ -169,6 +182,7 @@ async testConnection(): Promise<boolean> {
 ### Configuration
 
 **Docker Compose (docker-compose.prod.yml):**
+
 ```yaml
 services:
   api:
@@ -180,6 +194,7 @@ services:
 ```
 
 **Expected Environment Variables:**
+
 - `SMB_MOUNT_PATH=/shared` (path in container)
 - `SMB_BASE_PATH=IT-Information Technology Dept/devTest` (subfolder)
 - `SMB_MOUNT_PATH_HOST=/mnt/smb` (host mount point)
@@ -207,11 +222,13 @@ journalctl -u smb-mount.service -n 50
 ```
 
 **Expected Result:**
+
 - Mount should show: `//10.0.60.30/Public on /mnt/smb type cifs`
 - `/mnt/smb` should be accessible and contain SMB share contents
 - Service should be active and running
 
 **If Not Mounted:**
+
 1. Check SMB credentials: `/etc/smb-credentials`
 2. Test manual mount:
    ```bash
@@ -240,12 +257,14 @@ docker-compose -f docker-compose.prod.yml exec api ls -la "/shared/IT-Informatio
 ```
 
 **Expected Result:**
+
 - `SMB_MOUNT_PATH=/shared`
 - `SMB_BASE_PATH=IT-Information Technology Dept/devTest`
 - `/shared` should be accessible
 - Subfolder should exist
 
 **If Volume Mount Fails:**
+
 1. Check `SMB_MOUNT_PATH_HOST` environment variable on host
 2. Verify docker-compose.prod.yml volume configuration
 3. Restart container: `docker-compose -f docker-compose.prod.yml restart api`
@@ -262,10 +281,12 @@ ls -la "/mnt/smb/IT-Information Technology Dept/devTest"
 ```
 
 **Expected Result:**
+
 - Folder `IT-Information Technology Dept` should exist
 - Subfolder `devTest` should exist inside it
 
 **If Folder Doesn't Exist:**
+
 1. Verify the correct path on the SMB server
 2. Update `SMB_BASE_PATH` environment variable if path is different
 3. Create the folder structure if needed (with proper permissions)
@@ -275,6 +296,7 @@ ls -la "/mnt/smb/IT-Information Technology Dept/devTest"
 **Action:** Ensure all required environment variables are set correctly.
 
 **Check `.env` or environment configuration:**
+
 ```bash
 # On host
 cat .env | grep SMB
@@ -286,6 +308,7 @@ cat .env | grep SMB
 ```
 
 **If Variables Missing:**
+
 1. Add to `.env` file or environment configuration
 2. Restart Docker containers
 3. Verify in container: `docker-compose exec api env | grep SMB`
@@ -295,6 +318,7 @@ cat .env | grep SMB
 **Action:** Improve error messages to help diagnose mount issues.
 
 **Proposed Code Changes:**
+
 1. Add mount point existence check before path construction
 2. Add detailed logging of environment variables (masked credentials)
 3. Add check for parent directory existence
@@ -305,15 +329,19 @@ cat .env | grep SMB
 ## Secondary Issue: Department "Management" Not Found
 
 ### Problem
+
 Multiple warnings about department "Management" not being found:
+
 ```
 [Nest] WARN [UserDepartmentResolver] Department not found for user department string: "Management"
 ```
 
 ### Root Cause
+
 The department "Management" doesn't exist in the database. The seed data (`apps/api/prisma/seed.ts`) doesn't include a department with code or name "Management".
 
 ### Evidence
+
 - Seed file contains departments: BOD, HCNS, KINH_DOANH, KE_TOAN, IT, etc.
 - No "Management" department in seed data
 - UserDepartmentResolver tries to match by code first, then by name (case-insensitive)
@@ -322,6 +350,7 @@ The department "Management" doesn't exist in the database. The seed data (`apps/
 ### Fix Options
 
 **Option 1: Add "Management" Department to Database**
+
 ```typescript
 // Add to seed.ts
 {
@@ -334,14 +363,17 @@ The department "Management" doesn't exist in the database. The seed data (`apps/
 ```
 
 **Option 2: Map "Management" to Existing Department**
+
 - Update user data to use existing department code
 - Or add mapping in UserDepartmentResolver
 
 **Option 3: Create Migration Script**
+
 - Create script to add missing departments from user data
 - Run migration to populate departments table
 
 ### Recommended Action
+
 1. Check what "Management" should map to (possibly "BOD" - General Manager's Office)
 2. Either add the department or update user data
 3. Run migration/seed to update database
@@ -353,12 +385,14 @@ The department "Management" doesn't exist in the database. The seed data (`apps/
 After applying fixes:
 
 1. **Verify SMB Mount:**
+
    ```bash
    mount | grep smb
    ls /mnt/smb
    ```
 
 2. **Verify Container Access:**
+
    ```bash
    docker-compose -f docker-compose.prod.yml exec api ls /shared
    docker-compose -f docker-compose.prod.yml exec api ls "/shared/IT-Information Technology Dept/devTest"
@@ -394,6 +428,7 @@ After applying fixes:
 **Primary Issue:** **WRONG SMB SHARE NAME** - Using `Public` instead of `BPVN-Fileserver`
 
 **Evidence from Diagnostics:**
+
 - ✅ Network connectivity: OK (ping successful)
 - ✅ cifs-utils: Installed
 - ✅ Mount script: Exists and executable
@@ -403,6 +438,7 @@ After applying fixes:
 - ❌ **Wrong share name**: Script uses `//10.0.60.30/Public` but actual share is `BPVN-Fileserver`
 
 **Kernel Log Evidence:**
+
 ```
 [6433508.216697] CIFS: Attempting to mount \\10.0.60.30\Public
 [6433508.217468] CIFS: VFS:  BAD_NETWORK_NAME: \\10.0.60.30\Public
@@ -410,6 +446,7 @@ After applying fixes:
 ```
 
 **smbclient Output Shows Available Shares:**
+
 ```
 Sharename       Type      Comment
 BPVN-Fileserver Disk      ← CORRECT SHARE NAME
@@ -421,6 +458,7 @@ vn-share        Disk
 **Root Cause:** Mount script in `/usr/local/bin/mount-smb.sh` uses incorrect share name `Public` instead of `BPVN-Fileserver`
 
 **Error Logs:**
+
 ```
 mount error(13): Permission denied
 mount error(2): No such file or directory
@@ -428,6 +466,7 @@ Refer to the mount.cifs(8) manual page (e.g. man mount.cifs) and kernel log mess
 ```
 
 **Possible Causes:**
+
 1. **SMB Version incompatibility** - Server may require different SMB version
 2. **Credentials issue** - Username/password may be incorrect or expired
 3. **Domain authentication** - Domain join or authentication method issue
@@ -439,21 +478,25 @@ Refer to the mount.cifs(8) manual page (e.g. man mount.cifs) and kernel log mess
 ## Additional Diagnostic Commands
 
 ### Check Kernel Logs
+
 ```bash
 sudo dmesg | tail -50
 ```
 
 ### Check CIFS Kernel Module
+
 ```bash
 lsmod | grep cifs
 ```
 
 ### Check Current User/Group IDs
+
 ```bash
 id
 ```
 
 ### Test Mount with Different SMB Versions
+
 ```bash
 sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o credentials=/etc/smb-credentials,uid=1000,gid=1000,vers=2.0
 ```
@@ -467,31 +510,37 @@ sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o credentials=/etc/smb-credenti
 ```
 
 ### Test Mount with Different Options
+
 ```bash
 sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o username=V250813,password='Akira10012002.',domain=bestpacific.com,uid=1000,gid=1000,vers=3.0
 ```
 
 ### Check SMB Server Accessibility
+
 ```bash
 smbclient -L //10.0.60.30 -U V250813 -W bestpacific.com
 ```
 
 ### Check Mount Point Ownership
+
 ```bash
 ls -ld /mnt/smb
 ```
 
 ### Test with Root User Explicitly
+
 ```bash
 sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o credentials=/etc/smb-credentials,uid=0,gid=0,vers=3.0
 ```
 
 ### Check if Credentials File Format is Correct
+
 ```bash
 sudo cat /etc/smb-credentials | od -c
 ```
 
 ### Test Mount with Verbose Output
+
 ```bash
 sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o credentials=/etc/smb-credentials,uid=1000,gid=1000,vers=3.0,debug
 ```
@@ -505,6 +554,7 @@ sudo mount -t cifs //10.0.60.30/Public /mnt/smb -o credentials=/etc/smb-credenti
 **File:** `/usr/local/bin/mount-smb.sh`
 
 **Change:**
+
 ```bash
 # OLD (WRONG):
 SMB_SHARE="//10.0.60.30/Public"
@@ -514,16 +564,19 @@ SMB_SHARE="//10.0.60.30/BPVN-Fileserver"
 ```
 
 **Commands to fix:**
+
 ```bash
 sudo nano /usr/local/bin/mount-smb.sh
 ```
 
 Change line 7 from:
+
 ```bash
 SMB_SHARE="//10.0.60.30/Public"
 ```
 
 To:
+
 ```bash
 SMB_SHARE="//10.0.60.30/BPVN-Fileserver"
 ```
@@ -597,6 +650,7 @@ docker exec iso-docs-api env | grep SMB
 ```
 
 **Secondary Actions:**
+
 1. Add "Management" department or map to existing department
 2. Update user data if needed
 3. Run database migration/seed
@@ -610,12 +664,14 @@ docker exec iso-docs-api env | grep SMB
 **Status:** ✅ Mount successful, ❌ Path structure mismatch
 
 **Evidence:**
+
 - ✅ Mount successful: `//10.0.60.30/BPVN-Fileserver` mounted to `/mnt/smb`
 - ✅ Docker container can access `/shared`
 - ✅ Environment variables set correctly
 - ❌ **Path mismatch**: Code looks for `/mnt/smb/IT-Information Technology Dept/devTest` but actual path is `/mnt/smb/Public/IT-Information Technology Dept/devTest`
 
 **Actual Folder Structure:**
+
 ```
 /mnt/smb/
   ├── BPT/
@@ -627,6 +683,7 @@ docker exec iso-docs-api env | grep SMB
 ```
 
 **Environment Variable Shows Correct Path:**
+
 ```
 SMB_NETWORK_PATH=\\10.0.60.30\BPVN-Fileserver\Public\IT-Information Technology Dept\devTest
 ```
@@ -672,16 +729,19 @@ docker exec iso-docs-api ls -la "/shared/Public/IT-Information Technology Dept/d
 ### Update SMB_BASE_PATH Environment Variable
 
 **Current (WRONG):**
+
 ```
 SMB_BASE_PATH=IT-Information Technology Dept\devTest
 ```
 
 **Should be (CORRECT):**
+
 ```
 SMB_BASE_PATH=Public/IT-Information Technology Dept/devTest
 ```
 
 **Or (with backslashes for Windows compatibility):**
+
 ```
 SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
 ```
@@ -689,22 +749,26 @@ SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
 ### Where to Update
 
 1. **Environment file** (`.env` or `.env.production`):
+
    ```bash
    SMB_BASE_PATH=Public/IT-Information Technology Dept/devTest
    ```
 
 2. **Docker Compose** (if using environment file):
+
    ```yaml
    environment:
      - SMB_BASE_PATH=${SMB_BASE_PATH}
    ```
 
 3. **Restart Docker container** after updating:
+
    ```bash
    docker restart iso-docs-api
    ```
 
 4. **Verify in container**:
+
    ```bash
    docker exec iso-docs-api env | grep SMB_BASE_PATH
    ```
@@ -716,7 +780,8 @@ SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
 
 ---
 
-**Next Steps:** 
+**Next Steps:**
+
 1. Run verification commands to confirm folder structure
 2. Update `SMB_BASE_PATH` to include `Public/` prefix
 3. Restart Docker container
@@ -737,6 +802,7 @@ SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
 **Issue:** Database contains many "virtual folders" (created from seed data) that don't exist on the actual SMB share.
 
 **Evidence:**
+
 - **SMB Share Reality:** Only 7 folders exist in `Public/IT-Information Technology Dept/devTest`:
   - BOC_SOI, HR, IT, PD, PR, QC, SD
 - **Database Contains:** Many virtual folders from seed.ts:
@@ -744,6 +810,7 @@ SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
   - Plus subfolders: "Tài liệu ISO", "KPI", "Bảo trì thiết bị", "Cải tiến"
 
 **Root Cause:**
+
 1. **Seed.ts creates virtual folders** based on departments (not from SMB)
 2. **Sync service has cleanup logic** (Pass 2) but may not have run correctly
 3. **Path mismatch** - If sync ran from wrong path, cleanup didn't work
@@ -755,6 +822,7 @@ SMB_BASE_PATH=Public\IT-Information Technology Dept\devTest
 ### Why Virtual Folders Exist
 
 **From seed.ts (lines 728-779):**
+
 ```typescript
 // Creates folders based on departments
 const folderPath = dept.code; // e.g., "BOD", "HCNS", "IT"
@@ -782,6 +850,7 @@ for (const sub of subfolders) {
 ### Sync Cleanup Logic
 
 **From folder-sync.service.ts (Pass 2):**
+
 ```typescript
 // Clean up deleted folders
 const allFolders = await prisma.folder.findMany({
@@ -797,6 +866,7 @@ for (const folder of allFolders) {
 ```
 
 **This should cleanup orphaned folders, but:**
+
 - Only works if sync ran from correct path
 - Only works if sync completed successfully
 - Virtual folders will be marked as deleted if not found in `seenPaths`
@@ -810,22 +880,26 @@ for (const folder of allFolders) {
 **After fixing SMB_BASE_PATH, run sync:**
 
 1. **Update SMB_BASE_PATH** (as described above):
+
    ```
    SMB_BASE_PATH=Public/IT-Information Technology Dept/devTest
    ```
 
 2. **Restart container:**
+
    ```bash
    docker restart iso-docs-api
    ```
 
 3. **Trigger sync via API:**
+
    ```bash
    curl -X POST http://localhost:8085/storage/folders/sync \
      -H "Authorization: Bearer YOUR_TOKEN"
    ```
 
 4. **Monitor logs:**
+
    ```bash
    docker logs -f iso-docs-api | grep -i sync
    ```
@@ -845,15 +919,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Real folders that exist on SMB
-const REAL_FOLDERS = [
-  "BOC_SOI",
-  "HR", 
-  "IT",
-  "PD",
-  "PR",
-  "QC",
-  "SD"
-];
+const REAL_FOLDERS = ["BOC_SOI", "HR", "IT", "PD", "PR", "QC", "SD"];
 
 async function cleanup() {
   // Get all active folders
@@ -864,12 +930,12 @@ async function cleanup() {
   let deletedCount = 0;
   for (const folder of allFolders) {
     // Check if folder path matches real folders
-    const folderName = folder.path.split('/').pop();
+    const folderName = folder.path.split("/").pop();
     const isRealFolder = REAL_FOLDERS.includes(folderName);
-    
+
     // Check if path starts with real folder
-    const isInRealFolder = REAL_FOLDERS.some(real => 
-      folder.path.startsWith(real + '/') || folder.path === real
+    const isInRealFolder = REAL_FOLDERS.some(
+      (real) => folder.path.startsWith(real + "/") || folder.path === real
     );
 
     if (!isRealFolder && !isInRealFolder) {
@@ -916,8 +982,8 @@ SELECT COUNT(*) FROM folders WHERE deleted_at IS NULL;
 SELECT path, name FROM folders WHERE deleted_at IS NULL ORDER BY path;
 
 # Count folders by path pattern
-SELECT 
-  CASE 
+SELECT
+  CASE
     WHEN path LIKE 'BOC_SOI%' THEN 'BOC_SOI'
     WHEN path LIKE 'HR%' THEN 'HR'
     WHEN path LIKE 'IT%' THEN 'IT'
@@ -928,7 +994,7 @@ SELECT
     ELSE 'OTHER'
   END as folder_type,
   COUNT(*) as count
-FROM folders 
+FROM folders
 WHERE deleted_at IS NULL
 GROUP BY folder_type
 ORDER BY count DESC;
@@ -973,6 +1039,7 @@ docker logs iso-docs-api | grep -i "sync\|deleted" | tail -50
 **Issue:** Folder `IT/current` shows fewer files in web interface compared to "docs" folder/view.
 
 **Evidence:**
+
 - **SMB Reality:** `IT/current` contains 3 files:
   - `2025.11 BẢNG CHẤM CÔNG - MG - Copy.xlsx`
   - `backblue.gif`
@@ -981,6 +1048,7 @@ docker logs iso-docs-api | grep -i "sync\|deleted" | tail -50
 - **"docs" folder/view:** Shows many more files
 
 **Possible Causes:**
+
 1. **Sync incomplete** - Files in `current` folder not fully synced to database
 2. **Path mismatch** - Database paths don't match SMB structure
 3. **Duplicate entries** - Same file synced multiple times
@@ -1064,9 +1132,9 @@ docker exec iso-docs-api ls -la "/shared/Public/IT-Information Technology Dept/d
 
 ```bash
 # List all IT-related folders
-SELECT id, name, path, parent_id, deleted_at 
-FROM folders 
-WHERE path LIKE '%IT%' 
+SELECT id, name, path, parent_id, deleted_at
+FROM folders
+WHERE path LIKE '%IT%'
 ORDER BY path;
 
 # Check folder hierarchy
@@ -1125,7 +1193,7 @@ ORDER BY f.path;
 ```bash
 # Check if IT/current folder exists in database
 docker exec -it machine-status-postgres psql -U postgres -d documents -c "
-SELECT id, name, path FROM folders 
+SELECT id, name, path FROM folders
 WHERE path LIKE '%IT%current%' AND deleted_at IS NULL;
 "
 ```
@@ -1164,11 +1232,11 @@ HAVING COUNT(*) > 1;
 ```bash
 # Keep only the latest document for each file_name
 docker exec -it machine-status-postgres psql -U postgres -d documents -c "
-UPDATE documents 
+UPDATE documents
 SET status = 'DELETED'
 WHERE id IN (
   SELECT id FROM (
-    SELECT id, 
+    SELECT id,
            ROW_NUMBER() OVER (PARTITION BY file_name ORDER BY updated_at DESC) as rn
     FROM documents d
     JOIN folders f ON d.folder_id = f.id
@@ -1184,6 +1252,7 @@ WHERE id IN (
 ## Expected Results
 
 After sync and cleanup:
+
 - `IT/current` should show exactly 3 documents (matching SMB)
 - No duplicate entries
 - All files from SMB should be in database
@@ -1198,6 +1267,7 @@ After sync and cleanup:
 **Status:** ✅ **ROOT CAUSE FOUND**
 
 **Evidence from Diagnostics:**
+
 - ✅ SMB Reality: 3 files in `IT/current`
 - ❌ Database: 5 documents (should be 3)
 - ❌ **Duplicate Issue:** `BAO GIA KENH FTTH (5).pdf` has 3 duplicate entries
@@ -1207,6 +1277,7 @@ After sync and cleanup:
 **Root Cause:** File `BAO GIA KENH FTTH (5).pdf` was synced 3 times, creating 3 duplicate document records in database.
 
 **Duplicate Details:**
+
 ```
 BAO GIA KENH FTTH (5).pdf | IT/current/BAO GIA KENH FTTH (5).pdf | 483132 | 2026-01-12 20:02:01.386
 BAO GIA KENH FTTH (5).pdf | IT/current/BAO GIA KENH FTTH (5).pdf | 483132 | 2026-01-12 20:02:01.397
@@ -1214,6 +1285,7 @@ BAO GIA KENH FTTH (5).pdf | IT/current/BAO GIA KENH FTTH (5).pdf | 483132 | 2026
 ```
 
 **Why Duplicates Occurred:**
+
 - Sync ran multiple times
 - File was modified/updated during sync
 - Sync logic didn't properly detect existing document
@@ -1230,7 +1302,7 @@ docker exec -it machine-status-postgres psql -U postgres -d documents -c "
 SELECT id, file_name, file_path, updated_at, created_at
 FROM documents d
 JOIN folders f ON d.folder_id = f.id
-WHERE f.path = 'IT/current' 
+WHERE f.path = 'IT/current'
   AND d.file_name = 'BAO GIA KENH FTTH (5).pdf'
   AND d.status = 'ACTIVE'
 ORDER BY updated_at DESC;
@@ -1242,11 +1314,11 @@ ORDER BY updated_at DESC;
 ```bash
 docker exec -it machine-status-postgres psql -U postgres -d documents -c "
 -- First, see what will be deleted (dry run)
-SELECT id, file_name, updated_at, 
+SELECT id, file_name, updated_at,
        ROW_NUMBER() OVER (PARTITION BY file_name ORDER BY updated_at DESC) as rn
 FROM documents d
 JOIN folders f ON d.folder_id = f.id
-WHERE f.path = 'IT/current' 
+WHERE f.path = 'IT/current'
   AND d.file_name = 'BAO GIA KENH FTTH (5).pdf'
   AND d.status = 'ACTIVE';
 "
@@ -1256,15 +1328,15 @@ WHERE f.path = 'IT/current'
 
 ```bash
 docker exec -it machine-status-postgres psql -U postgres -d documents -c "
-UPDATE documents 
+UPDATE documents
 SET status = 'DELETED'
 WHERE id IN (
   SELECT id FROM (
-    SELECT d.id, 
+    SELECT d.id,
            ROW_NUMBER() OVER (PARTITION BY d.file_name ORDER BY d.updated_at DESC) as rn
     FROM documents d
     JOIN folders f ON d.folder_id = f.id
-    WHERE f.path = 'IT/current' 
+    WHERE f.path = 'IT/current'
       AND d.file_name = 'BAO GIA KENH FTTH (5).pdf'
       AND d.status = 'ACTIVE'
   ) t
@@ -1290,6 +1362,7 @@ GROUP BY file_name;
 ```
 
 **Expected Result:**
+
 - Total documents: 3 (matching SMB)
 - Each file_name: count = 1 (no duplicates)
 
@@ -1300,6 +1373,7 @@ GROUP BY file_name;
 **Finding:** No folder named "docs" exists in database (0 documents).
 
 **Possible Explanations:**
+
 1. **User Confusion:** "docs" might refer to:
    - All documents view (aggregated)
    - Another folder with different name
@@ -1316,6 +1390,7 @@ GROUP BY file_name;
    - A virtual folder that was cleaned up
 
 **Recommendation:** Ask user to clarify what "docs" refers to - is it:
+
 - A specific folder path?
 - A UI view/page?
 - Documents from a specific department?
@@ -1324,16 +1399,19 @@ GROUP BY file_name;
 
 ## Summary
 
-**Problem:** 
+**Problem:**
+
 - Database has 5 documents in `IT/current` but SMB only has 3 files
 - File `BAO GIA KENH FTTH (5).pdf` has 3 duplicate entries
 
 **Solution:**
+
 1. ✅ Delete 2 duplicate entries (keep latest)
 2. ✅ Verify count matches SMB (3 documents)
 3. ✅ Investigate why duplicates occurred (sync logic)
 
 **Next Steps:**
+
 1. Run cleanup script to remove duplicates
 2. Verify document count matches SMB
 3. Investigate sync logic to prevent future duplicates

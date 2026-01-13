@@ -16,5 +16,22 @@ export function useCanAccess(action: Actions, subject: Subjects): boolean {
     return false;
   }
 
-  return ability.can(action, subject);
+  // Check manage:all first (admin has full access)
+  if (ability.can("manage", "all")) {
+    return true;
+  }
+
+  // Check specific action on subject
+  if (ability.can(action, subject)) {
+    return true;
+  }
+
+  // Check manage:subject (if user can manage the subject, they can perform any action)
+  if (typeof subject === "string" && subject !== "all") {
+    if (ability.can("manage", subject)) {
+      return true;
+    }
+  }
+
+  return false;
 }
