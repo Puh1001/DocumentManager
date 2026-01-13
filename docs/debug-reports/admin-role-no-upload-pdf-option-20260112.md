@@ -759,3 +759,549 @@ useEffect(() => {
 2. Verify department is selected
 3. Check API response for folders
 4. Fix folderId loading if needed
+
+---
+
+## UPDATE: Race Condition and Login Issue Fixed
+
+**Date:** 2026-01-12  
+**Status:** ✅ Fix Implemented
+
+---
+
+## Additional Root Causes Identified
+
+### Issue 1: Race Condition with Department Selection
+
+**Problem:** `departmentFolderId` useEffect only depends on `selectedDepartmentId`, but `selectedDepartmentId` is set asynchronously when departments load. This causes:
+- On initial mount: `selectedDepartmentId` = "" → `departmentFolderId` = null
+- When departments load: `selectedDepartmentId` is set, but `departmentFolderId` may not reload if the effect doesn't trigger properly
+
+**Evidence:**
+```typescript
+// Line 224-233: selectedDepartmentId is set when departments load
+useEffect(() => {
+  if (departments.length > 0 && !selectedDepartmentId) {
+    setSelectedDepartmentId(departments[0].id); // ← Set asynchronously
+  }
+}, [departments, selectedDepartmentId, selectedYear]);
+
+// Line 475-494: departmentFolderId depends only on selectedDepartmentId
+useEffect(() => {
+  // ... load folderId
+}, [selectedDepartmentId]); // ← May not trigger if selectedDepartmentId was already set
+```
+
+### Issue 2: Login/Logout State Not Reset
+
+**Problem:** When user logs out and logs back in, `selectedDepartmentId` may retain old value, but `departmentFolderId` is not reloaded because the effect doesn't see a change.
+
+**Evidence:**
+- User logs out → `selectedDepartmentId` may still have value
+- User logs in → `selectedDepartmentId` doesn't change → `departmentFolderId` effect doesn't run
+- Component doesn't show upload button because `departmentFolderId` is null
+
+### Issue 3: Department Selection Not Validated
+
+**Problem:** If `selectedDepartmentId` is set but the department is no longer accessible (e.g., after login with different user), the code doesn't reset to a valid department.
+
+---
+
+## Fixes Implemented
+
+### Fix 1: Add User Dependency to folderId Effect
+
+**File:** `apps/web/src/app/[locale]/dashboard/kpi/page.tsx`
+
+**Change:**
+```typescript
+// Before
+useEffect(() => {
+  // ... load folderId
+}, [selectedDepartmentId]);
+
+// After
+useEffect(() => {
+  // ... load folderId
+}, [selectedDepartmentId, user]); // ← Reload when user changes (login/logout)
+```
+
+**Impact:**
+- `departmentFolderId` will reload when user logs in/out
+- Ensures folderId is loaded for the current user's accessible departments
+
+### Fix 2: Validate Department Selection
+
+**File:** `apps/web/src/app/[locale]/dashboard/kpi/page.tsx`
+
+**Change:**
+```typescript
+// Before
+useEffect(() => {
+  if (departments.length > 0 && !selectedDepartmentId) {
+    setSelectedDepartmentId(departments[0].id);
+  } else if (departments.length === 0) {
+    setSelectedDepartmentId("");
+    setLoading(false);
+  }
+  setHasAttemptedAutoCreate(false);
+}, [departments, selectedDepartmentId, selectedYear]);
+
+// After
+useEffect(() => {
+  if (departments.length > 0 && !selectedDepartmentId) {
+    // Set first department as default when departments are loaded and no department is selected
+    setSelectedDepartmentId(departments[0].id);
+  } else if (departments.length === 0) {
+    // No accessible departments - clear selection
+    setSelectedDepartmentId("");
+    setLoading(false);
+  } else if (selectedDepartmentId && !departments.find(d => d.id === selectedDepartmentId)) {
+    // Current selected department is no longer accessible - reset to first available
+    setSelectedDepartmentId(departments[0].id);
+  }
+  setHasAttemptedAutoCreate(false);
+}, [departments, selectedDepartmentId, selectedYear]);
+```
+
+**Impact:**
+- Validates that `selectedDepartmentId` is still accessible
+- Resets to first available department if current selection is invalid
+- Prevents stale department selection after login
+
+### Fix 3: Handle Empty Folders Response
+
+**File:** `apps/web/src/app/[locale]/dashboard/kpi/page.tsx`
+
+**Change:**
+```typescript
+// Before
+if (folders && folders.length > 0) {
+  setDepartmentFolderId(folders[0].id);
+}
+// No else case - departmentFolderId may retain old value
+
+// After
+if (folders && folders.length > 0) {
+  setDepartmentFolderId(folders[0].id);
+} else {
+  // No folders found for this department
+  setDepartmentFolderId(null);
+}
+```
+
+**Impact:**
+- Explicitly sets `departmentFolderId` to null if no folders found
+- Prevents stale folderId from previous department
+
+---
+
+## Testing Checklist
+
+### Test Case 1: Initial Page Load
+- [ ] Navigate to KPI page
+- [ ] Verify department is auto-selected (first in list)
+- [ ] Verify `departmentFolderId` is loaded
+- [ ] Verify upload PDF button appears (if user has permission)
+
+### Test Case 2: Department Change
+- [ ] Select different department from dropdown
+- [ ] Verify `departmentFolderId` reloads
+- [ ] Verify upload PDF button still appears
+
+### Test Case 3: Login/Logout
+- [ ] Logout from application
+- [ ] Login again
+- [ ] Navigate to KPI page
+- [ ] Verify department is selected
+- [ ] Verify `departmentFolderId` is loaded
+- [ ] Verify upload PDF button appears
+
+### Test Case 4: Admin User
+- [ ] Login as admin
+- [ ] Navigate to KPI page
+- [ ] Verify all departments are accessible
+- [ ] Verify upload PDF button appears for all departments
+
+### Test Case 5: Regular User
+- [ ] Login as regular user (with KPI create permission)
+- [ ] Navigate to KPI page
+- [ ] Verify only accessible departments are shown
+- [ ] Verify upload PDF button appears for accessible departments
+
+### Test Case 6: User Without Departments
+- [ ] Login as user without assigned departments
+- [ ] Navigate to KPI page
+- [ ] Verify no departments are shown
+- [ ] Verify no upload PDF button (expected behavior)
+
+---
+
+## Summary of All Fixes
+
+1. ✅ **Permission Check Fix**: Updated `useCanAccess` to check `manage:all` and `manage:subject`
+2. ✅ **Action on All Subject**: Added check for `ability.can(action, "all")`
+3. ✅ **Race Condition Fix**: Added `user` dependency to `departmentFolderId` effect
+4. ✅ **Department Validation**: Added validation to reset invalid department selection
+5. ✅ **Empty Folders Handling**: Explicitly set `departmentFolderId` to null when no folders found
+
+---
+
+**Status:** All fixes implemented. Ready for testing.
+
+---
+
+## UPDATE: Debug Logging Added
+
+**Date:** 2026-01-12  
+**Status:** 🔍 Debug Logging Enabled
+
+---
+
+## Debug Logging Added
+
+### Files Modified
+
+1. **`apps/web/src/components/boss/kpi-attachment-upload.tsx`**
+   - Added console.log for `canCreate`, `folderId`, `kpiRecordId`
+   - Logs when component renders and when permission check fails
+
+2. **`apps/web/src/app/[locale]/dashboard/kpi/page.tsx`**
+   - Added console.log for `departmentFolderId` loading process
+   - Logs when folderId is loaded, when API fails, when no folders found
+
+3. **`apps/web/src/hooks/use-can-access.ts`**
+   - Added detailed console.log for all permission checks
+   - Logs which permission check passes/fails
+   - Logs ability rules for debugging
+
+### How to Debug
+
+1. **Open Browser Console** (F12 → Console tab)
+2. **Navigate to KPI page**
+3. **Look for logs with prefixes:**
+   - `[KPI Page]` - Department folder loading
+   - `[KpiAttachmentUpload]` - Component render status
+   - `[useCanAccess]` - Permission checks
+
+### Expected Logs
+
+**When working correctly:**
+```
+[KPI Page] Loading folder for department: <department-id>
+[KPI Page] Loaded folderId: <folder-id> for department: <department-id>
+[useCanAccess] Allowed via manage:all { action: 'create', subject: 'Kpi' }
+[KpiAttachmentUpload] Debug: { kpiRecordId: '...', folderId: '...', canCreate: true, hasFolderId: true }
+```
+
+**When not working:**
+```
+[KPI Page] No selectedDepartmentId, clearing departmentFolderId
+// OR
+[KPI Page] No folders found for department: <department-id>
+// OR
+[useCanAccess] DENIED { action: 'create', subject: 'Kpi', ... }
+// OR
+[KpiAttachmentUpload] Debug: { ..., canCreate: false, ... }
+```
+
+### Common Issues to Check
+
+1. **departmentFolderId is null:**
+   - Check `[KPI Page]` logs
+   - Verify `selectedDepartmentId` is set
+   - Check API response for `/storage/folders/tree/with-documents`
+
+2. **canCreate is false:**
+   - Check `[useCanAccess]` logs
+   - Verify ability rules contain `manage:all` or `create:Kpi`
+   - Check `/auth/abilities` API response
+
+3. **Component not rendering:**
+   - Check both `departmentFolderId` and `canCreate`
+   - Verify component is in render tree (check React DevTools)
+
+---
+
+## Next Steps
+
+1. **Open browser console** and navigate to KPI page
+2. **Check console logs** for the debug messages above
+3. **Share the logs** so we can identify the exact issue
+4. **Check Network tab** for API calls:
+   - `/auth/abilities` - Should return rules with `manage:all` for admin
+   - `/storage/folders/tree/with-documents?departmentId=...` - Should return folders array
+
+---
+
+**Status:** Debug logging enabled. Please test and share console output.
+
+---
+
+## UPDATE: Fix Applied - Component Renders Based on Permission
+
+**Date:** 2026-01-12  
+**Status:** ✅ Fix Implemented
+
+---
+
+## Root Cause from Logs
+
+**From user logs:**
+1. ✅ Ability loading: `loading: true, hasAbility: false` - Ability đang load, nên `useCanAccess` return false
+2. ❌ **No folders found**: `[KPI Page] No folders found for department: f77b8db2-45c8-4049-9ffc-b39066f2b978`
+3. ❌ Component không render: Vì `departmentFolderId` là null, component không render
+
+**Vấn đề chính:**
+- Component chỉ render khi `departmentFolderId` có giá trị: `{departmentFolderId && <KpiAttachmentUpload ... />}`
+- Nhưng API không trả về folders cho department, nên `departmentFolderId` là null
+- Component không render → không thấy log `[KpiAttachmentUpload]`
+
+---
+
+## Fix Applied
+
+### Change 1: Render Based on Permission, Not folderId
+
+**File:** `apps/web/src/app/[locale]/dashboard/kpi/page.tsx`
+
+**Before:**
+```typescript
+{departmentFolderId && (
+  <KpiAttachmentUpload ... />
+)}
+```
+
+**After:**
+```typescript
+{canCreateAttachments && (
+  <KpiAttachmentUpload
+    folderId={departmentFolderId || ""} // Allow empty, show error if needed
+    ...
+  />
+)}
+```
+
+**Impact:**
+- Component sẽ render dựa trên permission, không phụ thuộc vào `departmentFolderId`
+- User sẽ thấy upload button ngay khi có permission
+- Nếu `folderId` chưa có, component sẽ hiển thị error khi user click upload
+
+### Change 2: Add folderId Validation in Component
+
+**File:** `apps/web/src/components/boss/kpi-attachment-upload.tsx`
+
+**Added:**
+```typescript
+// Check if folderId is available
+if (!folderId) {
+  toast({
+    title: "Lỗi",
+    description: "Không tìm thấy thư mục. Vui lòng chờ hoặc thử lại sau.",
+    variant: "destructive",
+  });
+  return;
+}
+```
+
+**Impact:**
+- User sẽ thấy error message rõ ràng nếu folderId chưa có
+- Component vẫn render, nhưng upload sẽ fail với message rõ ràng
+
+### Change 3: Add canCreateAttachments Permission Check
+
+**File:** `apps/web/src/app/[locale]/dashboard/kpi/page.tsx`
+
+**Added:**
+```typescript
+const canCreateAttachments = useCanAccess("create", "Kpi");
+```
+
+**Impact:**
+- Separate permission check for attachments (khác với `canCreate` từ `canCreateKpi` helper)
+- More granular control
+
+---
+
+## Expected Behavior After Fix
+
+1. **Component renders** khi user có `create:Kpi` permission (không cần `departmentFolderId`)
+2. **Upload button visible** ngay khi permission check pass
+3. **Error message** nếu user click upload mà `folderId` chưa có
+4. **Upload succeeds** khi `folderId` có giá trị
+
+---
+
+## Testing
+
+1. **Test with admin:**
+   - Login as admin
+   - Navigate to KPI page
+   - Verify upload button appears (even if no folders)
+   - Try upload → should see error if no folderId
+   - Wait for folderId to load → try upload again → should succeed
+
+2. **Test with regular user:**
+   - Login as user with `create:Kpi` permission
+   - Navigate to KPI page
+   - Verify upload button appears
+   - Test upload functionality
+
+3. **Check console logs:**
+   - Should see `[KpiAttachmentUpload] Debug` logs now (component renders)
+   - Should see `[useCanAccess]` logs for `create:Kpi` action
+   - Should see `[KPI Page]` logs for folder loading
+
+---
+
+**Status:** Fix implemented. Component now renders based on permission, not folderId.
+
+---
+
+## UPDATE: Unique Constraint Error Fixed
+
+**Date:** 2026-01-12  
+**Status:** ✅ Fix Implemented
+
+---
+
+## Problem: Unique Constraint Failed on Path
+
+**Error:**
+```
+Unique constraint failed on the fields: (`path`)
+Invalid `PrismaClientLike).folder.create()` invocation in
+D:\documentsManager\apps\api\src\modules\kpi\services\kpi-attachment.service.ts:403:73
+```
+
+**Root Cause:**
+- Code đang tìm folder bằng `findFirst` với `departmentId` và `parentId: null`
+- Folder có thể đã tồn tại với path đó (từ seed hoặc sync) nhưng không có `departmentId` set
+- Khi không tìm thấy, code cố gắng `create` với path đã tồn tại → unique constraint error
+
+---
+
+## Fix Applied
+
+### Change 1: Find Folder by Path Instead of departmentId
+
+**File:** `apps/api/src/modules/kpi/services/kpi-attachment.service.ts`
+
+**Before:**
+```typescript
+let departmentFolder = await folder.findFirst({
+  where: {
+    departmentId,
+    parentId: null,
+    deletedAt: null,
+  },
+});
+```
+
+**After:**
+```typescript
+// Get department info first
+const department = await department.findUnique({ where: { id: departmentId } });
+const folderPath = department.code;
+
+// Find by path (unique) instead of departmentId
+let departmentFolder = await folder.findUnique({
+  where: { path: folderPath },
+});
+```
+
+**Impact:**
+- Tìm folder theo path (unique) thay vì departmentId
+- Tránh trường hợp folder tồn tại nhưng không có departmentId
+
+### Change 2: Handle Race Condition with Try-Catch
+
+**File:** `apps/api/src/modules/kpi/services/kpi-attachment.service.ts`
+
+**Added:**
+```typescript
+try {
+  departmentFolder = await folder.create({ ... });
+} catch (error: unknown) {
+  // Handle race condition: folder might have been created by another request
+  const isUniqueConstraintError =
+    error && typeof error === "object" && "code" in error && error.code === "P2002";
+  
+  if (isUniqueConstraintError) {
+    // Fetch existing folder
+    departmentFolder = await folder.findUnique({ where: { path: folderPath } });
+  } else {
+    throw error;
+  }
+}
+```
+
+**Impact:**
+- Handle race condition khi nhiều requests cùng tạo folder
+- Fetch existing folder nếu unique constraint error
+
+### Change 3: Update Existing Folder if Needed
+
+**File:** `apps/api/src/modules/kpi/services/kpi-attachment.service.ts`
+
+**Added:**
+```typescript
+if (departmentFolder) {
+  // Folder exists - check if needs update
+  if (!departmentFolder.departmentId || departmentFolder.deletedAt) {
+    // Update departmentId and restore if deleted
+    await folder.update({
+      where: { id: departmentFolder.id },
+      data: {
+        departmentId: department.id,
+        deletedAt: null,
+      },
+    });
+  }
+}
+```
+
+**Impact:**
+- Update departmentId nếu folder tồn tại nhưng chưa có departmentId
+- Restore folder nếu đã bị soft delete
+
+### Change 4: Fix findOrCreateFolderByName to Use Path
+
+**File:** `apps/api/src/modules/kpi/services/kpi-attachment.service.ts`
+
+**Before:**
+```typescript
+const existing = await folder.findFirst({
+  where: { parentId, name: folderName, deletedAt: null },
+});
+```
+
+**After:**
+```typescript
+const folderPath = `${parent.path}/${folderName}`;
+const existing = await folder.findUnique({
+  where: { path: folderPath },
+});
+```
+
+**Impact:**
+- Tìm folder theo path (unique) thay vì name+parentId
+- Tránh duplicate và race condition
+
+---
+
+## Summary of All Fixes
+
+1. ✅ **Permission Check Fix**: Updated `useCanAccess` to check `manage:all` and `manage:subject`
+2. ✅ **Action on All Subject**: Added check for `ability.can(action, "all")`
+3. ✅ **Race Condition Fix**: Added `user` dependency to `departmentFolderId` effect
+4. ✅ **Department Validation**: Added validation to reset invalid department selection
+5. ✅ **Empty Folders Handling**: Explicitly set `departmentFolderId` to null when no folders found
+6. ✅ **Component Render Fix**: Render based on permission, not folderId
+7. ✅ **Auto-Create Folder**: Backend auto-creates folder structure when folderId not provided
+8. ✅ **Validation Fix**: `folderId` is optional, only validate UUID when provided
+9. ✅ **Unique Constraint Fix**: Find folder by path, handle race condition with try-catch
+
+---
+
+**Status:** All fixes implemented. Ready for testing.

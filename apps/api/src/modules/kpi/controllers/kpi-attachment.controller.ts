@@ -50,7 +50,7 @@ export class KpiAttachmentController {
           format: "binary",
         },
       },
-      required: ["folderId", "file"],
+      required: ["file"], // folderId is optional, will auto-create if not provided
     },
   })
   @UseInterceptors(FileInterceptor("file"))

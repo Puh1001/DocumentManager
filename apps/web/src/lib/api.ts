@@ -879,7 +879,7 @@ export const kpiAttachmentApi = {
   uploadAttachment: (
     kpiRecordId: string,
     file: File,
-    folderId: string,
+    folderId: string | undefined,
     description?: string
   ) =>
     api.upload<{
@@ -888,7 +888,8 @@ export const kpiAttachmentApi = {
       description?: string | null;
       createdAt: string;
     }>(`/kpi/records/${kpiRecordId}/attachments`, file, {
-      folderId,
+      // Only include folderId if it's a valid non-empty string
+      ...(folderId && folderId.trim() !== "" && { folderId }),
       ...(description && { description }),
     }),
   deleteAttachment: (attachmentId: string) =>

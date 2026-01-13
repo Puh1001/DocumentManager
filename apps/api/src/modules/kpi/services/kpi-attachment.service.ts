@@ -37,7 +37,7 @@ export class KpiAttachmentService {
   async uploadAttachment(
     kpiRecordId: string,
     file: Express.Multer.File,
-    folderId: string,
+    folderId: string | undefined,
     description: string | undefined,
     user: UserWithDepartments
   ) {
@@ -72,9 +72,20 @@ export class KpiAttachmentService {
       );
     }
 
+    // Find or create folder for department if folderId is not provided
+    let targetFolderId = folderId;
+    if (!targetFolderId) {
+      targetFolderId = await this.findOrCreateDepartmentKpiFolder(
+        record.departmentId
+      );
+      this.logger.log(
+        `Auto-created KPI folder for department ${record.departmentId}: ${targetFolderId}`
+      );
+    }
+
     // Store file using existing document pipeline on SMB-backed storage
     const document = await this.documentService.upload(
-      folderId,
+      targetFolderId,
       file,
       user.userId,
       record.title
@@ -354,38 +365,214 @@ export class KpiAttachmentService {
   }
 
   /**
+   * Find or create department KPI folder structure: Department -> KPI -> current
+   * Returns the "current" folder ID where KPI attachments should be stored
+   */
+  private async findOrCreateDepartmentKpiFolder(
+    departmentId: string
+  ): Promise<string> {
+    // Step 1: Get department info first
+    const department = await (
+      this.prisma as PrismaClientLike
+    ).department.findUnique({
+      where: { id: departmentId },
+      select: { id: true, code: true, nameVi: true },
+    });
+
+    if (!department) {
+      throw CustomException.notFound(
+        ErrorCodes.DEPARTMENT.NOT_FOUND,
+        "Department not found"
+      );
+    }
+
+    // Step 2: Find or create department root folder by path (path is unique)
+    const folderPath = department.code;
+
+    // Try to find by path first (more reliable than departmentId)
+    let departmentFolder = await (
+      this.prisma as PrismaClientLike
+    ).folder.findUnique({
+      where: { path: folderPath },
+    });
+
+    if (!departmentFolder) {
+      // Folder doesn't exist - create it
+      await this.smbService.createDirectory(folderPath);
+
+      try {
+        departmentFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.create({
+          data: {
+            name: department.nameVi || department.code,
+            path: folderPath,
+            parentId: null,
+            departmentId: department.id,
+          },
+        });
+
+        this.logger.log(`Created department root folder: ${folderPath}`);
+      } catch (error: unknown) {
+        // Handle race condition: folder might have been created by another request
+        // Check if it's a Prisma unique constraint error (P2002)
+        const isUniqueConstraintError =
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002";
+
+        if (isUniqueConstraintError) {
+          this.logger.warn(
+            `Folder ${folderPath} already exists (race condition), fetching existing folder`
+          );
+          // Fetch the existing folder
+          departmentFolder = await (
+            this.prisma as PrismaClientLike
+          ).folder.findUnique({
+            where: { path: folderPath },
+          });
+          if (!departmentFolder) {
+            throw CustomException.notFound(
+              ErrorCodes.FOLDER.NOT_FOUND,
+              `Failed to create or find folder: ${folderPath}`
+            );
+          }
+        } else {
+          // Re-throw other errors
+          throw error;
+        }
+      }
+    } else {
+      // Folder exists - check if needs update
+      if (!departmentFolder.departmentId || departmentFolder.deletedAt) {
+        // Folder exists but departmentId not set or was deleted - update it
+        await (this.prisma as PrismaClientLike).folder.update({
+          where: { id: departmentFolder.id },
+          data: {
+            departmentId: department.id,
+            deletedAt: null, // Restore if deleted
+          },
+        });
+        this.logger.log(
+          `Updated department folder: ${folderPath} with departmentId: ${department.id}`
+        );
+        // Reload folder to get updated data
+        const updatedFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
+          where: { path: folderPath },
+        });
+        if (updatedFolder) {
+          departmentFolder = updatedFolder;
+        }
+      }
+    }
+
+    // Ensure departmentFolder is not null (should never happen, but TypeScript needs this)
+    if (!departmentFolder) {
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        `Failed to find or create department folder: ${folderPath}`
+      );
+    }
+
+    // Step 2: Find or create "KPI" subfolder
+    const kpiFolder = await this.findOrCreateFolderByName(
+      departmentFolder.id,
+      "KPI"
+    );
+
+    // Step 3: Find or create "current" subfolder in KPI folder (if it exists in structure)
+    // Check if "current" subfolder exists, if not, use KPI folder directly
+    let targetFolder = kpiFolder;
+    try {
+      const currentFolder = await this.findOrCreateFolderByName(
+        kpiFolder.id,
+        "current"
+      );
+      targetFolder = currentFolder;
+    } catch (error) {
+      // If "current" folder creation fails, use KPI folder directly
+      this.logger.warn(
+        `Could not create "current" subfolder in KPI folder, using KPI folder directly: ${error}`
+      );
+    }
+
+    return targetFolder.id;
+  }
+
+  /**
    * Find or create a folder by name within a parent folder
    */
   private async findOrCreateFolderByName(parentId: string, folderName: string) {
-    // Try to find existing folder
-    const existing = await (this.prisma as PrismaClientLike).folder.findFirst({
-      where: {
-        parentId,
-        name: folderName,
-        deletedAt: null,
-      },
+    // Get parent folder to build path
+    const parent = await this.folderService.findById(parentId);
+    const folderPath = `${parent.path}/${folderName}`;
+
+    // Try to find existing folder by path (more reliable than name+parentId)
+    const existing = await (this.prisma as PrismaClientLike).folder.findUnique({
+      where: { path: folderPath },
     });
 
     if (existing) {
+      // Folder exists - restore if deleted, update parentId/departmentId if needed
+      if (existing.deletedAt || existing.parentId !== parentId) {
+        await (this.prisma as PrismaClientLike).folder.update({
+          where: { id: existing.id },
+          data: {
+            deletedAt: null,
+            parentId,
+            departmentId: parent.departmentId,
+          },
+        });
+        // Reload to get updated data
+        return (this.prisma as PrismaClientLike).folder.findUnique({
+          where: { path: folderPath },
+        }) as Promise<typeof existing>;
+      }
       return existing;
     }
 
     // Create new folder
-    const parent = await this.folderService.findById(parentId);
-    const folderPath = `${parent.path}/${folderName}`;
-
     // Create physical folder
     await this.smbService.createDirectory(folderPath);
 
     // Create in database
-    return (this.prisma as PrismaClientLike).folder.create({
-      data: {
-        name: folderName,
-        path: folderPath,
-        parentId,
-        departmentId: parent.departmentId,
-      },
-    });
+    try {
+      return await (this.prisma as PrismaClientLike).folder.create({
+        data: {
+          name: folderName,
+          path: folderPath,
+          parentId,
+          departmentId: parent.departmentId,
+        },
+      });
+    } catch (error: unknown) {
+      // Handle race condition: folder might have been created by another request
+      const isUniqueConstraintError =
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2002";
+
+      if (isUniqueConstraintError) {
+        this.logger.warn(
+          `Folder ${folderPath} already exists (race condition), fetching existing folder`
+        );
+        // Fetch the existing folder
+        const existingFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
+          where: { path: folderPath },
+        });
+        if (existingFolder) {
+          return existingFolder;
+        }
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   private async loadAttachmentWithRecord(

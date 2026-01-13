@@ -192,6 +192,7 @@ export default function KpiPage() {
 
   const canViewAttachments = useCanAccess("view", "Kpi");
   const canDeleteAttachments = useCanAccess("delete", "Kpi");
+  const canCreateAttachments = useCanAccess("create", "Kpi");
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -223,10 +224,15 @@ export default function KpiPage() {
   // Update selected department when filtered departments change
   useEffect(() => {
     if (departments.length > 0 && !selectedDepartmentId) {
+      // Set first department as default when departments are loaded and no department is selected
       setSelectedDepartmentId(departments[0].id);
     } else if (departments.length === 0) {
+      // No accessible departments - clear selection
       setSelectedDepartmentId("");
       setLoading(false);
+    } else if (selectedDepartmentId && !departments.find(d => d.id === selectedDepartmentId)) {
+      // Current selected department is no longer accessible - reset to first available
+      setSelectedDepartmentId(departments[0].id);
     }
     // Reset auto-create flag when department or year changes
     setHasAttemptedAutoCreate(false);
@@ -476,22 +482,40 @@ export default function KpiPage() {
     const loadFolderId = async () => {
       if (!selectedDepartmentId) {
         setDepartmentFolderId(null);
+        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+          console.log("[KPI Page] No selectedDepartmentId, clearing departmentFolderId");
+        }
         return;
       }
       try {
+        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+          console.log("[KPI Page] Loading folder for department:", selectedDepartmentId);
+        }
         const folders = await api.get<Array<{ id: string; name: string; children?: unknown[] }>>(
           `/storage/folders/tree/with-documents?departmentId=${selectedDepartmentId}`
         );
         if (folders && folders.length > 0) {
           setDepartmentFolderId(folders[0].id);
+          if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+            console.log("[KPI Page] Loaded folderId:", folders[0].id, "for department:", selectedDepartmentId);
+          }
+        } else {
+          // No folders found for this department
+          setDepartmentFolderId(null);
+          if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+            console.warn("[KPI Page] No folders found for department:", selectedDepartmentId);
+          }
         }
       } catch (err) {
         console.warn("Failed to load department folder:", err);
         setDepartmentFolderId(null);
+        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+          console.error("[KPI Page] Error loading folder:", err);
+        }
       }
     };
     loadFolderId();
-  }, [selectedDepartmentId]);
+  }, [selectedDepartmentId, user]); // Add user dependency to reload on login
 
   // Helper function to calculate average for a metric
   const calculateMetricAverage = (metric: KpiMetric | null | undefined) => {
@@ -1872,10 +1896,11 @@ export default function KpiPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {departmentFolderId && (
+                        {/* Show upload button if user has permission, even if folderId is not loaded yet */}
+                        {canCreateAttachments && (
                           <KpiAttachmentUpload
                             kpiRecordId={record.id}
-                            folderId={departmentFolderId}
+                            folderId={departmentFolderId || undefined} // Optional - backend will auto-create if not provided
                             onUploadSuccess={(attachment) => {
                               const currentAttachments = attachmentsMap.get(record.id) || [];
                               setAttachmentsMap(

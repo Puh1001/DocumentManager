@@ -38,6 +38,9 @@
   "searchPlaceholder": "Search documents...",
   "admin": "Admin",
   "passwordChangeDescription": "Update your account password.",
+  "cancel": "Cancel",
+  "save": "Save",
+  "saving": "Saving...",
   "accessDenied": {
     "title": "Access Denied",
     "description": "You don't have permission to access this page. Please contact your administrator if you believe this is an error.",

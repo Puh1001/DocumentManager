@@ -38,6 +38,9 @@
   "searchPlaceholder": "Tìm kiếm tài liệu...",
   "admin": "Quản trị viên",
   "passwordChangeDescription": "Đổi mật khẩu tài khoản của bạn.",
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "saving": "Đang lưu...",
   "accessDenied": {
     "title": "Truy cập bị từ chối",
     "description": "Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.",

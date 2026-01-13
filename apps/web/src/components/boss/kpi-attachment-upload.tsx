@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 
 interface KpiAttachmentUploadProps {
   kpiRecordId: string;
-  folderId: string;
+  folderId: string | undefined; // Optional - backend will auto-create if not provided
   onUploadSuccess: (attachment: KpiAttachment) => void;
   variant?: "default" | "cyber"; // Style variant: default for regular UI, cyber for boss UI
 }
@@ -26,6 +26,16 @@ export function KpiAttachmentUpload({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canCreate = useCanAccess("create", "Kpi");
+
+  // Debug logging (temporary)
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    console.log("[KpiAttachmentUpload] Debug:", {
+      kpiRecordId,
+      folderId,
+      canCreate,
+      hasFolderId: !!folderId,
+    });
+  }
 
   if (!canCreate) {
     return null;
@@ -51,6 +61,7 @@ export function KpiAttachmentUpload({
       return;
     }
 
+    // folderId is optional - backend will auto-create folder if not provided
     setUploading(true);
     try {
       const result = await kpiAttachmentApi.uploadAttachment(
