@@ -306,19 +306,30 @@ export function useCanAccess(action: Actions, subject: Subjects): boolean {
 
 ## Status
 
-🔴 **FIX REQUIRED**
+✅ **FIX IMPLEMENTED**
 
-**Immediate Action:**
-1. Update `useCanAccess` hook to check `manage:all` and `manage:subject`
-2. Test with admin user
-3. Verify upload option appears
-4. Test upload functionality
+**Implementation:**
+1. ✅ Updated `useCanAccess` hook to check `manage:all` and `manage:subject`
+2. ✅ Build successful - no compilation errors
+3. ⏳ Pending: Test with admin user
+4. ⏳ Pending: Verify upload option appears
+5. ⏳ Pending: Test upload functionality
+
+**Changes Made:**
+- File: `apps/web/src/hooks/use-can-access.ts`
+- Added `manage:all` check first (admin full access)
+- Added `manage:subject` check as fallback
+- Matches backend `PoliciesGuard` logic
 
 **Impact:**
 - Affects all components using `useCanAccess` hook
-- Should improve consistency with backend permission checks
-- Admin users will have proper access to all features
+- Improves consistency with backend permission checks
+- Admin users will now have proper access to all features
 
 ---
 
-**Next Steps:** Implement fix in `useCanAccess` hook following the pattern used in backend `PoliciesGuard`.
+**Next Steps:** 
+1. Test with admin user in browser
+2. Verify upload PDF option appears
+3. Test upload functionality
+4. Verify no regressions in other components using `useCanAccess`
