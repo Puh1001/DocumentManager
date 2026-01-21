@@ -61,39 +61,10 @@ export default function BossPage() {
     }
   }, [user, loadDepartments]);
 
-  // Temporarily hide specific departments
-  // Departments to hide: General Manager's Office, PD, Industrial Engineering Department, QC, SD, Production Department, PR, MG
+  // No filtering needed here - DepartmentKpiStatus component already filters
+  // departments with totalKpis > 0, and deactivated departments are not returned by API
   const visibleDepartments = useMemo(() => {
-    const hiddenNames = [
-      "General Manager's Office",
-      "PD",
-      "Industrial Engineering Department",
-      "QC",
-      "SD",
-      "Production Department",
-      "PR",
-      "MG",
-    ];
-    const hiddenCodes = ["PD", "QC", "SD", "PR", "MG"];
-
-    return departments.filter((dept) => {
-      const nameEn = dept.nameEn?.toLowerCase() || "";
-      const nameVi =
-        dept.nameVi?.toLowerCase() || dept.name?.toLowerCase() || "";
-      const code = dept.code?.toUpperCase() || "";
-
-      // Check if department should be hidden
-      const isHiddenByName = hiddenNames.some(
-        (hiddenName) =>
-          nameEn.includes(hiddenName.toLowerCase()) ||
-          nameVi.includes(hiddenName.toLowerCase())
-      );
-      const isHiddenByCode = hiddenCodes.some(
-        (hiddenCode) => code === hiddenCode.toUpperCase()
-      );
-
-      return !isHiddenByName && !isHiddenByCode;
-    });
+    return departments;
   }, [departments]);
 
   if (isLoading) {
