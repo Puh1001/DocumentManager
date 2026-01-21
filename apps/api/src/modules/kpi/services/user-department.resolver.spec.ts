@@ -7,6 +7,9 @@ import { ErrorCodes } from "@/common/errors/error-codes";
 type MockUserWithRoles = {
   id: string;
   department: string | null;
+  departments?: Array<{
+    departmentId: string;
+  }>;
   roles: Array<{
     role: {
       name: string;
@@ -30,6 +33,7 @@ describe("UserDepartmentResolver", () => {
   const mockUser: MockUserWithRoles = {
     id: "user-1",
     department: "IT",
+    departments: [],
     roles: [
       {
         role: {
@@ -178,6 +182,7 @@ describe("UserDepartmentResolver", () => {
         roles: ["editor"],
         isAdmin: false,
         isBoss: false,
+        isKpiViewerAll: false,
       });
     });
 

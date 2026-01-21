@@ -188,19 +188,26 @@ export function DepartmentKpiStatus({
   }, [departments.length, loadStatuses]);
 
   // Filter statuses based on selected filter
+  // Only show departments with KPI records (totalKpis > 0)
   const filteredStatuses = useMemo(() => {
+    // Filter out departments with no KPI records (e.g., IT, DCC, AC)
+    const deptsWithKpi = statuses.filter((s) => s.totalKpis > 0);
+    
     if (filter === "all") {
-      return statuses;
+      return deptsWithKpi;
     }
-    return statuses.filter((s) => s.status === filter);
+    return deptsWithKpi.filter((s) => s.status === filter);
   }, [statuses, filter]);
 
-  // Calculate summary statistics
+  // Calculate summary statistics (only for departments with KPI records)
   const summary = useMemo(() => {
-    const total = statuses.length;
-    const completed = statuses.filter((s) => s.status === "completed").length;
-    const partial = statuses.filter((s) => s.status === "partial").length;
-    const incomplete = statuses.filter((s) => s.status === "incomplete").length;
+    // Only count departments with KPI records
+    const deptsWithKpi = statuses.filter((s) => s.totalKpis > 0);
+    
+    const total = deptsWithKpi.length;
+    const completed = deptsWithKpi.filter((s) => s.status === "completed").length;
+    const partial = deptsWithKpi.filter((s) => s.status === "partial").length;
+    const incomplete = deptsWithKpi.filter((s) => s.status === "incomplete").length;
 
     return { total, completed, partial, incomplete };
   }, [statuses]);

@@ -1,0 +1,33 @@
+STT	Mã bộ phận	Tên tiếng Anh	Tên bộ phận (Tiếng Việt)
+1	V-Tech		Công nghệ
+2	SD	Sales Dept.	Kinh doanh
+3	HR	Human Resource Dept.	HCNS (Hành chính Nhân sự)
+4	AC	Accounting Dept.	Kế toán
+5	PMC	Production Material Control	Kế hoạch sản xuất
+6	WA	Warping & Knitting Dept.	Dệt dọc
+7	EG	Engineering Dept.	Công trình
+8	WH	Warehouse Dept.	Kho
+9	QA	Quality Assurance	QA
+10	QC(E)	Elastic Quality Control	QC đai
+11	IT	Information Technology	Thông tin
+12	PUR	Purchasing Dept.	Thu mua
+13	CV	Covering	Bọc sợi
+14	WD	Warping Dept.	Kéo sợi
+15	DCC	Document Control Center	Kiểm soát văn kiện
+16	WK	Weft Knitting Dept.	Dệt ngang
+17	IE	Industry Engineering Dept.	Công trình dự án
+18	DH	Fabric Dyeing	Nhuộm vải
+19	DF	Elastic Dyeing	Nhuộm đai
+20	SS	Scouring and Setting	Định hình
+21	SHD	Shipping Dept.	Xuất nhập khẩu
+22	PT	Printing Dept.	In hoa
+23	LTB(F)	Fabric Little to bulk	LTB vải
+24	YDF	Yarn Weaving and Finishing	Nhuộm sợi
+25	BOD	Board of Director	Ban giám đốc
+26	WV	Elastic Weaving Dept.	Dệt đai
+27	PW	Preceding & Weaving	GĐ Trước nhuộm sợi
+28	QC(F)	Fabric Quality Control	QC vải
+29	LAB	Laboratory	Thí nghiệm
+30	TL	Testing Laboratory	Kiểm nghiệm
+31	RD	Research and Development	Nghiên cứu và phát triển
+32	LTB(E)	Elastic Little to bulk	LTB đai

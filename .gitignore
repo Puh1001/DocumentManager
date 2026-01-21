@@ -53,3 +53,8 @@ backups/
 deploy.log
 *.backup
 *.sql.backup
+
+.agent
+.cursor
+.claude
+.antigravity
