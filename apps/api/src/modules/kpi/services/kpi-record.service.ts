@@ -4,6 +4,7 @@ import { CreateKpiRecordDto } from "../dto/create-kpi-record.dto";
 import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
+import { KpiStatus } from "@prisma/client";
 import {
   UserWithDepartments,
   UserDepartmentResolver,
@@ -145,6 +146,7 @@ export class KpiRecordService {
         targetValue: dto.targetValue,
         displayType: dto.displayType,
         rowMode: dto.rowMode,
+        status: dto.status,
       },
     });
   }
@@ -203,6 +205,7 @@ export class KpiRecordService {
         targetValue: dto.targetValue,
         displayType: dto.displayType,
         rowMode: dto.rowMode,
+        status: dto.status,
       },
     });
   }
@@ -238,6 +241,117 @@ export class KpiRecordService {
     return this.prisma.kpiRecord.delete({
       where: { id },
     });
+  }
+
+  /**
+   * Update KPI record status manually.
+   * Validates department access and user permissions.
+   */
+  async updateStatus(
+    id: string,
+    status: KpiStatus,
+    user: UserWithDepartments
+  ) {
+    // Check existing record
+    const existing = await this.prisma.kpiRecord.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        departmentId: true,
+        status: true,
+      },
+    });
+
+    if (!existing) {
+      throw CustomException.notFound(
+        ErrorCodes.KPI.RECORD_NOT_FOUND,
+        "KPI record not found"
+      );
+    }
+
+    // Check department access
+    this.checkDepartmentAccess(existing.departmentId, user);
+
+    // kpi_viewer_all role is read-only
+    if (user.isKpiViewerAll) {
+      this.logger.warn(
+        `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to update KPI status`,
+        { userId: user.userId, recordId: id }
+      );
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot update KPI status."
+      );
+    }
+
+    // Validate status transition
+    this.validateStatusTransition(existing.status, status);
+
+    // Update status
+    const updated = await this.prisma.kpiRecord.update({
+      where: { id },
+      data: { status },
+      include: {
+        department: true,
+        metrics: {
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+
+    // Audit log
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.userId,
+        action: "UPDATE",
+        resourceType: "KpiRecord",
+        resourceId: id,
+        details: {
+          field: "status",
+          oldValue: existing.status,
+          newValue: status,
+        },
+      },
+    });
+
+    this.logger.log(
+      `KPI record ${id} status updated: ${existing.status} → ${status} by user ${user.userId}`
+    );
+
+    return updated;
+  }
+
+  /**
+   * Validate if status transition is allowed
+   * @throws CustomException if transition is invalid
+   */
+  private validateStatusTransition(
+    currentStatus: KpiStatus,
+    newStatus: KpiStatus
+  ): void {
+    // Same status is always allowed (no-op)
+    if (currentStatus === newStatus) {
+      return;
+    }
+
+    // Define valid state transitions
+    const allowedTransitions: Record<KpiStatus, KpiStatus[]> = {
+      [KpiStatus.PENDING]: [KpiStatus.IN_PROGRESS, KpiStatus.COMPLETED],
+      [KpiStatus.IN_PROGRESS]: [KpiStatus.COMPLETED, KpiStatus.PENDING],
+      [KpiStatus.COMPLETED]: [KpiStatus.IN_PROGRESS, KpiStatus.PENDING],
+    };
+
+    const allowed = allowedTransitions[currentStatus] || [];
+
+    if (!allowed.includes(newStatus)) {
+      this.logger.warn(
+        `Invalid status transition attempted: ${currentStatus} → ${newStatus}`
+      );
+      throw CustomException.badRequest(
+        ErrorCodes.INVALID_INPUT,
+        `Invalid status transition: ${currentStatus} → ${newStatus}`
+      );
+    }
   }
 
   /**

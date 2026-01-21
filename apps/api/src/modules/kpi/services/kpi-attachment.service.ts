@@ -6,6 +6,7 @@ import { FolderService } from "@/modules/storage/services/folder.service";
 import { SmbService } from "@/modules/storage/services/smb.service";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
+import { KpiStatus } from "@prisma/client";
 import {
   UserDepartmentResolver,
   UserWithDepartments,
@@ -91,34 +92,49 @@ export class KpiAttachmentService {
       record.title
     );
 
-    const attachment = await (
-      this.prisma as PrismaClientLike
-    ).kpiAttachment.create({
-      data: {
-        kpiRecordId: record.id,
-        documentId: document.id,
-        description,
-        createdById: user.userId,
-      },
-      include: {
-        createdBy: true,
-      },
-    });
+    // Use transaction for atomic operations: attachment creation + audit log + status update
+    const attachment = await (this.prisma as PrismaClientLike).$transaction(
+      async (tx) => {
+        const createdAttachment = await tx.kpiAttachment.create({
+          data: {
+            kpiRecordId: record.id,
+            documentId: document.id,
+            description,
+            createdById: user.userId,
+          },
+          include: {
+            createdBy: true,
+          },
+        });
 
-    // Basic audit log entry – detailed structure can be extended later
-    await this.prisma.auditLog.create({
-      data: {
-        userId: user.userId,
-        action: "UPLOAD",
-        resourceType: "KpiAttachment",
-        resourceId: attachment.id,
-        details: {
-          kpiRecordId: record.id,
-          documentId: document.id,
-          fileName: document.fileName,
-        },
-      },
-    });
+        // Audit log within transaction
+        await tx.auditLog.create({
+          data: {
+            userId: user.userId,
+            action: "UPLOAD",
+            resourceType: "KpiAttachment",
+            resourceId: createdAttachment.id,
+            details: {
+              kpiRecordId: record.id,
+              documentId: document.id,
+              fileName: document.fileName,
+            },
+          },
+        });
+
+        // Auto-update KPI status to COMPLETED (atomic with attachment)
+        await tx.kpiRecord.update({
+          where: { id: record.id },
+          data: { status: KpiStatus.COMPLETED },
+        });
+
+        this.logger.log(
+          `Auto-updated KPI record ${record.id} status to COMPLETED after attachment upload`
+        );
+
+        return createdAttachment;
+      }
+    );
 
     return attachment;
   }
@@ -270,24 +286,51 @@ export class KpiAttachmentService {
       });
     }
 
-    // Delete the attachment record
-    await (this.prisma as PrismaClientLike).kpiAttachment.delete({
-      where: { id: attachmentId },
-    });
+    // Use transaction for atomic operations: delete attachment + status revert + audit log
+    await (this.prisma as PrismaClientLike).$transaction(async (tx) => {
+      // Delete the attachment record
+      await tx.kpiAttachment.delete({
+        where: { id: attachmentId },
+      });
 
-    // Log the deletion
-    await this.prisma.auditLog.create({
-      data: {
-        userId: user.userId,
-        action: "DELETE",
-        resourceType: "KpiAttachment",
-        resourceId: attachment.id,
-        details: {
-          kpiRecordId: attachment.kpiRecordId,
-          documentId: attachment.documentId,
-          movedToDeleteFolder: deleteFolder.path,
+      // Check remaining attachments for this KPI record
+      const remainingCount = await tx.kpiAttachment.count({
+        where: { kpiRecordId: attachment.kpiRecordId },
+      });
+
+      // If no attachments remain and status is COMPLETED, revert to PENDING
+      if (remainingCount === 0) {
+        const kpiRecord = await tx.kpiRecord.findUnique({
+          where: { id: attachment.kpiRecordId },
+          select: { status: true },
+        });
+
+        if (kpiRecord?.status === KpiStatus.COMPLETED) {
+          await tx.kpiRecord.update({
+            where: { id: attachment.kpiRecordId },
+            data: { status: KpiStatus.PENDING },
+          });
+
+          this.logger.log(
+            `Auto-reverted KPI record ${attachment.kpiRecordId} status to PENDING after deleting last attachment`
+          );
+        }
+      }
+
+      // Audit log within transaction
+      await tx.auditLog.create({
+        data: {
+          userId: user.userId,
+          action: "DELETE",
+          resourceType: "KpiAttachment",
+          resourceId: attachment.id,
+          details: {
+            kpiRecordId: attachment.kpiRecordId,
+            documentId: attachment.documentId,
+            movedToDeleteFolder: deleteFolder.path,
+          },
         },
-      },
+      });
     });
 
     return { success: true };

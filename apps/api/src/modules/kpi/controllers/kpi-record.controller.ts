@@ -16,16 +16,19 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
+import { PoliciesGuard } from "@/modules/authorization/guards/policies.guard";
+import { CheckPolicies } from "@/modules/authorization/decorators/check-policies.decorator";
 import { KpiRecordService } from "../services/kpi-record.service";
 import { CreateKpiRecordDto } from "../dto/create-kpi-record.dto";
 import { UpdateKpiRecordDto } from "../dto/update-kpi-record.dto";
+import { UpdateKpiStatusDto } from "../dto/update-kpi-status.dto";
 import { UserDepartmentGuard } from "../guards/user-department.guard";
 import { CurrentUserWithDepartment } from "../decorators/current-user-with-department.decorator";
 import { UserWithDepartments } from "../services/user-department.resolver";
 
 @ApiTags("KPI Records")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, UserDepartmentGuard)
+@UseGuards(JwtAuthGuard, UserDepartmentGuard, PoliciesGuard)
 @Controller("kpi/records")
 export class KpiRecordController {
   constructor(private readonly kpiRecordService: KpiRecordService) {}
@@ -83,5 +86,16 @@ export class KpiRecordController {
     @Param("id") id: string
   ) {
     return this.kpiRecordService.remove(id, user);
+  }
+
+  @Patch(":id/status")
+  @CheckPolicies({ action: "edit", subject: "Kpi" })
+  @ApiOperation({ summary: "Update KPI record status" })
+  async updateStatus(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") id: string,
+    @Body() dto: UpdateKpiStatusDto
+  ) {
+    return this.kpiRecordService.updateStatus(id, dto.status, user);
   }
 }

@@ -8,6 +8,7 @@ import {
   Max,
   Min,
 } from "class-validator";
+import { KpiStatus } from "@prisma/client";
 
 export enum DisplayType {
   PERCENTAGE = "PERCENTAGE",
@@ -60,4 +61,14 @@ export class CreateKpiRecordDto {
   @IsEnum(RowMode)
   @IsOptional()
   rowMode?: RowMode;
+
+  @ApiProperty({
+    enum: KpiStatus,
+    example: KpiStatus.PENDING,
+    required: false,
+    description: "Initial KPI status (defaults to PENDING if not provided)",
+  })
+  @IsEnum(KpiStatus)
+  @IsOptional()
+  status?: KpiStatus;
 }

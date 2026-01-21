@@ -335,6 +335,7 @@ model KpiRecord {
   targetValue  Float?      @map("target_value") // numeric: 85
   displayType  DisplayType @default(PERCENTAGE) @map("display_type") // PERCENTAGE or COUNT
   rowMode      RowMode?    @map("row_mode") // SINGLE (1 row) or DOUBLE (2 rows), only for COUNT
+  status       KpiStatus   @default(PENDING) @map("status") // Track completion status
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
   createdBy    String?     @map("created_by")
@@ -346,6 +347,7 @@ model KpiRecord {
   @@unique([departmentId, year, title])
   @@index([departmentId])
   @@index([year])
+  @@index([status])
   @@map("kpi_records")
 }
 
@@ -357,6 +359,12 @@ enum DisplayType {
 enum RowMode {
   SINGLE // 1 dòng: ACTUAL only
   DOUBLE // 2 dòng: TARGET + ACTUAL
+}
+
+enum KpiStatus {
+  PENDING     // Initial state, no files uploaded
+  IN_PROGRESS // Work started (manual only)
+  COMPLETED   // Files uploaded or manually marked complete
 }
 
 enum MetricType {

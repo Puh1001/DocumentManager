@@ -8,6 +8,7 @@
 ## Quick Overview
 
 Customer has provided new field specifications that expand KPI management with:
+
 - **Statistical Cycle** selection (Month/Quarter/Year)
 - **KPI Status** tracking (Achieved/Not achieved)
 - **CAR (Corrective Action Request)** workflow
@@ -18,12 +19,14 @@ Customer has provided new field specifications that expand KPI management with:
 ## Current vs New Requirements
 
 ### ✅ Already Implemented
+
 - KPI Name (title)
 - Department selection
 - Year selection
 - PDF attachments (basic functionality)
 
 ### 🔴 Missing - High Priority
+
 1. **Statistical Cycle** - Dropdown (Month/Quarter/Year)
 2. **KPI Status** - Dropdown (Achieved/Not achieved)
 3. **Non-conformance Item** - Text field (conditional)
@@ -32,6 +35,7 @@ Customer has provided new field specifications that expand KPI management with:
 6. **Mandatory validation** for PDF uploads
 
 ### 🟡 Partial Implementation
+
 - **KPI Evidence PDF**: Exists but not mandatory
 
 ---
@@ -39,16 +43,19 @@ Customer has provided new field specifications that expand KPI management with:
 ## Key Changes Required
 
 ### Database Schema
+
 - Add 4 new enums: `StatisticalCycle`, `KpiStatus`, `CarStatus`, `AttachmentType`
 - Add 4 new fields to `KpiRecord`: `statisticalCycle`, `status`, `nonConformanceItem`, `carStatus`
 - Add 1 new field to `KpiAttachment`: `attachmentType`
 
 ### Backend
+
 - Update DTOs with new fields
 - Add conditional validation logic
 - Enforce mandatory PDF uploads based on status
 
 ### Frontend
+
 - Add form fields for new data
 - Implement conditional field display
 - Separate upload sections for KPI Evidence and CAR PDF
@@ -61,16 +68,19 @@ Customer has provided new field specifications that expand KPI management with:
 ### Recommended: Phased Rollout
 
 **Phase 1: Database (Non-breaking)**
+
 - Add nullable fields
 - Migrate existing data with defaults
 - Duration: 1-2 hours
 
 **Phase 2: Backend API**
+
 - Update DTOs (optional fields initially)
 - Add validation logic
 - Duration: 4-6 hours
 
 **Phase 3: Frontend**
+
 - Update forms
 - Add conditional logic
 - Duration: 6-8 hours

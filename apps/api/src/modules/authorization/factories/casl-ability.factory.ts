@@ -54,6 +54,14 @@ export class CaslAbilityFactory {
       return build();
     }
 
+    // kpi_viewer_all has read-only access to all KPI records from all departments
+    if (userRoles.includes("kpi_viewer_all")) {
+      can("view", "Kpi");
+      can("download", "Kpi");
+      can("print", "Kpi");
+      // Continue to load other permissions (for module access, etc.)
+    }
+
     // Load user roles
     const roleIds = await this.loadRoleIds(userRoles);
 

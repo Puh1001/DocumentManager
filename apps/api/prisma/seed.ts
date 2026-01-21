@@ -168,6 +168,10 @@ async function main() {
       name: "boss",
       description: "Boss role with view access to all departments",
     },
+    {
+      name: "kpi_viewer_all",
+      description: "Can view all KPI records from all departments (read-only)",
+    },
   ];
 
   let createdRoles = 0;
@@ -204,6 +208,9 @@ async function main() {
   });
   const bossRole = await prisma.role.findUnique({
     where: { name: "boss" },
+  });
+  const kpiViewerAllRole = await prisma.role.findUnique({
+    where: { name: "kpi_viewer_all" },
   });
 
   const allPermissions = await prisma.permission.findMany();
@@ -297,6 +304,50 @@ async function main() {
         },
         update: {},
         create: { roleId: bossRole.id, permissionId: perm.id },
+      });
+    }
+  }
+
+  // kpi_viewer_all gets view, download, print for KPI module only (read-only access to all KPI)
+  if (kpiViewerAllRole) {
+    const kpiViewPerm = allPermissions.find((p) => p.name === "view:Kpi");
+    const kpiDownloadPerm = allPermissions.find((p) => p.name === "download:Kpi");
+    const kpiPrintPerm = allPermissions.find((p) => p.name === "print:Kpi");
+    
+    if (kpiViewPerm) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: kpiViewerAllRole.id,
+            permissionId: kpiViewPerm.id,
+          },
+        },
+        update: {},
+        create: { roleId: kpiViewerAllRole.id, permissionId: kpiViewPerm.id },
+      });
+    }
+    if (kpiDownloadPerm) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: kpiViewerAllRole.id,
+            permissionId: kpiDownloadPerm.id,
+          },
+        },
+        update: {},
+        create: { roleId: kpiViewerAllRole.id, permissionId: kpiDownloadPerm.id },
+      });
+    }
+    if (kpiPrintPerm) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: kpiViewerAllRole.id,
+            permissionId: kpiPrintPerm.id,
+          },
+        },
+        update: {},
+        create: { roleId: kpiViewerAllRole.id, permissionId: kpiPrintPerm.id },
       });
     }
   }
