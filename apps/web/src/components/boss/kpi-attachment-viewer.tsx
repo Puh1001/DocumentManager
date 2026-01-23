@@ -6,6 +6,7 @@ import { PdfViewer } from "@/components/viewers/pdf-viewer";
 import { useCanAccess } from "@/hooks/use-can-access";
 import { useCopyProtection } from "@/hooks/use-copy-protection";
 import { kpiAttachmentApi } from "@/lib/api";
+import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
 
 interface KpiAttachmentViewerProps {
   attachmentId: string;
@@ -31,6 +32,9 @@ export function KpiAttachmentViewer({
   useCopyProtection(!canCopy);
 
   const streamUrl = kpiAttachmentApi.getAttachmentStreamUrl(attachmentId);
+  
+  // Fix filename encoding for display
+  const displayFileName = fixFileNameEncoding(fileName);
 
   const handleDownload = async () => {
     if (!canDownload) return;
@@ -41,7 +45,7 @@ export function KpiAttachmentViewer({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName;
+      a.download = displayFileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -69,7 +73,7 @@ export function KpiAttachmentViewer({
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-4 p-4 border-b border-cyan-500/20 bg-gray-900/50">
           <h2 className="font-cyber font-bold text-lg cyber-neon-cyan truncate flex-1">
-            {fileName}
+            {displayFileName}
           </h2>
           <div className="flex items-center gap-2">
             {canDownload && (

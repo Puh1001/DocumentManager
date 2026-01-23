@@ -17,6 +17,7 @@ interface KpiRecord {
   departmentId: string;
   year: number;
   title: string;
+  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
   metrics?: KpiMetric[];
 }
 
@@ -39,36 +40,27 @@ interface DepartmentKpiStatusProps {
   onSelectDepartment: (department: Department) => void;
 }
 
-const MONTH_KEYS = [
-  "m1",
-  "m2",
-  "m3",
-  "m4",
-  "m5",
-  "m6",
-  "m7",
-  "m8",
-  "m9",
-  "m10",
-  "m11",
-  "m12",
-] as const;
+// const MONTH_KEYS = [
+//   "m1",
+//   "m2",
+//   "m3",
+//   "m4",
+//   "m5",
+//   "m6",
+//   "m7",
+//   "m8",
+//   "m9",
+//   "m10",
+//   "m11",
+//   "m12",
+// ] as const;
 
 // Check if a KPI record is completed
+// Điều kiện mới: chỉ cần upload files là tính hoàn thành (status === COMPLETED)
 function isKpiCompleted(record: KpiRecord): boolean {
-  if (!record.metrics || record.metrics.length === 0) {
-    return false;
-  }
-
-  // KPI được coi là hoàn thành nếu BẤT KỲ metric nào (TARGET / ACTUAL / CALCULATED)
-  // có ít nhất một tháng đã nhập dữ liệu (null mới là chưa nhập).
-  return record.metrics.some((metric) =>
-    MONTH_KEYS.some((key) => {
-      const value = metric.values?.[key];
-      // 0 cũng là dữ liệu hợp lệ (ví dụ 0% / 0 lần sai)
-      return value != null;
-    })
-  );
+  // KPI được coi là hoàn thành nếu status === COMPLETED
+  // Status được tự động set thành COMPLETED khi upload file (backend)
+  return record.status === "COMPLETED";
 }
 
 // Calculate department KPI status

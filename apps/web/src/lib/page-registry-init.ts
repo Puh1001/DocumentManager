@@ -19,5 +19,6 @@ import "@/app/[locale]/dashboard/kpi/page";
 import "@/app/[locale]/dashboard/maintenance/page";
 import "@/app/[locale]/dashboard/permissions/page";
 import "@/app/[locale]/dashboard/modules/page";
+import "@/app/[locale]/dashboard/dcc/deletion-requests/page";
 
 // Export nothing - this file is imported for side effects only

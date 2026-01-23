@@ -361,6 +361,10 @@ class ApiClient {
 
     const formData = new FormData();
     formData.append("file", file);
+    
+    // Gửi filename riêng như text field (UTF-8 thô, không qua Content-Disposition header)
+    // Điều này tránh vấn đề encoding khi Multer parse filename từ header
+    formData.append("fileName", file.name);
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
@@ -428,6 +432,9 @@ class ApiClient {
   ): { promise: Promise<T>; abort: () => void } {
     const formData = new FormData();
     formData.append("file", file);
+    
+    // Gửi filename riêng như text field (UTF-8 thô, không qua Content-Disposition header)
+    formData.append("fileName", file.name);
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
@@ -867,6 +874,7 @@ export interface KpiAttachment {
   uploadedBy: string;
   createdAt: string;
   description?: string | null;
+  deletionExpiresAt?: string | null;
 }
 
 export const kpiAttachmentApi = {
@@ -892,6 +900,121 @@ export const kpiAttachmentApi = {
       ...(folderId && folderId.trim() !== "" && { folderId }),
       ...(description && { description }),
     }),
+  getDeletionStatus: (attachmentId: string) =>
+    api.get<DeletionStatus>(`/kpi/attachments/${attachmentId}/deletion-status`),
+  getDeletionRequest: (attachmentId: string) =>
+    api.get<DeletionRequest | null>(
+      `/kpi/attachments/${attachmentId}/deletion-request`
+    ),
+  submitDeletionRequest: (
+    attachmentId: string,
+    reason: string,
+    replacementFileId?: string
+  ) =>
+    api.post<DeletionRequest>(
+      `/kpi/attachments/${attachmentId}/deletion-request`,
+      { reason, replacementFileId }
+    ),
   deleteAttachment: (attachmentId: string) =>
     api.delete<{ success: boolean }>(`/kpi/attachments/${attachmentId}`),
+  renameAttachment: (attachmentId: string, data: RenameDocumentDto) =>
+    api.patch<{
+      id: string;
+      documentId: string;
+      fileName: string;
+      name: string;
+    }>(`/kpi/attachments/${attachmentId}/rename`, data),
+};
+
+// Deletion Request types and API methods
+export interface DeletionStatus {
+  canDelete: boolean;
+  isExpired: boolean;
+  remainingHours: number;
+  requiresDCCApproval: boolean;
+  hasActiveRequest: boolean;
+  requestId?: string;
+}
+
+export interface DeletionRequest {
+  id: string;
+  documentId: string;
+  requestedBy: string;
+  requestedAt: string;
+  reason: string;
+  replacementFileId?: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewerComment?: string | null;
+  document?: {
+    id: string;
+    name: string;
+    fileName: string;
+    folder: { name: string };
+  };
+  requester?: {
+    id: string;
+    fullName: string;
+    username: string;
+  };
+  replacementFile?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface SubmitDeletionRequestDto {
+  reason: string;
+  replacementFileId?: string;
+}
+
+export interface ReviewDeletionRequestDto {
+  approve: boolean;
+  comment?: string;
+}
+
+export interface RenameDocumentDto {
+  name: string;
+  fileName: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  folderId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const documentApi = {
+  rename: (documentId: string, data: RenameDocumentDto) =>
+    api.patch<Document>(`/storage/documents/${documentId}/rename`, data),
+};
+
+export const deletionRequestApi = {
+  getDeletionStatus: (documentId: string) =>
+    api.get<DeletionStatus>(
+      `/storage/documents/${documentId}/deletion-status`,
+    ),
+
+  submitDeletionRequest: (
+    documentId: string,
+    data: SubmitDeletionRequestDto,
+  ) =>
+    api.post<DeletionRequest>(
+      `/storage/documents/${documentId}/deletion-requests`,
+      data,
+    ),
+
+  listPending: () => api.get<DeletionRequest[]>('/storage/deletion-requests'),
+
+  getById: (id: string) =>
+    api.get<DeletionRequest>(`/storage/deletion-requests/${id}`),
+
+  review: (id: string, data: ReviewDeletionRequestDto) =>
+    api.post<DeletionRequest>(`/storage/deletion-requests/${id}/review`, data),
 };

@@ -6,6 +6,9 @@ import { FolderSyncService } from "../services/folder-sync.service";
 @Injectable()
 export class FolderSyncListener {
   private readonly logger = new Logger(FolderSyncListener.name);
+  // Event deduplication: track recent events to avoid processing duplicates
+  private readonly recentEvents = new Map<string, number>();
+  private readonly DEDUPLICATION_WINDOW_MS = 100; // Ignore duplicates within 100ms
 
   constructor(
     private readonly gateway: FolderSyncGateway,
@@ -14,7 +17,6 @@ export class FolderSyncListener {
 
   @OnEvent("file.added")
   async handleFileAdded(event: { path: string; relativePath: string }) {
-    this.logger.debug(`File added event: ${event.relativePath}`);
 
     try {
       // Sync file to database first
@@ -49,7 +51,6 @@ export class FolderSyncListener {
 
   @OnEvent("file.changed")
   async handleFileChanged(event: { path: string; relativePath: string }) {
-    this.logger.debug(`File changed event: ${event.relativePath}`);
 
     try {
       // Sync file to database (will create new version if changed)
@@ -81,7 +82,6 @@ export class FolderSyncListener {
 
   @OnEvent("file.deleted")
   async handleFileDeleted(event: { path: string; relativePath: string }) {
-    this.logger.debug(`File deleted event: ${event.relativePath}`);
 
     try {
       // Soft delete file in database first
@@ -91,9 +91,6 @@ export class FolderSyncListener {
 
       if (result && result.folderId) {
         // Broadcast event with folderId so frontend knows which folder to refresh
-        this.logger.debug(
-          `Broadcasting document_deleted with folderId: ${result.folderId}, documentId: ${result.documentId}`
-        );
         this.gateway.broadcastSyncEvent({
           type: "document_deleted",
           folderId: result.folderId,
@@ -124,21 +121,113 @@ export class FolderSyncListener {
 
   @OnEvent("folder.added")
   async handleFolderAdded(event: { path: string; relativePath: string }) {
-    this.logger.debug(`Folder added event: ${event.relativePath}`);
+    // Normalize path separators (Windows uses backslashes, DB uses forward slashes)
+    const normalizedPath = event.relativePath.replace(/\\/g, '/');
+    
+    // Event deduplication: skip if same event processed recently
+    const eventKey = `folder.added:${normalizedPath}`;
+    const now = Date.now();
+    const lastProcessed = this.recentEvents.get(eventKey);
+    
+    if (lastProcessed && (now - lastProcessed) < this.DEDUPLICATION_WINDOW_MS) {
+      return;
+    }
+    
+    // Mark event as processed
+    this.recentEvents.set(eventKey, now);
+    
+    // Clean up old entries (keep map size reasonable)
+    if (this.recentEvents.size > 1000) {
+      const cutoff = now - this.DEDUPLICATION_WINDOW_MS * 10;
+      for (const [key, timestamp] of this.recentEvents.entries()) {
+        if (timestamp < cutoff) {
+          this.recentEvents.delete(key);
+        }
+      }
+    }
+    
+    this.logger.log(`[REALTIME SYNC] Folder added event received: ${normalizedPath} (original: ${event.relativePath})`);
 
-    this.gateway.broadcastSyncEvent({
-      type: "folder_added",
-      data: { path: event.relativePath },
-    });
+    try {
+      // Sync folder to database first (recursively syncs parent folders if needed)
+      const folderId = await this.syncService.syncSingleFolder(normalizedPath);
+
+      if (folderId) {
+        // Broadcast event with folderId so frontend knows which folder was added
+        this.gateway.broadcastSyncEvent({
+          type: "folder_added",
+          folderId: folderId,
+          data: { path: event.relativePath },
+        });
+      } else {
+        // Fallback: broadcast without folderId (will trigger full refresh)
+        this.logger.warn(`Failed to sync folder, broadcasting without folderId: ${normalizedPath}`);
+        this.gateway.broadcastSyncEvent({
+          type: "folder_added",
+          data: { path: normalizedPath },
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Failed to handle folder added event: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      // Still broadcast event even if sync failed
+      this.gateway.broadcastSyncEvent({
+        type: "folder_added",
+        data: { path: normalizedPath },
+      });
+    }
   }
 
   @OnEvent("folder.deleted")
   async handleFolderDeleted(event: { path: string; relativePath: string }) {
-    this.logger.debug(`Folder deleted event: ${event.relativePath}`);
+    // Normalize path separators (Windows uses backslashes, DB uses forward slashes)
+    const normalizedPath = event.relativePath.replace(/\\/g, '/');
+    
+    // Event deduplication: skip if same event processed recently
+    const eventKey = `folder.deleted:${normalizedPath}`;
+    const now = Date.now();
+    const lastProcessed = this.recentEvents.get(eventKey);
+    
+    if (lastProcessed && (now - lastProcessed) < this.DEDUPLICATION_WINDOW_MS) {
+      return;
+    }
+    
+    // Mark event as processed
+    this.recentEvents.set(eventKey, now);
+    
+    this.logger.log(`[REALTIME SYNC] Folder deleted event received: ${normalizedPath} (original: ${event.relativePath})`);
 
-    this.gateway.broadcastSyncEvent({
-      type: "folder_deleted",
-      data: { path: event.relativePath },
-    });
+    try {
+      // Soft delete folder in database first
+      const result = await this.syncService.deleteSingleFolder(normalizedPath);
+
+      if (result && result.folderId) {
+        // Broadcast event with folderId so frontend knows which folder was deleted
+        this.gateway.broadcastSyncEvent({
+          type: "folder_deleted",
+          folderId: result.folderId,
+          data: { path: normalizedPath },
+        });
+      } else {
+        // Fallback: broadcast without folderId (will refresh all folders)
+        this.logger.warn(
+          `Broadcasting folder_deleted without folderId for: ${normalizedPath}`
+        );
+        this.gateway.broadcastSyncEvent({
+          type: "folder_deleted",
+          data: { path: normalizedPath },
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Failed to handle folder deleted event: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      // Still broadcast event even if delete failed
+      this.gateway.broadcastSyncEvent({
+        type: "folder_deleted",
+        data: { path: normalizedPath },
+      });
+    }
   }
 }

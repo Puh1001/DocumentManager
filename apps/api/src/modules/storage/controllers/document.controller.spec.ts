@@ -3,6 +3,8 @@ import { DocumentController } from "./document.controller";
 import { DocumentService } from "../services/document.service";
 import { VersionService } from "../services/version.service";
 import { LocalEditService } from "../services/local-edit.service";
+import { DocumentDeletionService } from "../services/document-deletion.service";
+import { PrismaService } from "@/common/prisma/prisma.service";
 import { Express } from "express";
 import { Readable } from "stream";
 import { Response } from "express";
@@ -21,7 +23,7 @@ describe("DocumentController", () => {
     fileType: "pdf",
     mimeType: "application/pdf",
     fileSize: 1024,
-    filePath: "test-folder/current/test-document.pdf",
+    filePath: "test-folder/current/doc-1.pdf", // ID-based filename
     folder: {
       id: "folder-1",
       name: "Test Folder",
@@ -183,7 +185,8 @@ describe("DocumentController", () => {
         mockFile,
         "folder-1",
         "Custom Name",
-        mockRequest
+        mockRequest,
+        undefined
       );
 
       expect(result).toEqual(mockDocument);
@@ -191,20 +194,22 @@ describe("DocumentController", () => {
         "folder-1",
         mockFile,
         "user-1",
-        "Custom Name"
+        "Custom Name",
+        undefined
       );
     });
 
     it("should upload document without custom name", async () => {
       documentService.upload = jest.fn().mockResolvedValue(mockDocument);
 
-      await controller.upload(mockFile, "folder-1", "", mockRequest);
+      await controller.upload(mockFile, "folder-1", "", mockRequest, undefined);
 
       expect(documentService.upload).toHaveBeenCalledWith(
         "folder-1",
         mockFile,
         "user-1",
-        ""
+        "",
+        undefined
       );
     });
   });
@@ -244,13 +249,33 @@ describe("DocumentController", () => {
 
   describe("remove", () => {
     it("should delete document", async () => {
-      const deletedDocument = { ...mockDocument, status: "DELETED" };
-      documentService.delete = jest.fn().mockResolvedValue(deletedDocument);
+      // Mock deletion service
+      const deletionService: Partial<DocumentDeletionService> = {
+        selfDelete: jest.fn().mockResolvedValue(undefined),
+      };
+      
+      // Mock prisma service
+      const mockPrisma = {
+        auditLog: {
+          create: jest.fn(),
+        },
+      } as unknown as PrismaService;
+      
+      // Create controller with mocked deletion service
+      const controllerWithDeletion = new DocumentController(
+        documentService,
+        versionService,
+        localEditService,
+        deletionService as DocumentDeletionService,
+        mockPrisma,
+      );
 
-      const result = await controller.remove("doc-1");
+      const mockReq: AuthenticatedRequest = {
+        user: { id: 'user-1' },
+      } as AuthenticatedRequest;
+      await controllerWithDeletion.remove("doc-1", mockReq);
 
-      expect(result.status).toBe("DELETED");
-      expect(documentService.delete).toHaveBeenCalledWith("doc-1");
+      expect(deletionService.selfDelete).toHaveBeenCalledWith("doc-1", "user-1");
     });
   });
 

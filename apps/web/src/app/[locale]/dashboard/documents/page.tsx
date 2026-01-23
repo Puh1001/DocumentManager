@@ -32,6 +32,7 @@ interface Document {
   fileType: string;
   fileSize: number;
   updatedAt: string;
+  deletionExpiresAt?: string | null;
 }
 
 interface UploadProgress {
@@ -163,6 +164,18 @@ export default function DocumentsPage() {
     setSelectedFolderId(folderId);
   };
 
+  const handleDocumentDeleted = useCallback(
+    (documentId: string) => {
+      // Remove deleted document from list
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+      // Optionally refresh folder contents to ensure consistency
+      if (selectedFolderId) {
+        loadFolderContents(selectedFolderId);
+      }
+    },
+    [selectedFolderId, loadFolderContents],
+  );
+
   const handleUpload = async (file: File) => {
     if (!selectedFolderId) return;
 
@@ -270,6 +283,13 @@ export default function DocumentsPage() {
                 onDocumentClick={(doc) => {
                   // Open document viewer with locale
                   window.open(`/${locale}/dashboard/documents/${doc.id}/view`, "_blank");
+                }}
+                onDocumentDeleted={handleDocumentDeleted}
+                onDocumentRenamed={(documentId) => {
+                  // Refresh folder contents to update renamed document
+                  if (selectedFolderId) {
+                    loadFolderContents(selectedFolderId);
+                  }
                 }}
               />
             ) : (

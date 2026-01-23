@@ -340,4 +340,256 @@ export class FolderService {
       where: { deletedAt: null }, // Only active folders
     });
   }
+
+  /**
+   * Ensure department folder structure exists (create if not exists, use if exists)
+   * Structure: {dept.code}/KPI/current, {dept.code}/KPI/version,
+   *            {dept.code}/Documents/current, {dept.code}/Documents/version,
+   *            {dept.code}/Maintenance/current, {dept.code}/Maintenance/version,
+   *            {dept.code}/Deleted files
+   * 
+   * @param departmentId Department ID
+   * @returns Object with folder IDs for each type
+   */
+  async ensureDepartmentFolderStructure(departmentId: string): Promise<{
+    departmentRoot: string;
+    kpiCurrent: string;
+    kpiVersion: string;
+    documentsCurrent: string;
+    documentsVersion: string;
+    maintenanceCurrent: string;
+    maintenanceVersion: string;
+    deletedFiles: string;
+  }> {
+    // Get department info
+    const department = await (this.prisma as PrismaClientLike).department.findUnique({
+      where: { id: departmentId },
+      select: { id: true, code: true, nameVi: true },
+    });
+
+    if (!department) {
+      throw CustomException.notFound(
+        ErrorCodes.DEPARTMENT.NOT_FOUND,
+        "Department not found"
+      );
+    }
+
+    const folderPath = department.code;
+
+    // Step 1: Find or create department root folder
+    let departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+      where: { path: folderPath },
+    });
+
+    if (!departmentRoot) {
+      // Create physical folder on SMB
+      await this.smbService.createDirectory(folderPath);
+
+      try {
+        departmentRoot = await (this.prisma as PrismaClientLike).folder.create({
+          data: {
+            name: department.nameVi || department.code,
+            path: folderPath,
+            parentId: null,
+            departmentId: department.id,
+          },
+        });
+      } catch (error: unknown) {
+        // Handle race condition
+        const isUniqueConstraintError =
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002";
+
+        if (isUniqueConstraintError) {
+          departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+            where: { path: folderPath },
+          });
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      // Update if needed
+      if (!departmentRoot.departmentId || departmentRoot.deletedAt) {
+        await (this.prisma as PrismaClientLike).folder.update({
+          where: { id: departmentRoot.id },
+          data: {
+            departmentId: department.id,
+            deletedAt: null,
+          },
+        });
+        departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+          where: { path: folderPath },
+        });
+      }
+    }
+
+    if (!departmentRoot) {
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        `Failed to find or create department folder: ${folderPath}`
+      );
+    }
+
+    // Step 2: Find or create subfolders (KPI, Documents, Maintenance, Deleted files)
+    const subfolders = ["KPI", "Documents", "Maintenance", "Deleted files"];
+    const subfolderMap = new Map<string, string>();
+
+    for (const sub of subfolders) {
+      const subfolderPath = `${folderPath}/${sub}`;
+      let subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+        where: { path: subfolderPath },
+      });
+
+      if (!subfolder) {
+        // Create physical folder on SMB
+        await this.smbService.createDirectory(subfolderPath);
+
+        try {
+          subfolder = await (this.prisma as PrismaClientLike).folder.create({
+            data: {
+              name: sub,
+              path: subfolderPath,
+              parentId: departmentRoot.id,
+              departmentId: department.id,
+            },
+          });
+        } catch (error: unknown) {
+          const isUniqueConstraintError =
+            error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002";
+
+          if (isUniqueConstraintError) {
+            subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+              where: { path: subfolderPath },
+            });
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        // Update if needed
+        if (subfolder.deletedAt || subfolder.parentId !== departmentRoot.id) {
+          await (this.prisma as PrismaClientLike).folder.update({
+            where: { id: subfolder.id },
+            data: {
+              deletedAt: null,
+              parentId: departmentRoot.id,
+              departmentId: department.id,
+            },
+          });
+          subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+            where: { path: subfolderPath },
+          });
+        }
+      }
+
+      if (subfolder) {
+        subfolderMap.set(sub, subfolder.id);
+      }
+    }
+
+    // Step 3: For KPI, Documents, Maintenance: find or create current/ and version/ subfolders
+    const folderTypes = ["KPI", "Documents", "Maintenance"];
+    const result: any = {
+      departmentRoot: departmentRoot.id,
+      deletedFiles: subfolderMap.get("Deleted files") || "",
+    };
+
+    for (const type of folderTypes) {
+      const typeFolderId = subfolderMap.get(type);
+      if (!typeFolderId) continue;
+
+      const typeFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+        where: { id: typeFolderId },
+      });
+      if (!typeFolder) continue;
+
+      // Create current/ subfolder
+      const currentPath = `${typeFolder.path}/current`;
+      let currentFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+        where: { path: currentPath },
+      });
+
+      if (!currentFolder) {
+        await this.smbService.createDirectory(currentPath);
+        try {
+          currentFolder = await (this.prisma as PrismaClientLike).folder.create({
+            data: {
+              name: "current",
+              path: currentPath,
+              parentId: typeFolder.id,
+              departmentId: department.id,
+            },
+          });
+        } catch (error: unknown) {
+          const isUniqueConstraintError =
+            error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002";
+
+          if (isUniqueConstraintError) {
+            currentFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+              where: { path: currentPath },
+            });
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      // Create version/ subfolder
+      const versionPath = `${typeFolder.path}/version`;
+      let versionFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+        where: { path: versionPath },
+      });
+
+      if (!versionFolder) {
+        await this.smbService.createDirectory(versionPath);
+        try {
+          versionFolder = await (this.prisma as PrismaClientLike).folder.create({
+            data: {
+              name: "version",
+              path: versionPath,
+              parentId: typeFolder.id,
+              departmentId: department.id,
+            },
+          });
+        } catch (error: unknown) {
+          const isUniqueConstraintError =
+            error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "P2002";
+
+          if (isUniqueConstraintError) {
+            versionFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+              where: { path: versionPath },
+            });
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      // Set result based on type
+      if (type === "KPI") {
+        result.kpiCurrent = currentFolder?.id || "";
+        result.kpiVersion = versionFolder?.id || "";
+      } else if (type === "Documents") {
+        result.documentsCurrent = currentFolder?.id || "";
+        result.documentsVersion = versionFolder?.id || "";
+      } else if (type === "Maintenance") {
+        result.maintenanceCurrent = currentFolder?.id || "";
+        result.maintenanceVersion = versionFolder?.id || "";
+      }
+    }
+
+    return result;
+  }
 }

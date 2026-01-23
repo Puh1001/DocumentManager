@@ -34,6 +34,11 @@ model User {
   departments        UserDepartment[] // NEW: Many-to-many relation with departments
   kpiAttachments     KpiAttachment[]      @relation("UserKpiAttachments")
 
+  // Deletion tracking relations
+  uploadedDocuments Document[]        @relation("UploadedDocuments")
+  deletionRequests  DeletionRequest[] @relation("DeletionRequests")
+  deletionReviews   DeletionRequest[] @relation("DeletionReviews")
+
   @@index([username])
   @@index([email])
   @@index([department])
@@ -172,15 +177,27 @@ model Document {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
+  // NEW: Deletion tracking fields
+  uploadedBy        String?   @map("uploaded_by") // Uploader user ID
+  uploadedAt        DateTime? @default(now()) @map("uploaded_at") // Upload timestamp
+  deletionExpiresAt DateTime? @map("deletion_expires_at") // uploadedAt + 72h
+
   // Relations
-  folder      Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  versions    DocumentVersion[]
-  permissions DocumentPermission[]
-  kpiAttachments KpiAttachment[]    @relation("DocumentKpiAttachments")
+  folder         Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  versions       DocumentVersion[]
+  permissions    DocumentPermission[]
+  kpiAttachments KpiAttachment[]      @relation("DocumentKpiAttachments")
+
+  // NEW: Deletion tracking relations
+  uploadedByUser  User?             @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  deletionRequest DeletionRequest?
+  replacementFor  DeletionRequest[] @relation("ReplacementFiles")
 
   @@index([folderId])
   @@index([status])
   @@index([fileType])
+  @@index([uploadedBy])
+  @@index([deletionExpiresAt])
   @@map("documents")
 }
 
@@ -188,6 +205,43 @@ enum DocumentStatus {
   ACTIVE
   ARCHIVED
   DELETED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// =====================
+// Deletion Requests
+// =====================
+
+model DeletionRequest {
+  id                String        @id @default(uuid())
+  documentId        String        @unique @map("document_id") // One request per document
+  requestedBy       String        @map("requested_by")
+  requestedAt       DateTime      @default(now()) @map("requested_at")
+  reason            String        @db.Text // Reason for deletion
+  replacementFileId String?       @map("replacement_file_id") // Optional replacement
+  status            RequestStatus @default(PENDING)
+  reviewedBy        String?       @map("reviewed_by") // DCC reviewer
+  reviewedAt        DateTime?     @map("reviewed_at")
+  reviewerComment   String?       @map("reviewer_comment") @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  document        Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  requester       User      @relation("DeletionRequests", fields: [requestedBy], references: [id], onDelete: Restrict)
+  reviewer        User?     @relation("DeletionReviews", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  replacementFile Document? @relation("ReplacementFiles", fields: [replacementFileId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([requestedBy])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([status, requestedAt]) // Composite index for DCC dashboard queries
+  @@map("deletion_requests")
 }
 
 // =====================
@@ -340,9 +394,9 @@ model KpiRecord {
   updatedAt    DateTime    @updatedAt @map("updated_at")
   createdBy    String?     @map("created_by")
 
-  department Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  metrics    KpiMetric[]
-  attachments KpiAttachment[]       @relation("KpiRecordAttachments")
+  department  Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  metrics     KpiMetric[]
+  attachments KpiAttachment[] @relation("KpiRecordAttachments")
 
   @@unique([departmentId, year, title])
   @@index([departmentId])
@@ -353,7 +407,7 @@ model KpiRecord {
 
 enum DisplayType {
   PERCENTAGE // Default: show efficiency calculations (%)
-  COUNT      // Show only actual counts vs targets (数量)
+  COUNT // Show only actual counts vs targets (数量)
 }
 
 enum RowMode {
@@ -362,9 +416,9 @@ enum RowMode {
 }
 
 enum KpiStatus {
-  PENDING     // Initial state, no files uploaded
+  PENDING // Initial state, no files uploaded
   IN_PROGRESS // Work started (manual only)
-  COMPLETED   // Files uploaded or manually marked complete
+  COMPLETED // Files uploaded or manually marked complete
 }
 
 enum MetricType {
@@ -391,12 +445,12 @@ model KpiMetric {
 }
 
 model KpiAttachment {
-  id           String   @id @default(uuid())
-  kpiRecordId  String   @map("kpi_record_id")
-  documentId   String   @map("document_id")
-  description  String?
-  createdById  String   @map("created_by_id")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid())
+  kpiRecordId String   @map("kpi_record_id")
+  documentId  String   @map("document_id")
+  description String?
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   kpiRecord KpiRecord @relation("KpiRecordAttachments", fields: [kpiRecordId], references: [id], onDelete: Cascade)
   document  Document  @relation("DocumentKpiAttachments", fields: [documentId], references: [id], onDelete: Cascade)

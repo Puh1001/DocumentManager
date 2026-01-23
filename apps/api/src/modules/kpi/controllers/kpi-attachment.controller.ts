@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   Delete,
   Body,
   UseGuards,
@@ -19,8 +20,11 @@ import {
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { Utf8FileFixInterceptor } from "@/common/interceptors/utf8-file.interceptor";
 import { Response } from "express";
 import { CreateKpiAttachmentDto } from "../dto/create-kpi-attachment.dto";
+import { SubmitKpiDeletionRequestDto } from "../dto/submit-kpi-deletion-request.dto";
+import { RenameDocumentDto } from "@/modules/storage/dto/rename-document.dto";
 import { KpiAttachmentService } from "../services/kpi-attachment.service";
 import { UserDepartmentGuard } from "../guards/user-department.guard";
 import { UserWithDepartments } from "../services/user-department.resolver";
@@ -45,6 +49,7 @@ export class KpiAttachmentController {
       properties: {
         folderId: { type: "string", format: "uuid" },
         description: { type: "string" },
+        fileName: { type: "string", description: "Original filename (UTF-8, sent as text field)" },
         file: {
           type: "string",
           format: "binary",
@@ -53,19 +58,20 @@ export class KpiAttachmentController {
       required: ["file"], // folderId is optional, will auto-create if not provided
     },
   })
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file"), Utf8FileFixInterceptor)
   async uploadAttachment(
     @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") kpiRecordId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: CreateKpiAttachmentDto
+    @Body() body: CreateKpiAttachmentDto & { fileName?: string }
   ) {
     const attachment = await this.attachmentService.uploadAttachment(
       kpiRecordId,
       file,
       body.folderId,
       body.description,
-      user
+      user,
+      body.fileName
     );
 
     return {
@@ -84,6 +90,58 @@ export class KpiAttachmentController {
     @Param("id") kpiRecordId: string
   ) {
     return this.attachmentService.listAttachments(kpiRecordId, user);
+  }
+
+  @Get("attachments/:id/deletion-status")
+  @CheckPolicies({ action: "view", subject: "Kpi" })
+  @ApiOperation({ summary: "Get deletion status for KPI attachment" })
+  async getDeletionStatus(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") attachmentId: string
+  ) {
+    return this.attachmentService.getDeletionStatus(attachmentId, user);
+  }
+
+  @Get("attachments/:id/deletion-request")
+  @CheckPolicies({ action: "view", subject: "Kpi" })
+  @ApiOperation({ summary: "Get deletion request for KPI attachment (if exists)" })
+  async getDeletionRequest(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") attachmentId: string
+  ) {
+    return this.attachmentService.getDeletionRequest(attachmentId, user);
+  }
+
+  @Post("attachments/:id/deletion-request")
+  @CheckPolicies({ action: "create", subject: "Kpi" })
+  @ApiOperation({ summary: "Submit deletion request for KPI attachment" })
+  async submitDeletionRequest(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") attachmentId: string,
+    @Body() body: SubmitKpiDeletionRequestDto
+  ) {
+    return this.attachmentService.submitDeletionRequest(
+      attachmentId,
+      user,
+      body.reason,
+      body.replacementFileId
+    );
+  }
+
+  @Patch("attachments/:id/rename")
+  @CheckPolicies({ action: "view", subject: "Kpi" })
+  @ApiOperation({ summary: "Rename KPI PDF attachment" })
+  async renameAttachment(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") attachmentId: string,
+    @Body() dto: RenameDocumentDto
+  ) {
+    return this.attachmentService.renameAttachment(
+      attachmentId,
+      dto.name,
+      dto.fileName,
+      user
+    );
   }
 
   @Delete("attachments/:id")

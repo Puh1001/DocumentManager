@@ -36,6 +36,7 @@ export const ErrorCodes = {
     FOLDER_REQUIRED: "document.upload.folder_required",
     FILE_REQUIRED: "document.upload.file_required",
     FOLDER_NOT_FOUND: "document.upload.folder_not_found",
+    INVALID_FILENAME: "document.rename.invalid_filename",
   },
   VERSION: {
     NOT_FOUND: "version.not_found",

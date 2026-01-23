@@ -86,10 +86,11 @@ export class FolderSyncService {
 
   /**
    * Sync a single file from file system to database (public method for real-time sync)
+   * @returns Sync result with documentId, folderId, or null if failed
    */
   async syncSingleFile(
     relativePath: string
-  ): Promise<{ folderId: string | null; documentId?: string } | null> {
+  ): Promise<{ folderId: string; documentId?: string } | null> {
     try {
       // Get file info from SMB
       const fileName = path.basename(relativePath);
@@ -103,7 +104,9 @@ export class FolderSyncService {
       };
 
       // Find folder by path
-      const folderPath = path.dirname(relativePath);
+      // Normalize path separators (Windows uses backslashes, DB uses forward slashes)
+      const normalizedRelativePath = relativePath.replace(/\\/g, '/');
+      const folderPath = path.dirname(normalizedRelativePath).replace(/\\/g, '/');
       const folder = await (this.prisma as PrismaClientLike).folder.findUnique({
         where: { path: folderPath },
       });
@@ -143,10 +146,49 @@ export class FolderSyncService {
 
   /**
    * Soft delete a single file from database (public method for real-time sync)
+   * @returns Deletion result with documentId, folderId, or null if failed
    */
   async deleteSingleFile(
     relativePath: string
-  ): Promise<{ folderId: string | null; documentId?: string } | null> {
+  ): Promise<{ folderId: string; documentId?: string } | null> {
     return this.syncDeletionHandler.deleteSingleFile(relativePath);
+  }
+
+  /**
+   * Sync a single folder from file system to database (public method for real-time sync)
+   * @returns The folder ID, or null if failed
+   */
+  async syncSingleFolder(
+    relativePath: string
+  ): Promise<string | null> {
+    try {
+      return await this.folderSyncHandler.syncSingleFolder(relativePath);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Failed to sync single folder ${relativePath}: ${errorMessage}`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Soft delete a single folder from database (public method for real-time sync)
+   * @returns Deletion result with folderId, or null if failed
+   */
+  async deleteSingleFolder(
+    relativePath: string
+  ): Promise<{ folderId: string } | null> {
+    try {
+      return await this.syncDeletionHandler.deleteSingleFolder(relativePath);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Failed to delete single folder ${relativePath}: ${errorMessage}`
+      );
+      return null;
+    }
   }
 }

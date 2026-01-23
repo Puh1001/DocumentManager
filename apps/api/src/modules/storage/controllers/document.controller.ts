@@ -14,6 +14,7 @@ import {
   Request,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { Utf8FileFixInterceptor } from "@/common/interceptors/utf8-file.interceptor";
 import {
   ApiTags,
   ApiOperation,
@@ -30,19 +31,24 @@ import {
   LocalEditService,
   OpenPathResponse,
 } from "../services/local-edit.service";
+import { DocumentDeletionService } from "../services/document-deletion.service";
+import { SubmitDeletionRequestDto } from "../dto/submit-deletion-request.dto";
+import { RenameDocumentDto } from "../dto/rename-document.dto";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { PrismaClientLike } from "@/common/types/prisma.types";
+import { PoliciesGuard } from "@/modules/authorization/guards/policies.guard";
 
 @ApiTags("Documents")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PoliciesGuard)
 @Controller("storage/documents")
 export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
     private readonly versionService: VersionService,
     private readonly localEditService: LocalEditService,
+    private readonly deletionService: DocumentDeletionService,
     private readonly prisma: PrismaService
   ) {}
 
@@ -150,23 +156,25 @@ export class DocumentController {
         file: { type: "string", format: "binary" },
         folderId: { type: "string" },
         name: { type: "string" },
+        fileName: { type: "string", description: "Original filename (UTF-8, sent as text field to avoid encoding issues)" },
       },
     },
   })
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file"), Utf8FileFixInterceptor)
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Body("folderId") folderId: string,
     @Body("name") name: string,
-    @Request() req: AuthenticatedRequest
+    @Request() req: AuthenticatedRequest,
+    @Body("fileName") fileName?: string
   ) {
-    return this.documentService.upload(folderId, file, req.user.id, name);
+    return this.documentService.upload(folderId, file, req.user.id, name, fileName);
   }
 
   @Post(":id/upload-version")
   @ApiOperation({ summary: "Upload a new version of document" })
   @ApiConsumes("multipart/form-data")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file"), Utf8FileFixInterceptor)
   async uploadVersion(
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
@@ -182,10 +190,59 @@ export class DocumentController {
     return this.documentService.archive(id);
   }
 
+  @Patch(":id/rename")
+  @ApiOperation({ summary: "Rename document" })
+  async rename(
+    @Param("id") id: string,
+    @Body() dto: RenameDocumentDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.documentService.rename(
+      id,
+      dto.name,
+      dto.fileName,
+      req.user.id
+    );
+  }
+
+  // NEW: Deletion workflow endpoints
+  @Get(":id/deletion-status")
+  @ApiOperation({ summary: "Check deletion status for document" })
+  async getDeletionStatus(
+    @Param("id") id: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.deletionService.checkDeletionStatus(id, req.user.id);
+  }
+
+  @Get(":id/deletion-request")
+  @ApiOperation({ summary: "Get deletion request for document (if exists)" })
+  async getDeletionRequest(
+    @Param("id") id: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.deletionService.getRequestByDocumentId(id, req.user.id);
+  }
+
+  @Post(":id/deletion-requests")
+  @ApiOperation({ summary: "Submit deletion request to DCC" })
+  async submitDeletionRequest(
+    @Param("id") id: string,
+    @Body() dto: SubmitDeletionRequestDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    return this.deletionService.submitDeletionRequest(
+      id,
+      req.user.id,
+      dto.reason,
+      dto.replacementFileId
+    );
+  }
+
   @Delete(":id")
-  @ApiOperation({ summary: "Delete document (soft delete)" })
-  async remove(@Param("id") id: string) {
-    return this.documentService.delete(id);
+  @ApiOperation({ summary: "Delete document (within 72-hour window or with DCC permission)" })
+  async remove(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
+    return this.deletionService.selfDelete(id, req.user.id);
   }
 
   @Get(":id/open-path")

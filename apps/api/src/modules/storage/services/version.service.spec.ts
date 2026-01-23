@@ -26,8 +26,8 @@ describe("VersionService", () => {
     id: "version-1",
     documentId: "doc-1",
     version: 1,
-    fileName: "test-document.pdf",
-    filePath: "test-folder/versions/doc-1/v001_2024-01-01_user12345.pdf",
+    fileName: "test-document.pdf", // Original filename for display
+    filePath: "test-folder/versions/doc-1/v001_2024-01-01_user12345.pdf", // Version file path
     fileSize: 1024,
     checksum: "abc123",
     comment: "Initial upload",
@@ -55,6 +55,8 @@ describe("VersionService", () => {
 
     const mockSmbService = {
       writeFile: jest.fn(),
+      exists: jest.fn(),
+      deleteFile: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -104,6 +106,7 @@ describe("VersionService", () => {
           },
         },
       });
+      // Version file, current file, and potentially cleanup of old file
       expect(smbService.writeFile).toHaveBeenCalledTimes(2); // Version file and current file
       expect(prismaService.documentVersion.create).toHaveBeenCalled();
       expect(prismaService.document.update).toHaveBeenCalled();
@@ -143,6 +146,87 @@ describe("VersionService", () => {
       await expect(
         service.createVersion("invalid-id", Buffer.from("data"), "user-1")
       ).rejects.toThrow(CustomException);
+    });
+
+    it("should cleanup old file when migrating to ID-based name", async () => {
+      const fileData = Buffer.from("test content");
+      const documentWithOldPath = {
+        ...mockDocument,
+        filePath: "test-folder/current/old-filename.pdf", // Old format
+      };
+
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValue(documentWithOldPath);
+      smbService.writeFile = jest.fn().mockResolvedValue(undefined);
+      smbService.exists = jest.fn().mockResolvedValue(true);
+      smbService.deleteFile = jest.fn().mockResolvedValue(undefined);
+      prismaService.documentVersion.create = jest
+        .fn()
+        .mockResolvedValue(mockVersion);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+
+      await service.createVersion("doc-1", fileData, "user-1", "Initial upload");
+
+      expect(smbService.writeFile).toHaveBeenCalledTimes(2); // Version and current
+      expect(smbService.exists).toHaveBeenCalledWith(
+        "test-folder/current/old-filename.pdf"
+      );
+      expect(smbService.deleteFile).toHaveBeenCalledWith(
+        "test-folder/current/old-filename.pdf"
+      );
+    });
+
+    it("should not cleanup if old file does not exist", async () => {
+      const fileData = Buffer.from("test content");
+      const documentWithOldPath = {
+        ...mockDocument,
+        filePath: "test-folder/current/old-filename.pdf",
+      };
+
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValue(documentWithOldPath);
+      smbService.writeFile = jest.fn().mockResolvedValue(undefined);
+      smbService.exists = jest.fn().mockResolvedValue(false); // File doesn't exist
+      smbService.deleteFile = jest.fn();
+      prismaService.documentVersion.create = jest
+        .fn()
+        .mockResolvedValue(mockVersion);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+
+      await service.createVersion("doc-1", fileData, "user-1", "Initial upload");
+
+      expect(smbService.exists).toHaveBeenCalled();
+      expect(smbService.deleteFile).not.toHaveBeenCalled();
+    });
+
+    it("should handle cleanup errors gracefully", async () => {
+      const fileData = Buffer.from("test content");
+      const documentWithOldPath = {
+        ...mockDocument,
+        filePath: "test-folder/current/old-filename.pdf",
+      };
+
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValue(documentWithOldPath);
+      smbService.writeFile = jest.fn().mockResolvedValue(undefined);
+      smbService.exists = jest.fn().mockResolvedValue(true);
+      smbService.deleteFile = jest
+        .fn()
+        .mockRejectedValue(new Error("Delete failed"));
+      prismaService.documentVersion.create = jest
+        .fn()
+        .mockResolvedValue(mockVersion);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+
+      // Should not throw, cleanup errors should be handled gracefully
+      await expect(
+        service.createVersion("doc-1", fileData, "user-1", "Initial upload")
+      ).resolves.toBeDefined();
+
+      expect(smbService.deleteFile).toHaveBeenCalled();
     });
   });
 

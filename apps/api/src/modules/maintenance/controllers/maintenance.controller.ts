@@ -16,6 +16,7 @@ import { CheckPolicies } from "@/modules/authorization/decorators/check-policies
 import { MaintenanceService } from "../services/maintenance.service";
 import { CreateMaintenanceNoticeDto } from "../dto/create-maintenance-notice.dto";
 import { UpdateMaintenanceNoticeDto } from "../dto/update-maintenance-notice.dto";
+import { AuthenticatedRequest } from "@/common/types/request.types";
 
 @ApiTags("Maintenance")
 @ApiBearerAuth()
@@ -40,7 +41,7 @@ export class MaintenanceController {
   @UseGuards(PoliciesGuard)
   @CheckPolicies({ action: "create", subject: "Maintenance" })
   @ApiOperation({ summary: "Create maintenance notice (managers/admins only)" })
-  create(@Body() dto: CreateMaintenanceNoticeDto, @Request() req: any) {
+  create(@Body() dto: CreateMaintenanceNoticeDto, @Request() req: AuthenticatedRequest) {
     return this.maintenanceService.create(dto, req.user.id);
   }
 

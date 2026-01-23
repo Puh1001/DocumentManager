@@ -61,6 +61,10 @@
         "close": "Close",
         "loadError": "Unable to load document. Please try again.",
         "notSupported": "Your browser does not support viewing PDFs."
+      },
+      "errors": {
+        "noPermission": "You do not have permission to delete this attachment",
+        "checkStatusFailed": "Failed to check deletion status"
       }
     }
   },

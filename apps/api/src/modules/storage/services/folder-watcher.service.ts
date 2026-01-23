@@ -88,7 +88,22 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log(`Starting file watcher for: ${this.basePath}`);
 
-      this.watcher = chokidar.watch(this.basePath, {
+      // Check if this is a UNC path (Windows network share)
+      const isUncPath = process.platform === "win32" && this.basePath.startsWith("\\\\");
+      
+      // Configure watcher options
+      const watchOptions: {
+        ignored: RegExp;
+        persistent: boolean;
+        ignoreInitial: boolean;
+        awaitWriteFinish: {
+          stabilityThreshold: number;
+          pollInterval: number;
+        };
+        usePolling?: boolean;
+        interval?: number;
+        binaryInterval?: number;
+      } = {
         ignored: /(^|[\/\\])\../, // Ignore dotfiles
         persistent: true,
         ignoreInitial: true, // Don't emit events for existing files
@@ -96,50 +111,83 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
           stabilityThreshold: 2000, // Wait 2s after file stops changing
           pollInterval: 100,
         },
-      });
+      };
+
+      // For UNC paths on Windows, use polling for reliability
+      // Native fs.watch doesn't work well with network shares
+      if (isUncPath) {
+        watchOptions.usePolling = true;
+        // Optimized polling interval: 3 seconds for production (reduced from 1s)
+        // This reduces CPU/IO overhead by 66% while maintaining reasonable responsiveness
+        const pollingInterval = this.configService.get<number>(
+          "SMB_POLLING_INTERVAL_MS",
+          3000
+        );
+        watchOptions.interval = pollingInterval;
+        watchOptions.binaryInterval = pollingInterval * 2; // Poll slower for binary files
+        this.logger.log(
+          `Using polling mode for UNC path (network share) with ${pollingInterval}ms interval`
+        );
+      }
+
+      this.watcher = chokidar.watch(this.basePath, watchOptions);
 
       // Watch for file additions
       this.watcher.on("add", (filePath) => {
-        this.logger.debug(`File added: ${filePath}`);
-        this.eventEmitter.emit("file.added", {
-          path: filePath,
-          relativePath: path.relative(this.basePath, filePath),
+        // Async event emission to prevent blocking watcher
+        setImmediate(() => {
+          this.eventEmitter.emit("file.added", {
+            path: filePath,
+            relativePath: path.relative(this.basePath, filePath),
+          });
         });
       });
 
       // Watch for file changes
       this.watcher.on("change", (filePath) => {
-        this.logger.debug(`File changed: ${filePath}`);
-        this.eventEmitter.emit("file.changed", {
-          path: filePath,
-          relativePath: path.relative(this.basePath, filePath),
+        // Async event emission to prevent blocking watcher
+        setImmediate(() => {
+          this.eventEmitter.emit("file.changed", {
+            path: filePath,
+            relativePath: path.relative(this.basePath, filePath),
+          });
         });
       });
 
       // Watch for file deletions
       this.watcher.on("unlink", (filePath) => {
-        this.logger.debug(`File deleted: ${filePath}`);
-        this.eventEmitter.emit("file.deleted", {
-          path: filePath,
-          relativePath: path.relative(this.basePath, filePath),
+        // Async event emission to prevent blocking watcher
+        setImmediate(() => {
+          this.eventEmitter.emit("file.deleted", {
+            path: filePath,
+            relativePath: path.relative(this.basePath, filePath),
+          });
         });
       });
 
       // Watch for folder additions
       this.watcher.on("addDir", (dirPath) => {
-        this.logger.debug(`Folder added: ${dirPath}`);
-        this.eventEmitter.emit("folder.added", {
-          path: dirPath,
-          relativePath: path.relative(this.basePath, dirPath),
+        // Normalize path separators to forward slashes for consistency with database
+        const relativePath = path.relative(this.basePath, dirPath).replace(/\\/g, '/');
+        this.logger.log(`[WATCHER] Folder added detected: ${dirPath} -> relative: ${relativePath}`);
+        
+        // Async event emission to prevent blocking watcher
+        setImmediate(() => {
+          this.eventEmitter.emit("folder.added", {
+            path: dirPath,
+            relativePath: relativePath,
+          });
         });
       });
 
       // Watch for folder deletions
       this.watcher.on("unlinkDir", (dirPath) => {
-        this.logger.debug(`Folder deleted: ${dirPath}`);
-        this.eventEmitter.emit("folder.deleted", {
-          path: dirPath,
-          relativePath: path.relative(this.basePath, dirPath),
+        // Async event emission to prevent blocking watcher
+        setImmediate(() => {
+          this.eventEmitter.emit("folder.deleted", {
+            path: dirPath,
+            relativePath: path.relative(this.basePath, dirPath).replace(/\\/g, '/'),
+          });
         });
       });
 

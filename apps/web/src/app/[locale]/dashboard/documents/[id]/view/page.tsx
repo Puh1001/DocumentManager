@@ -12,6 +12,7 @@ import { ImageViewer } from "@/components/viewers/image-viewer";
 import { Watermark } from "@/components/viewers/watermark";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, ExternalLink, Printer } from "lucide-react";
+import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
 
 interface Document {
   id: string;
@@ -116,7 +117,7 @@ export default function DocumentViewPage() {
           </Button>
           <div>
             <h1 className="font-semibold">{document.name}</h1>
-            <p className="text-xs text-muted-foreground">{document.fileName}</p>
+            <p className="text-xs text-muted-foreground">{fixFileNameEncoding(document.fileName)}</p>
           </div>
         </div>
 

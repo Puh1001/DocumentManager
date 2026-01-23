@@ -11,6 +11,8 @@ interface SyncEvent {
     | "document_added"
     | "document_updated"
     | "document_deleted"
+    | "deletion_request_rejected"
+    | "deletion_request_approved"
     | "sync_completed";
   folderId?: string;
   documentId?: string;

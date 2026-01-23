@@ -61,6 +61,10 @@
         "close": "关闭",
         "loadError": "无法加载文档。请重试。",
         "notSupported": "您的浏览器不支持查看 PDF。"
+      },
+      "errors": {
+        "noPermission": "您没有删除此附件的权限",
+        "checkStatusFailed": "无法检查删除状态"
       }
     }
   },

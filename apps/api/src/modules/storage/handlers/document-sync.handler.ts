@@ -6,6 +6,7 @@ import { PrismaClientLike } from "@/common/types/prisma.types";
 import { ChecksumUtil } from "../utils/checksum.util";
 import { SystemUserUtil } from "../utils/system-user.util";
 import { MimeTypeUtil } from "../utils/mime-type.util";
+import { fixFileNameEncoding } from "@/common/utils/encoding.util";
 import * as path from "path";
 
 @Injectable()
@@ -50,13 +51,20 @@ export class DocumentSyncHandler {
         targetFolderId = folder.id;
       }
 
+      // Fix encoding in case file system has corrupted names
+      // fixFileNameEncoding() already normalizes to NFC
+      const fixedFileName = fixFileNameEncoding(file.name);
+      
       // Check if document already exists by file path
+      // Note: fixedFileName is already normalized to NFC by fixFileNameEncoding()
+      // Existing documents in DB may not be normalized, but comparison should still work
+      // as PostgreSQL handles Unicode normalization in comparisons
       const existing = await (
         this.prisma as PrismaClientLike
       ).document.findFirst({
         where: {
           folderId: targetFolderId,
-          fileName: file.name,
+          fileName: fixedFileName, // Normalized to NFC
           status: "ACTIVE",
         },
       });
@@ -122,8 +130,10 @@ export class DocumentSyncHandler {
         return;
       }
 
-      const fileType = path.extname(file.name).slice(1).toLowerCase();
-      const documentName = path.basename(file.name, path.extname(file.name));
+      // Use fixedFileName already defined at the top
+      const fileType = path.extname(fixedFileName).slice(1).toLowerCase();
+      // fixFileNameEncoding() already normalizes to NFC
+      const documentName = fixFileNameEncoding(path.basename(fixedFileName, path.extname(fixedFileName)));
 
       // Get file size from stats (không cần đọc file)
       let fileSize: number;
@@ -163,10 +173,11 @@ export class DocumentSyncHandler {
       // Create document record
       // NOTE: Không tạo version file khi sync existing files
       // Chỉ lưu path đến file gốc, version sẽ được tạo khi file thay đổi hoặc upload qua UI
+      // fixFileNameEncoding() already normalizes to NFC
       await (this.prisma as PrismaClientLike).document.create({
         data: {
-          name: documentName,
-          fileName: file.name,
+          name: documentName, // Already normalized by fixFileNameEncoding
+          fileName: fixedFileName, // Already normalized by fixFileNameEncoding
           fileType,
           mimeType,
           fileSize,

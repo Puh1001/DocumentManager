@@ -1,15 +1,20 @@
 "use client";
 
-import { FileText, X } from "lucide-react";
+import { useState } from "react";
 import { KpiAttachment } from "@/lib/api";
 import { useTranslations } from "next-intl";
+import { useToast } from "@/hooks/use-toast";
+import { KpiAttachmentItem } from "./kpi-attachment-item";
+import { KpiAttachmentDeletionRequestDialog } from "./kpi-attachment-deletion-request-dialog";
 
 interface KpiAttachmentListProps {
   attachments: KpiAttachment[];
   onAttachmentClick: (attachmentId: string) => void;
   onAttachmentDelete?: (attachmentId: string) => void;
+  onAttachmentRenamed?: (attachmentId: string) => void;
   canView: boolean;
   canDelete?: boolean;
+  canEdit?: boolean;
   variant?: "default" | "cyber"; // Style variant: default for regular UI, cyber for boss UI
 }
 
@@ -17,11 +22,16 @@ export function KpiAttachmentList({
   attachments,
   onAttachmentClick,
   onAttachmentDelete,
+  onAttachmentRenamed,
   canView,
   canDelete = false,
+  canEdit = false,
   variant = "default",
 }: KpiAttachmentListProps) {
   const t = useTranslations("boss.kpi.attachments");
+  const { toast } = useToast();
+  const [deletionRequestDialogOpen, setDeletionRequestDialogOpen] = useState(false);
+  const [selectedAttachment, setSelectedAttachment] = useState<KpiAttachment | null>(null);
 
   if (!canView) {
     return null;
@@ -40,40 +50,10 @@ export function KpiAttachmentList({
   const displayAttachments = attachments.slice(0, 3);
   const remainingCount = attachments.length - 3;
 
-  const handleDelete = (e: React.MouseEvent, attachmentId: string) => {
-    e.stopPropagation();
-    if (
-      onAttachmentDelete &&
-      confirm(t("deleteConfirm") || "Bạn có chắc muốn xóa file này?")
-    ) {
-      onAttachmentDelete(attachmentId);
-    }
+  const handleDeletionRequest = (attachment: KpiAttachment) => {
+    setSelectedAttachment(attachment);
+    setDeletionRequestDialogOpen(true);
   };
-
-  const containerClass =
-    variant === "cyber"
-      ? "group relative flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all text-xs font-cyber text-cyan-300 cyber-text-glow"
-      : "group relative inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted border border-border rounded-md hover:bg-accent hover:border-accent-foreground/20 transition-all text-xs";
-
-  const buttonClass =
-    variant === "cyber"
-      ? "flex items-center gap-1.5 flex-1 min-w-0"
-      : "flex items-center gap-1.5 flex-1 min-w-0 text-muted-foreground hover:text-foreground";
-
-  const fileNameClass =
-    variant === "cyber"
-      ? "max-w-[120px] truncate"
-      : "max-w-[140px] truncate font-medium";
-
-  const deleteButtonClass =
-    variant === "cyber"
-      ? "ml-1 p-0.5 hover:bg-red-500/20 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-      : "ml-1 p-1 hover:bg-destructive/10 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100";
-
-  const deleteIconClass =
-    variant === "cyber"
-      ? "h-3 w-3 text-red-400 hover:text-red-300"
-      : "h-3.5 w-3.5 text-destructive hover:text-destructive/80";
 
   const moreFilesClass =
     variant === "cyber"
@@ -81,40 +61,45 @@ export function KpiAttachmentList({
       : "text-xs text-muted-foreground";
 
   return (
-    <div className="flex flex-wrap gap-2 items-center">
-      {displayAttachments.map((attachment) => (
-        <div key={attachment.id} className={containerClass}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAttachmentClick(attachment.id);
-            }}
-            className={buttonClass}
-            title={attachment.fileName}
-            aria-label={`${t("viewer.title")}: ${attachment.fileName}`}
-          >
-            <FileText
-              className={`${variant === "cyber" ? "h-3 w-3" : "h-3.5 w-3.5"} flex-shrink-0`}
-            />
-            <span className={fileNameClass}>{attachment.fileName}</span>
-          </button>
-          {canDelete && onAttachmentDelete && (
-            <button
-              onClick={(e) => handleDelete(e, attachment.id)}
-              className={deleteButtonClass}
-              title={t("delete") || "Xóa file"}
-              aria-label={t("delete") || "Xóa file"}
-            >
-              <X className={deleteIconClass} />
-            </button>
-          )}
-        </div>
-      ))}
-      {remainingCount > 0 && (
-        <span className={moreFilesClass}>
-          {t("moreFiles", { count: remainingCount })}
-        </span>
+    <>
+      <div className="flex flex-wrap gap-2 items-center">
+        {displayAttachments.map((attachment) => (
+          <KpiAttachmentItem
+            key={attachment.id}
+            attachment={attachment}
+            onAttachmentClick={onAttachmentClick}
+            onAttachmentDelete={onAttachmentDelete}
+            onDeletionRequest={handleDeletionRequest}
+            onAttachmentRenamed={onAttachmentRenamed}
+            canDelete={canDelete}
+            canEdit={canEdit}
+            variant={variant}
+          />
+        ))}
+        {remainingCount > 0 && (
+          <span className={moreFilesClass}>
+            {t("moreFiles", { count: remainingCount })}
+          </span>
+        )}
+      </div>
+
+      {/* Deletion request dialog */}
+      {selectedAttachment && (
+        <KpiAttachmentDeletionRequestDialog
+          open={deletionRequestDialogOpen}
+          onOpenChange={setDeletionRequestDialogOpen}
+          attachmentId={selectedAttachment.id}
+          fileName={selectedAttachment.fileName}
+          onSubmitted={() => {
+            // Refresh deletion status after request submitted
+            toast({
+              title: "Success",
+              description: "Deletion request submitted. DCC will review it.",
+            });
+            setSelectedAttachment(null);
+          }}
+        />
       )}
-    </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 # File Storage Architecture
 
 **Date:** 2024-12-19  
+**Updated:** 2025-01-26 (ID-based filename implementation)  
 **Status:** Current Implementation
 
 ---
@@ -57,12 +58,18 @@ SMB Share Structure:
 Version Control Structure (khi upload qua UI):
 ├── 1/
 │   ├── current/
-│   │   └── document.xlsx  ← Current version
+│   │   └── {documentId}.xlsx  ← Current version (Unique ID-based filename)
 │   └── versions/
 │       └── {documentId}/
 │           ├── v001_2024-12-19_user123.xlsx
 │           └── v002_2024-12-19_user456.xlsx
 ```
+
+**File Naming Strategy:**
+- **Physical files on SMB**: Use Unique ID format (`{documentId}.{ext}`) for stability
+- **Database `fileName` field**: Stores original filename for user display
+- **Database `filePath` field**: Stores SMB path with ID-based filename
+- **User display**: Always shows original `fileName` from database
 
 ---
 

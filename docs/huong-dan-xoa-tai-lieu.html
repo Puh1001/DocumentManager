@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn Sử Dụng Chức Năng Yêu Cầu Xóa Tài Liệu</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2c3e50;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        h2 {
+            font-size: 18px;
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        
+        h3 {
+            font-size: 16px;
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        h4 {
+            font-size: 14px;
+            color: #34495e;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .badge-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        
+        .badge-table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .badge-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .badge-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .badge-table tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        .example-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .example-box.good {
+            border-left-color: #27ae60;
+        }
+        
+        .example-box.bad {
+            border-left-color: #e74c3c;
+        }
+        
+        .example-box h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .note-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+        }
+        
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #3498db;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .faq-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .faq-answer {
+            color: #555;
+            margin-left: 20px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .print-button:hover {
+            background-color: #2980b9;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px solid #ecf0f1;
+            margin: 30px 0;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ In / Lưu PDF</button>
+    
+    <div class="header">
+        <h1>HƯỚNG DẪN SỬ DỤNG CHỨC NĂNG<br>YÊU CẦU XÓA TÀI LIỆU<br>(DELETION REQUESTS)</h1>
+        <div class="subtitle">Phiên bản 1.0 | Ngày cập nhật: 23/01/2026</div>
+    </div>
+
+    <h1>1. TỔNG QUAN</h1>
+    
+    <p>Chức năng <strong>Yêu cầu xóa tài liệu (Deletion Requests)</strong> cho phép người dùng yêu cầu xóa các tài liệu đã quá thời hạn tự xóa (72 giờ). Tất cả các yêu cầu xóa sau 72 giờ đều phải được phê duyệt bởi DCC (Document Control Center) trước khi tài liệu được xóa.</p>
+    
+    <h2>1.1. Quy tắc 72 giờ</h2>
+    <ul>
+        <li><strong>Trong 72 giờ đầu</strong>: Người dùng có thể tự xóa tài liệu mà không cần phê duyệt</li>
+        <li><strong>Sau 72 giờ</strong>: Người dùng phải gửi yêu cầu xóa và chờ DCC phê duyệt</li>
+        <li><strong>DCC</strong>: Có thể xóa tài liệu bất cứ lúc nào mà không cần chờ 72 giờ</li>
+    </ul>
+    
+    <h2>1.2. Ai có thể sử dụng?</h2>
+    <ul>
+        <li><strong>Tất cả người dùng</strong>: Có thể gửi yêu cầu xóa tài liệu của mình hoặc tài liệu trong phòng ban</li>
+        <li><strong>DCC</strong>: Có thể xem, phê duyệt hoặc từ chối tất cả các yêu cầu xóa</li>
+        <li><strong>Admin</strong>: Có thể xem tất cả các yêu cầu xóa</li>
+    </ul>
+    
+    <hr class="page-break">
+    
+    <h1>2. CÁCH GỬI YÊU CẦU XÓA TÀI LIỆU</h1>
+    
+    <h2>2.1. Khi nào cần gửi yêu cầu?</h2>
+    <p>Bạn cần gửi yêu cầu xóa khi:</p>
+    <ul>
+        <li>Tài liệu đã được tải lên <strong>hơn 72 giờ</strong></li>
+        <li>Bạn muốn xóa tài liệu nhưng không thể tự xóa được</li>
+        <li>Hệ thống hiển thị badge <strong>"Requires DCC Approval"</strong> (Yêu cầu phê duyệt DCC)</li>
+    </ul>
+    
+    <h2>2.2. Các bước gửi yêu cầu</h2>
+    <ol class="step-list">
+        <li>
+            <strong>Tìm tài liệu cần xóa</strong>
+            <ul>
+                <li>Điều hướng đến danh sách tài liệu</li>
+                <li>Tìm tài liệu bạn muốn xóa</li>
+                <li>Kiểm tra badge trạng thái: nếu hiển thị "Requires DCC Approval" nghĩa là bạn cần gửi yêu cầu</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Mở hộp thoại yêu cầu xóa</strong>
+            <ul>
+                <li>Click vào nút <strong>"Request Deletion"</strong> hoặc <strong>"Yêu cầu xóa"</strong> trên tài liệu</li>
+                <li>Hộp thoại yêu cầu xóa sẽ hiển thị</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Điền thông tin yêu cầu</strong>
+            <ul>
+                <li><strong>Lý do xóa</strong> (bắt buộc): Giải thích tại sao bạn muốn xóa tài liệu này
+                    <ul>
+                        <li>Tối thiểu 10 ký tự</li>
+                        <li>Nên mô tả chi tiết và rõ ràng</li>
+                        <li>Ví dụ: "Tài liệu đã lỗi thời, đã có bản cập nhật mới"</li>
+                    </ul>
+                </li>
+                <li><strong>File thay thế</strong> (tùy chọn): Nếu có file mới thay thế, nhập ID của file đó
+                    <ul>
+                        <li>Upload file mới trước (nếu có)</li>
+                        <li>Copy ID của file mới</li>
+                        <li>Dán vào trường "Replacement file ID"</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <strong>Gửi yêu cầu</strong>
+            <ul>
+                <li>Click nút <strong>"Submit Request"</strong> (Gửi yêu cầu)</li>
+                <li>Hệ thống sẽ xác nhận yêu cầu đã được gửi</li>
+                <li>Badge trạng thái sẽ chuyển thành <strong>"Pending DCC Review"</strong> (Đang chờ DCC xem xét)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>2.3. Ví dụ mẫu lý do xóa</h2>
+    
+    <div class="example-box good">
+        <h4>✅ Tốt:</h4>
+        <ul>
+            <li>"Tài liệu này đã được thay thế bằng bản cập nhật mới (file ID: abc123). Bản cũ chứa thông tin không chính xác."</li>
+            <li>"Tài liệu bị trùng lặp với file khác trong cùng thư mục. File cần giữ lại là version 2.0."</li>
+            <li>"Tài liệu đã hết hạn sử dụng theo quy định. Đã có tài liệu mới thay thế."</li>
+        </ul>
+    </div>
+    
+    <div class="example-box bad">
+        <h4>❌ Không tốt:</h4>
+        <ul>
+            <li>"Xóa" (quá ngắn, không đủ 10 ký tự)</li>
+            <li>"Không cần nữa" (không rõ ràng)</li>
+            <li>"Test" (không phù hợp)</li>
+        </ul>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>3. THEO DÕI TRẠNG THÁI YÊU CẦU</h1>
+    
+    <h2>3.1. Các trạng thái yêu cầu</h2>
+    <p>Hệ thống hiển thị các badge trạng thái khác nhau:</p>
+    
+    <table class="badge-table">
+        <thead>
+            <tr>
+                <th>Badge</th>
+                <th>Ý nghĩa</th>
+                <th>Mô tả</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>🟢 <strong>Can Delete</strong><br>(Có thể xóa)</td>
+                <td>Tài liệu còn trong 72 giờ</td>
+                <td>Bạn có thể tự xóa ngay, không cần yêu cầu</td>
+            </tr>
+            <tr>
+                <td>🟡 <strong>Requires DCC Approval</strong><br>(Yêu cầu phê duyệt DCC)</td>
+                <td>Đã quá 72 giờ, chưa có yêu cầu</td>
+                <td>Cần gửi yêu cầu xóa để DCC phê duyệt</td>
+            </tr>
+            <tr>
+                <td>🟠 <strong>Pending DCC Review</strong><br>(Đang chờ DCC xem xét)</td>
+                <td>Đã gửi yêu cầu, đang chờ</td>
+                <td>Yêu cầu của bạn đang được DCC xem xét</td>
+            </tr>
+            <tr>
+                <td>🔴 <strong>Rejected</strong><br>(Bị từ chối)</td>
+                <td>DCC đã từ chối yêu cầu</td>
+                <td>Click vào badge để xem lý do từ chối</td>
+            </tr>
+            <tr>
+                <td>❌ <strong>No Permission</strong><br>(Không có quyền)</td>
+                <td>Không có quyền xóa</td>
+                <td>Bạn không phải người upload hoặc không thuộc phòng ban</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>3.2. Xem chi tiết yêu cầu bị từ chối</h2>
+    <p>Khi yêu cầu bị từ chối:</p>
+    <ol>
+        <li>Badge sẽ hiển thị <strong>"Rejected"</strong> màu đỏ</li>
+        <li>Click vào badge để xem chi tiết:
+            <ul>
+                <li>Lý do bạn đã gửi</li>
+                <li>Lý do DCC từ chối (nếu có)</li>
+                <li>Người xem xét</li>
+                <li>Thời gian xem xét</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>3.3. Gửi lại yêu cầu sau khi bị từ chối</h2>
+    <p>Nếu yêu cầu bị từ chối, bạn có thể:</p>
+    <ol>
+        <li>Xem lý do từ chối từ DCC</li>
+        <li>Sửa lại lý do xóa (nếu cần)</li>
+        <li>Gửi lại yêu cầu mới với thông tin cập nhật</li>
+    </ol>
+    
+    <hr class="page-break">
+    
+    <h1>4. QUY TRÌNH PHÊ DUYỆT CỦA DCC</h1>
+    
+    <h2>4.1. Xem danh sách yêu cầu</h2>
+    <p><strong>DCC</strong> có thể:</p>
+    <ol>
+        <li>Đăng nhập vào hệ thống</li>
+        <li>Điều hướng đến <strong>Dashboard → DCC → Deletion Requests</strong></li>
+        <li>Xem tất cả các yêu cầu đang chờ phê duyệt</li>
+    </ol>
+    
+    <h2>4.2. Thông tin hiển thị cho DCC</h2>
+    <p>Mỗi yêu cầu hiển thị:</p>
+    <ul>
+        <li><strong>Tên tài liệu</strong> và tên file</li>
+        <li><strong>Người yêu cầu</strong>: Tên và username</li>
+        <li><strong>Thời gian yêu cầu</strong>: Ngày và giờ gửi yêu cầu</li>
+        <li><strong>Lý do xóa</strong>: Lý do người dùng cung cấp</li>
+        <li><strong>File thay thế</strong> (nếu có): Link đến file mới</li>
+    </ul>
+    
+    <h2>4.3. Phê duyệt yêu cầu</h2>
+    <p><strong>Các bước phê duyệt:</strong></p>
+    <ol>
+        <li>Xem xét thông tin yêu cầu</li>
+        <li>Click nút <strong>"Approve"</strong> (Phê duyệt)</li>
+        <li>Xác nhận trong hộp thoại xác nhận</li>
+        <li>Hệ thống sẽ:
+            <ul>
+                <li>Tự động xóa tài liệu (di chuyển vào thư mục "Deleted files")</li>
+                <li>Cập nhật trạng thái yêu cầu thành "APPROVED"</li>
+                <li>Gửi thông báo cho người yêu cầu (nếu có)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>4.4. Từ chối yêu cầu</h2>
+    <p><strong>Các bước từ chối:</strong></p>
+    <ol>
+        <li>Xem xét thông tin yêu cầu</li>
+        <li>Click nút <strong>"Reject"</strong> (Từ chối)</li>
+        <li>Nhập lý do từ chối (tùy chọn nhưng nên có):
+            <ul>
+                <li>Giải thích tại sao yêu cầu không được chấp nhận</li>
+                <li>Hướng dẫn người dùng cần làm gì (nếu có)</li>
+            </ul>
+        </li>
+        <li>Click <strong>"Reject Request"</strong></li>
+        <li>Hệ thống sẽ:
+            <ul>
+                <li>Cập nhật trạng thái yêu cầu thành "REJECTED"</li>
+                <li>Lưu lý do từ chối</li>
+                <li>Gửi thông báo cho người yêu cầu (nếu có)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <div class="note-box">
+        <h4>📝 Lưu ý cho DCC:</h4>
+        <ul>
+            <li><strong>Xem xét kỹ</strong>: Đọc kỹ lý do xóa và kiểm tra file thay thế (nếu có)</li>
+            <li><strong>Ghi chú rõ ràng</strong>: Khi từ chối, nên ghi rõ lý do để người dùng hiểu</li>
+            <li><strong>Xử lý nhanh</strong>: Cố gắng xử lý yêu cầu trong thời gian hợp lý</li>
+            <li><strong>Kiểm tra file thay thế</strong>: Nếu có file thay thế, nên xác minh file đó phù hợp</li>
+        </ul>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>5. CÁC TÌNH HUỐNG THƯỜNG GẶP</h1>
+    
+    <h2>5.1. Tình huống 1: Xóa nhầm tài liệu trong 72 giờ</h2>
+    <p><strong>Vấn đề</strong>: Bạn vừa upload nhầm tài liệu và muốn xóa ngay.</p>
+    <p><strong>Giải pháp</strong>:</p>
+    <ul>
+        <li>Bạn có thể tự xóa ngay mà không cần yêu cầu</li>
+        <li>Tìm tài liệu trong danh sách</li>
+        <li>Click nút "Delete" (Xóa)</li>
+        <li>Xác nhận xóa</li>
+    </ul>
+    
+    <h2>5.2. Tình huống 2: Tài liệu đã quá 72 giờ</h2>
+    <p><strong>Vấn đề</strong>: Bạn muốn xóa tài liệu nhưng đã quá 72 giờ.</p>
+    <p><strong>Giải pháp</strong>:</p>
+    <ol>
+        <li>Gửi yêu cầu xóa với lý do rõ ràng</li>
+        <li>Chờ DCC phê duyệt</li>
+        <li>Nếu bị từ chối, xem lý do và gửi lại (nếu cần)</li>
+    </ol>
+    
+    <h2>5.3. Tình huống 3: Có file mới thay thế</h2>
+    <p><strong>Vấn đề</strong>: Bạn đã upload file mới và muốn xóa file cũ.</p>
+    <p><strong>Giải pháp</strong>:</p>
+    <ol>
+        <li>Upload file mới trước</li>
+        <li>Copy ID của file mới</li>
+        <li>Gửi yêu cầu xóa file cũ</li>
+        <li>Trong yêu cầu, nhập ID của file mới vào trường "Replacement file ID"</li>
+        <li>Giải thích rõ trong lý do: "File cũ đã được thay thế bằng file mới (ID: xxx)"</li>
+    </ol>
+    
+    <h2>5.4. Tình huống 4: Yêu cầu bị từ chối</h2>
+    <p><strong>Vấn đề</strong>: Yêu cầu xóa của bạn bị DCC từ chối.</p>
+    <p><strong>Giải pháp</strong>:</p>
+    <ol>
+        <li>Click vào badge "Rejected" để xem lý do</li>
+        <li>Đọc kỹ lý do từ chối</li>
+        <li>Nếu cần, sửa lại lý do và gửi lại yêu cầu</li>
+        <li>Nếu không đồng ý, liên hệ DCC để trao đổi</li>
+    </ol>
+    
+    <h2>5.5. Tình huống 5: Không thấy nút xóa</h2>
+    <p><strong>Vấn đề</strong>: Bạn không thấy nút xóa hoặc nút yêu cầu xóa.</p>
+    <p><strong>Nguyên nhân có thể</strong>:</p>
+    <ul>
+        <li>Bạn không phải người upload tài liệu</li>
+        <li>Bạn không thuộc phòng ban của tài liệu</li>
+        <li>Bạn không có quyền xóa</li>
+    </ul>
+    <p><strong>Giải pháp</strong>:</p>
+    <ul>
+        <li>Liên hệ người upload hoặc quản trị viên</li>
+        <li>Nếu bạn là DCC, bạn có thể xóa bất cứ tài liệu nào</li>
+    </ul>
+    
+    <hr class="page-break">
+    
+    <h1>6. CÂU HỎI THƯỜNG GẶP (FAQ)</h1>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q1: Tại sao có quy tắc 72 giờ?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>: Quy tắc 72 giờ giúp:
+            <ul>
+                <li>Người dùng có thời gian sửa lỗi nếu upload nhầm</li>
+                <li>Bảo vệ dữ liệu quan trọng khỏi việc xóa nhầm</li>
+                <li>Đảm bảo tính toàn vẹn của hệ thống quản lý tài liệu</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q2: Làm sao biết tài liệu còn bao nhiêu thời gian có thể tự xóa?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Badge trạng thái sẽ hiển thị: "Can Delete (Xh Ym left)"</li>
+                <li>Ví dụ: "Can Delete (5h 30m left)" nghĩa là còn 5 giờ 30 phút</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q3: Yêu cầu xóa mất bao lâu để được xử lý?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Tùy thuộc vào DCC</li>
+                <li>Thông thường trong vòng 1-2 ngày làm việc</li>
+                <li>Yêu cầu khẩn cấp có thể liên hệ DCC trực tiếp</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q4: Có thể hủy yêu cầu xóa không?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Hiện tại chưa có chức năng hủy yêu cầu</li>
+                <li>Nếu muốn hủy, liên hệ DCC để từ chối yêu cầu</li>
+                <li>Hoặc đợi DCC xử lý và giải thích</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q5: File bị xóa sẽ đi đâu?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>File không bị xóa hoàn toàn</li>
+                <li>File được di chuyển vào thư mục "Deleted files" của phòng ban</li>
+                <li>DCC có thể khôi phục nếu cần</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q6: Có thể xóa nhiều tài liệu cùng lúc không?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Hiện tại chỉ có thể xóa từng tài liệu một</li>
+                <li>Mỗi tài liệu cần một yêu cầu riêng (nếu quá 72 giờ)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q7: DCC có thể xóa tài liệu mà không cần yêu cầu không?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Có, DCC có thể xóa bất cứ tài liệu nào bất cứ lúc nào</li>
+                <li>DCC không cần chờ 72 giờ</li>
+                <li>DCC không cần gửi yêu cầu</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q8: Làm sao biết yêu cầu đã được xử lý?</div>
+        <div class="faq-answer">
+            <strong>Trả lời</strong>:
+            <ul>
+                <li>Badge trạng thái sẽ thay đổi:
+                    <ul>
+                        <li>"Pending DCC Review" → "Rejected" hoặc tài liệu biến mất (nếu được phê duyệt)</li>
+                    </ul>
+                </li>
+                <li>Hệ thống sẽ cập nhật real-time khi DCC xử lý</li>
+            </ul>
+        </div>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>7. LƯU Ý QUAN TRỌNG</h1>
+    
+    <h2>7.1. Trước khi gửi yêu cầu</h2>
+    <ul>
+        <li>✅ Kiểm tra kỹ tài liệu có thực sự cần xóa không</li>
+        <li>✅ Đảm bảo đã có file thay thế (nếu cần)</li>
+        <li>✅ Viết lý do rõ ràng, chi tiết</li>
+        <li>✅ Kiểm tra lại thông tin trước khi gửi</li>
+    </ul>
+    
+    <h2>7.2. Sau khi gửi yêu cầu</h2>
+    <ul>
+        <li>⏰ Theo dõi trạng thái yêu cầu</li>
+        <li>📧 Kiểm tra thông báo từ hệ thống</li>
+        <li>🔄 Sẵn sàng gửi lại nếu bị từ chối</li>
+    </ul>
+    
+    <h2>7.3. Quyền và trách nhiệm</h2>
+    <p><strong>Người dùng</strong>:</p>
+    <ul>
+        <li>Chịu trách nhiệm về lý do xóa</li>
+        <li>Cung cấp thông tin chính xác</li>
+        <li>Tuân thủ quy trình</li>
+    </ul>
+    
+    <p><strong>DCC</strong>:</p>
+    <ul>
+        <li>Xem xét kỹ lưỡng mỗi yêu cầu</li>
+        <li>Đưa ra quyết định công bằng</li>
+        <li>Ghi chú rõ ràng khi từ chối</li>
+    </ul>
+    
+    <hr>
+    
+    <h1>8. HỖ TRỢ VÀ LIÊN HỆ</h1>
+    <p>Nếu gặp vấn đề hoặc có câu hỏi:</p>
+    <ol>
+        <li><strong>Kiểm tra FAQ</strong> ở trên trước</li>
+        <li><strong>Liên hệ DCC</strong> nếu cần hỗ trợ về yêu cầu xóa</li>
+        <li><strong>Liên hệ IT Support</strong> nếu gặp lỗi kỹ thuật</li>
+        <li><strong>Xem tài liệu hướng dẫn</strong> khác trong hệ thống</li>
+    </ol>
+    
+    <div class="footer">
+        <p><strong>Phiên bản tài liệu</strong>: 1.0</p>
+        <p><strong>Ngày cập nhật</strong>: 23/01/2026</p>
+        <p><strong>Người soạn</strong>: Hệ thống Quản lý Tài liệu</p>
+    </div>
+</body>
+</html>

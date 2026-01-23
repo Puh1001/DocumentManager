@@ -1536,8 +1536,20 @@ export default function KpiPage() {
                                 });
                               }
                             }}
+                            onAttachmentRenamed={async (_attachmentId) => {
+                              try {
+                                // Refresh attachments for this KPI record
+                                const attachments = await kpiAttachmentApi.getAttachments(record.id);
+                                setAttachmentsMap(
+                                  new Map(attachmentsMap.set(record.id, attachments))
+                                );
+                              } catch (error: unknown) {
+                                console.error("Failed to refresh attachments after rename:", error);
+                              }
+                            }}
                             canView={canViewAttachments}
                             canDelete={canDeleteAttachments}
+                            canEdit={canViewAttachments}
                           />
                         )}
                       </div>

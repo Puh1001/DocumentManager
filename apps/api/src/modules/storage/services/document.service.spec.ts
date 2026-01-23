@@ -32,7 +32,7 @@ describe("DocumentService", () => {
     fileType: "pdf",
     mimeType: "application/pdf",
     fileSize: 1024,
-    filePath: "test-folder/current/test-document.pdf",
+    filePath: "test-folder/current/doc-1.pdf", // ID-based filename
     checksum: "abc123",
     folderId: "folder-1",
     status: "ACTIVE",
@@ -157,8 +157,8 @@ describe("DocumentService", () => {
         id: "version-1",
         documentId: "doc-1",
         version: 1,
-        filePath: "test-folder/current/test-document.pdf",
-        fileName: "test-document.pdf",
+        filePath: "test-folder/current/doc-1.pdf", // ID-based filename
+        fileName: "test-document.pdf", // Original filename for display
         fileSize: 1024,
         checksum: "abc123",
         createdBy: "user-1",
@@ -204,7 +204,7 @@ describe("DocumentService", () => {
 
       const mockVersion = {
         id: "version-1",
-        filePath: "test-folder/current/test-document.pdf",
+        filePath: "test-folder/current/doc-1.pdf", // ID-based filename
       };
 
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
@@ -240,7 +240,7 @@ describe("DocumentService", () => {
     it("should handle file stats unavailable gracefully", async () => {
       const mockVersion = {
         id: "version-1",
-        filePath: "test-folder/current/test-document.pdf",
+        filePath: "test-folder/current/doc-1.pdf", // ID-based filename
       };
 
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);

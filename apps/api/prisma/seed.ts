@@ -812,9 +812,10 @@ async function main() {
     });
 
     // Create subfolders (inherit departmentId from parent)
-    const subfolders = ["Tài liệu ISO", "KPI", "Bảo trì thiết bị", "Cải tiến"];
+    // New structure: KPI, Documents, Maintenance, Deleted files
+    const subfolders = ["KPI", "Documents", "Maintenance", "Deleted files"];
     for (const sub of subfolders) {
-      await prisma.folder.upsert({
+      const subfolder = await prisma.folder.upsert({
         where: { path: `${folderPath}/${sub}` },
         update: {
           departmentId: department.id, // Update departmentId if subfolder exists
@@ -826,6 +827,37 @@ async function main() {
           departmentId: department.id, // Inherit from parent
         },
       });
+
+      // For KPI, Documents, and Maintenance: create current/ and version/ subfolders
+      if (sub !== "Deleted files") {
+        // Create current/ subfolder
+        await prisma.folder.upsert({
+          where: { path: `${folderPath}/${sub}/current` },
+          update: {
+            departmentId: department.id,
+          },
+          create: {
+            name: "current",
+            path: `${folderPath}/${sub}/current`,
+            parentId: subfolder.id,
+            departmentId: department.id,
+          },
+        });
+
+        // Create version/ subfolder
+        await prisma.folder.upsert({
+          where: { path: `${folderPath}/${sub}/version` },
+          update: {
+            departmentId: department.id,
+          },
+          create: {
+            name: "version",
+            path: `${folderPath}/${sub}/version`,
+            parentId: subfolder.id,
+            departmentId: department.id,
+          },
+        });
+      }
     }
   }
   console.log(

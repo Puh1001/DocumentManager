@@ -10,6 +10,7 @@ import { DocxViewer } from "@/components/viewers/docx-viewer";
 import { Watermark } from "@/components/viewers/watermark";
 import { ArrowLeft, Download, Printer } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
+import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
 
 interface Document {
   id: string;
@@ -130,7 +131,7 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
       <div className="cyber-card cyber-corner p-5">
         <div>
           <h2 className="font-cyber font-bold text-xl mb-2 cyber-neon-cyan">{document.name}</h2>
-          <p className="text-sm font-cyber text-cyan-300/80">{document.fileName}</p>
+          <p className="text-sm font-cyber text-cyan-300/80">{fixFileNameEncoding(document.fileName)}</p>
         </div>
       </div>
 

@@ -78,10 +78,11 @@ export class SyncDeletionHandler {
 
   /**
    * Soft delete a single file from database (public method for real-time sync)
+   * @returns Deletion result with documentId and folderId, or null if failed
    */
   async deleteSingleFile(
     relativePath: string
-  ): Promise<{ folderId: string | null; documentId?: string } | null> {
+  ): Promise<{ folderId: string; documentId?: string } | null> {
     try {
       // Extract fileName and folder path from relativePath
       const fileName = path.basename(relativePath);
@@ -134,6 +135,55 @@ export class SyncDeletionHandler {
         error instanceof Error ? error.message : "Unknown error";
       this.logger.error(
         `Failed to delete single file ${relativePath}: ${errorMessage}`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Soft delete a single folder from database (public method for real-time sync)
+   * @returns Deletion result with folderId, or null if failed
+   */
+  async deleteSingleFolder(
+    relativePath: string
+  ): Promise<{ folderId: string } | null> {
+    try {
+      // Normalize path separators (Windows uses backslashes, DB uses forward slashes)
+      const normalizedPath = relativePath.replace(/\\/g, '/');
+
+      // Find folder by path
+      const folder = await (this.prisma as PrismaClientLike).folder.findUnique({
+        where: { path: normalizedPath },
+      });
+
+      if (!folder) {
+        this.logger.warn(`Folder not found for deletion: ${normalizedPath}`);
+        return null;
+      }
+
+      // Check if folder is already deleted
+      if (folder.deletedAt) {
+        return { folderId: folder.id };
+      }
+
+      // Soft delete folder (with cascade)
+      await this.handleDeletedFolder({
+        id: folder.id,
+        path: folder.path,
+      });
+
+      this.logger.log(
+        `Soft deleted folder: ${normalizedPath} (${folder.id})`
+      );
+
+      return {
+        folderId: folder.id,
+      };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        `Failed to delete single folder ${relativePath}: ${errorMessage}`
       );
       return null;
     }

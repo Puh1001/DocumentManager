@@ -1,12 +1,14 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { PrismaClientLike } from "@/common/types/prisma.types";
 import { DocumentService } from "@/modules/storage/services/document.service";
 import { FolderService } from "@/modules/storage/services/folder.service";
 import { SmbService } from "@/modules/storage/services/smb.service";
+import { DocumentDeletionService, DeletionStatus } from "@/modules/storage/services/document-deletion.service";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { KpiStatus } from "@prisma/client";
+import { fixFileNameEncoding } from "@/common/utils/encoding.util";
 import {
   UserDepartmentResolver,
   UserWithDepartments,
@@ -21,6 +23,7 @@ export interface KpiAttachmentListItem {
   uploadedBy: string;
   createdAt: Date;
   description?: string | null;
+  deletionExpiresAt?: Date | null;
 }
 
 @Injectable()
@@ -32,7 +35,8 @@ export class KpiAttachmentService {
     private readonly documentService: DocumentService,
     private readonly folderService: FolderService,
     private readonly smbService: SmbService,
-    private readonly userDepartmentResolver: UserDepartmentResolver
+    private readonly userDepartmentResolver: UserDepartmentResolver,
+    private readonly deletionService: DocumentDeletionService
   ) {}
 
   async uploadAttachment(
@@ -40,7 +44,8 @@ export class KpiAttachmentService {
     file: Express.Multer.File,
     folderId: string | undefined,
     description: string | undefined,
-    user: UserWithDepartments
+    user: UserWithDepartments,
+    fileName?: string
   ) {
     const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
       {
@@ -76,20 +81,24 @@ export class KpiAttachmentService {
     // Find or create folder for department if folderId is not provided
     let targetFolderId = folderId;
     if (!targetFolderId) {
-      targetFolderId = await this.findOrCreateDepartmentKpiFolder(
+      // Use folder service to ensure department folder structure exists
+      const folderStructure = await this.folderService.ensureDepartmentFolderStructure(
         record.departmentId
       );
+      targetFolderId = folderStructure.kpiCurrent;
       this.logger.log(
         `Auto-created KPI folder for department ${record.departmentId}: ${targetFolderId}`
       );
     }
 
     // Store file using existing document pipeline on SMB-backed storage
+    // Pass fileName từ body (UTF-8 thô) để tránh vấn đề encoding
     const document = await this.documentService.upload(
       targetFolderId,
       file,
       user.userId,
-      record.title
+      record.title,
+      fileName
     );
 
     // Use transaction for atomic operations: attachment creation + audit log + status update
@@ -174,10 +183,11 @@ export class KpiAttachmentService {
       (a): KpiAttachmentListItem => ({
         id: a.id,
         documentId: a.documentId,
-        fileName: a.document.fileName,
+        fileName: fixFileNameEncoding(a.document.fileName), // Apply encoding fix (already normalizes to NFC)
         uploadedBy: a.createdBy.fullName,
         createdAt: a.createdAt,
         description: a.description ?? undefined,
+        deletionExpiresAt: a.document.deletionExpiresAt ?? null,
       })
     );
   }
@@ -221,70 +231,139 @@ export class KpiAttachmentService {
     return result;
   }
 
+  /**
+   * Get deletion status for a KPI attachment
+   * Uses DocumentDeletionService to check 72-hour rule and permissions
+   */
+  async getDeletionStatus(
+    attachmentId: string,
+    user: UserWithDepartments,
+  ): Promise<DeletionStatus> {
+    const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
+    
+    // Use DocumentDeletionService to check deletion status
+    return this.deletionService.checkDeletionStatus(
+      attachment.documentId,
+      user.userId,
+    );
+  }
+
+  /**
+   * Submit deletion request for a KPI attachment
+   * Uses DocumentDeletionService to create deletion request
+   */
+  async submitDeletionRequest(
+    attachmentId: string,
+    user: UserWithDepartments,
+    reason: string,
+    replacementFileId?: string,
+  ) {
+    const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
+    
+    return this.deletionService.submitDeletionRequest(
+      attachment.documentId,
+      user.userId,
+      reason,
+      replacementFileId,
+    );
+  }
+
+  /**
+   * Get deletion request for a KPI attachment
+   * Uses DocumentDeletionService to get request by documentId
+   */
+  async getDeletionRequest(
+    attachmentId: string,
+    user: UserWithDepartments,
+  ) {
+    const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
+    
+    return this.deletionService.getRequestByDocumentId(attachment.documentId, user.userId);
+  }
+
+  async renameAttachment(
+    attachmentId: string,
+    newName: string,
+    newFileName: string,
+    user: UserWithDepartments
+  ) {
+    const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
+
+    // Get current document to get old filename for audit log
+    const currentDocument = await this.documentService.findById(attachment.documentId);
+
+    // Use DocumentService to rename the underlying document
+    const updatedDocument = await this.documentService.rename(
+      attachment.documentId,
+      newName,
+      newFileName,
+      user.userId
+    );
+
+    // Create audit log for KPI attachment rename
+    try {
+      await (this.prisma as PrismaClientLike).auditLog.create({
+        data: {
+          userId: user.userId,
+          action: "UPDATE",
+          resourceType: "KpiAttachment",
+          resourceId: attachmentId,
+          details: {
+            documentId: attachment.documentId,
+            oldFileName: currentDocument.fileName,
+            newFileName: updatedDocument.fileName,
+            action: "rename",
+          },
+        },
+      });
+    } catch (error) {
+      // Don't fail if audit log fails
+      this.logger.warn(`Failed to create audit log for KPI attachment rename: ${error}`);
+    }
+
+    return {
+      id: attachment.id,
+      documentId: attachment.documentId,
+      fileName: updatedDocument.fileName,
+      name: updatedDocument.name,
+    };
+  }
+
   async deleteAttachment(attachmentId: string, user: UserWithDepartments) {
     const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
 
-    // Check if user has delete permission or is the creator
-    // Admin/Boss can delete any attachment
-    // Regular users can only delete their own attachments
-    if (
-      !user.isAdmin &&
-      !user.isBoss &&
-      attachment.createdById !== user.userId
-    ) {
-      throw CustomException.forbidden(
-        ErrorCodes.KPI.ACCESS_DENIED,
-        "You can only delete attachments you created"
-      );
-    }
-
-    // Load document with folder information
-    const document = await this.documentService.findById(attachment.documentId);
-    const currentFolder = await this.folderService.findById(document.folderId);
-
-    // Find or create "delete files" folder in the department folder
-    const deleteFolder = await this.findOrCreateDeleteFolder(
-      attachment.kpiRecord.departmentId,
-      currentFolder
+    // Check deletion status using DocumentDeletionService (enforces 72-hour rule)
+    const status = await this.deletionService.checkDeletionStatus(
+      attachment.documentId,
+      user.userId,
     );
 
-    // Move file to delete folder
-    // document.filePath points to: folder/current/filename.pdf
-    const oldFilePath = document.filePath;
-    const fileName = path.basename(oldFilePath);
-    // New path in delete folder: department/delete files/filename.pdf
-    const newFilePath = `${deleteFolder.path}/${fileName}`;
-
-    try {
-      // Move file physically from current folder to delete folder
-      await this.smbService.rename(oldFilePath, newFilePath);
-
-      // Update document to point to delete folder
-      await (this.prisma as PrismaClientLike).document.update({
-        where: { id: document.id },
-        data: {
-          folderId: deleteFolder.id,
-          filePath: newFilePath,
-          status: "DELETED",
-        },
-      });
-
-      this.logger.log(
-        `Moved KPI attachment file to delete folder: ${oldFilePath} -> ${newFilePath}`
+    if (!status.canDelete) {
+      if (status.isExpired) {
+        this.logger.warn(
+          `Deletion blocked: KPI attachment ${attachmentId} expired for user ${user.userId}`,
+        );
+        throw new ForbiddenException(
+          'Cannot delete: 72-hour window expired. Please submit a deletion request to DCC.',
+        );
+      }
+      this.logger.warn(
+        `Deletion blocked: User ${user.userId} lacks permission for KPI attachment ${attachmentId}`,
       );
-    } catch (error) {
-      this.logger.error(
-        `Failed to move file to delete folder: ${error}`,
-        error instanceof Error ? error.stack : undefined
+      throw new ForbiddenException(
+        'You do not have permission to delete this attachment',
       );
-      // If move fails, still mark document as deleted but don't update path
-      await (this.prisma as PrismaClientLike).document.update({
-        where: { id: document.id },
-        data: {
-          status: "DELETED",
-        },
-      });
     }
+
+    // Use DocumentDeletionService for self-deletion (handles file deletion)
+    await this.deletionService.selfDelete(
+      attachment.documentId,
+      user.userId,
+    );
+
+    this.logger.log(
+      `KPI attachment ${attachmentId} document deleted, removing attachment record`
+    );
 
     // Use transaction for atomic operations: delete attachment + status revert + audit log
     await (this.prisma as PrismaClientLike).$transaction(async (tx) => {
@@ -327,7 +406,7 @@ export class KpiAttachmentService {
           details: {
             kpiRecordId: attachment.kpiRecordId,
             documentId: attachment.documentId,
-            movedToDeleteFolder: deleteFolder.path,
+            deletionMethod: "self-deletion-within-72h",
           },
         },
       });
@@ -337,9 +416,9 @@ export class KpiAttachmentService {
   }
 
   /**
-   * Find or create a "delete files" folder in the department folder structure
-   * The folder structure is: Department -> (kpi/maintenance/documents) -> files
-   * When deleting, we move files to: Department -> delete files
+   * Find or create a "Deleted files" folder in the department folder structure
+   * The folder structure is: Department -> (KPI/Documents/Maintenance) -> current/version
+   * When deleting, we move files to: Department -> Deleted files
    */
   private async findOrCreateDeleteFolder(
     departmentId: string,
@@ -403,8 +482,8 @@ export class KpiAttachmentService {
       departmentFolder = deptFolder;
     }
 
-    // Find or create "delete files" folder in department folder
-    return this.findOrCreateFolderByName(departmentFolder.id, "delete files");
+    // Find or create "Deleted files" folder in department folder
+    return this.findOrCreateFolderByName(departmentFolder.id, "Deleted files");
   }
 
   /**

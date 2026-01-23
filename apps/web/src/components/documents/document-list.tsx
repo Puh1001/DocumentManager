@@ -3,9 +3,15 @@
 import { useTranslations } from "next-intl";
 import { formatFileSize, formatDate, getFileIcon } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Eye, Download, History, ExternalLink } from "lucide-react";
+import { Eye, Download, History, ExternalLink, Pencil } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
 import { Document as DocumentType } from "@/lib/types/ability.types";
+import { DeletionStatusBadge } from "./deletion-status-badge";
+import { DeletionActions } from "./deletion-actions";
+import { DeletionErrorBoundary } from "./deletion-error-boundary";
+import { RenameDocumentDialog } from "./rename-document-dialog";
+import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
+import { useState } from "react";
 
 interface Document {
   id: string;
@@ -15,21 +21,28 @@ interface Document {
   fileSize: number;
   updatedAt: string;
   folderId?: string;
+  deletionExpiresAt?: string | null;
 }
 
 interface DocumentListProps {
   documents: Document[];
   onDocumentClick?: (doc: Document) => void;
   folderId?: string | null;
+  onDocumentDeleted?: (documentId: string) => void;
+  onDocumentRenamed?: (documentId: string) => void;
 }
 
 export function DocumentList({
   documents,
   onDocumentClick,
   folderId,
+  onDocumentDeleted,
+  onDocumentRenamed,
 }: DocumentListProps) {
   const t = useTranslations("documents.list");
   const { ability } = useAbility();
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   if (documents.length === 0) {
     return (
@@ -56,6 +69,9 @@ export function DocumentList({
             <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
               {t("columns.updated")}
             </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+              Deletion Status
+            </th>
             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
               {t("columns.actions")}
             </th>
@@ -74,7 +90,7 @@ export function DocumentList({
                   <div>
                     <p className="font-medium">{doc.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {doc.fileName}
+                      {fixFileNameEncoding(doc.fileName)}
                     </p>
                   </div>
                 </div>
@@ -89,6 +105,20 @@ export function DocumentList({
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
                 {formatDate(doc.updatedAt)}
+              </td>
+              <td className="py-3 px-4">
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DeletionErrorBoundary>
+                    <DeletionStatusBadge
+                      documentId={doc.id}
+                      expiresAt={
+                        doc.deletionExpiresAt
+                          ? new Date(doc.deletionExpiresAt)
+                          : null
+                      }
+                    />
+                  </DeletionErrorBoundary>
+                </div>
               </td>
               <td className="py-3 px-4">
                 <div
@@ -131,6 +161,18 @@ export function DocumentList({
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Rename"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDocument(doc);
+                      setRenameDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   {ability?.can("view", {
                     id: doc.id,
                     folderId: doc.folderId || folderId || undefined,
@@ -143,12 +185,36 @@ export function DocumentList({
                       <History className="h-4 w-4" />
                     </Button>
                   )}
+                  <DeletionErrorBoundary>
+                    <DeletionActions
+                      documentId={doc.id}
+                      documentName={doc.name}
+                      onDeleted={() => {
+                        onDocumentDeleted?.(doc.id);
+                      }}
+                    />
+                  </DeletionErrorBoundary>
                 </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Rename Dialog */}
+      {selectedDocument && (
+        <RenameDocumentDialog
+          open={renameDialogOpen}
+          onOpenChange={setRenameDialogOpen}
+          documentId={selectedDocument.id}
+          currentName={selectedDocument.name}
+          currentFileName={selectedDocument.fileName}
+          onRenamed={() => {
+            onDocumentRenamed?.(selectedDocument.id);
+            setSelectedDocument(null);
+          }}
+        />
+      )}
     </div>
   );
 }

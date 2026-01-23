@@ -61,6 +61,10 @@
         "close": "Đóng",
         "loadError": "Không thể tải tài liệu. Vui lòng thử lại.",
         "notSupported": "Trình duyệt của bạn không hỗ trợ xem PDF."
+      },
+      "errors": {
+        "noPermission": "Bạn không có quyền xóa tệp đính kèm này",
+        "checkStatusFailed": "Không thể kiểm tra trạng thái xóa"
       }
     }
   },

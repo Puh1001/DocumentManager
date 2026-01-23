@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deletion Requests User Guide</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2c3e50;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        h2 {
+            font-size: 18px;
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        
+        h3 {
+            font-size: 16px;
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        h4 {
+            font-size: 14px;
+            color: #34495e;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .badge-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        
+        .badge-table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .badge-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .badge-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .badge-table tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        .example-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .example-box.good {
+            border-left-color: #27ae60;
+        }
+        
+        .example-box.bad {
+            border-left-color: #e74c3c;
+        }
+        
+        .example-box h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .note-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+        }
+        
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #3498db;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .faq-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .faq-answer {
+            color: #555;
+            margin-left: 20px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .print-button:hover {
+            background-color: #2980b9;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px solid #ecf0f1;
+            margin: 30px 0;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+    
+    <div class="header">
+        <h1>DELETION REQUESTS<br>USER GUIDE</h1>
+        <div class="subtitle">Version 1.0 | Last Updated: January 23, 2026</div>
+    </div>
+
+    <h1>1. OVERVIEW</h1>
+    
+    <p>The <strong>Deletion Requests</strong> feature allows users to request deletion of documents that have exceeded the self-deletion time window (72 hours). All deletion requests after 72 hours must be approved by DCC (Document Control Center) before the document is deleted.</p>
+    
+    <h2>1.1. 72-Hour Rule</h2>
+    <ul>
+        <li><strong>Within the first 72 hours</strong>: Users can delete documents themselves without approval</li>
+        <li><strong>After 72 hours</strong>: Users must submit a deletion request and wait for DCC approval</li>
+        <li><strong>DCC</strong>: Can delete documents at any time without waiting 72 hours</li>
+    </ul>
+    
+    <h2>1.2. Who Can Use This Feature?</h2>
+    <ul>
+        <li><strong>All users</strong>: Can submit deletion requests for their own documents or documents in their department</li>
+        <li><strong>DCC</strong>: Can view, approve, or reject all deletion requests</li>
+        <li><strong>Admin</strong>: Can view all deletion requests</li>
+    </ul>
+    
+    <hr class="page-break">
+    
+    <h1>2. HOW TO SUBMIT A DELETION REQUEST</h1>
+    
+    <h2>2.1. When Do You Need to Submit a Request?</h2>
+    <p>You need to submit a deletion request when:</p>
+    <ul>
+        <li>The document has been uploaded <strong>more than 72 hours ago</strong></li>
+        <li>You want to delete a document but cannot delete it directly</li>
+        <li>The system displays the <strong>"Requires DCC Approval"</strong> badge</li>
+    </ul>
+    
+    <h2>2.2. Steps to Submit a Request</h2>
+    <ol class="step-list">
+        <li>
+            <strong>Find the document to delete</strong>
+            <ul>
+                <li>Navigate to the document list</li>
+                <li>Find the document you want to delete</li>
+                <li>Check the status badge: if it shows "Requires DCC Approval", you need to submit a request</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Open the deletion request dialog</strong>
+            <ul>
+                <li>Click the <strong>"Request Deletion"</strong> button on the document</li>
+                <li>The deletion request dialog will appear</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Fill in the request information</strong>
+            <ul>
+                <li><strong>Deletion reason</strong> (required): Explain why you want to delete this document
+                    <ul>
+                        <li>Minimum 10 characters</li>
+                        <li>Should be detailed and clear</li>
+                        <li>Example: "Document is outdated, a new updated version is available"</li>
+                    </ul>
+                </li>
+                <li><strong>Replacement file</strong> (optional): If you have a new file to replace it, enter the file ID
+                    <ul>
+                        <li>Upload the new file first (if applicable)</li>
+                        <li>Copy the new file's ID</li>
+                        <li>Paste it into the "Replacement file ID" field</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <strong>Submit the request</strong>
+            <ul>
+                <li>Click the <strong>"Submit Request"</strong> button</li>
+                <li>The system will confirm the request has been submitted</li>
+                <li>The status badge will change to <strong>"Pending DCC Review"</strong></li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>2.3. Example Deletion Reasons</h2>
+    
+    <div class="example-box good">
+        <h4>✅ Good examples:</h4>
+        <ul>
+            <li>"This document has been replaced by a new updated version (file ID: abc123). The old version contains inaccurate information."</li>
+            <li>"Document is duplicated with another file in the same folder. The file to keep is version 2.0."</li>
+            <li>"Document has expired according to regulations. A new replacement document is available."</li>
+        </ul>
+    </div>
+    
+    <div class="example-box bad">
+        <h4>❌ Bad examples:</h4>
+        <ul>
+            <li>"Delete" (too short, less than 10 characters)</li>
+            <li>"Not needed anymore" (not clear)</li>
+            <li>"Test" (not appropriate)</li>
+        </ul>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>3. TRACKING REQUEST STATUS</h1>
+    
+    <h2>3.1. Request Status Badges</h2>
+    <p>The system displays different status badges:</p>
+    
+    <table class="badge-table">
+        <thead>
+            <tr>
+                <th>Badge</th>
+                <th>Meaning</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>🟢 <strong>Can Delete</strong></td>
+                <td>Document is within 72 hours</td>
+                <td>You can delete it immediately without a request</td>
+            </tr>
+            <tr>
+                <td>🟡 <strong>Requires DCC Approval</strong></td>
+                <td>Exceeded 72 hours, no request yet</td>
+                <td>Need to submit a deletion request for DCC approval</td>
+            </tr>
+            <tr>
+                <td>🟠 <strong>Pending DCC Review</strong></td>
+                <td>Request submitted, awaiting review</td>
+                <td>Your request is being reviewed by DCC</td>
+            </tr>
+            <tr>
+                <td>🔴 <strong>Rejected</strong></td>
+                <td>DCC has rejected the request</td>
+                <td>Click the badge to view the rejection reason</td>
+            </tr>
+            <tr>
+                <td>❌ <strong>No Permission</strong></td>
+                <td>No deletion permission</td>
+                <td>You are not the uploader or not in the department</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>3.2. Viewing Rejected Request Details</h2>
+    <p>When a request is rejected:</p>
+    <ol>
+        <li>The badge will display <strong>"Rejected"</strong> in red</li>
+        <li>Click the badge to view details:
+            <ul>
+                <li>The reason you provided</li>
+                <li>DCC's rejection reason (if provided)</li>
+                <li>Reviewer information</li>
+                <li>Review time</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>3.3. Resubmitting After Rejection</h2>
+    <p>If your request is rejected, you can:</p>
+    <ol>
+        <li>Review the rejection reason from DCC</li>
+        <li>Update the deletion reason (if needed)</li>
+        <li>Resubmit a new request with updated information</li>
+    </ol>
+    
+    <hr class="page-break">
+    
+    <h1>4. DCC REVIEW PROCESS</h1>
+    
+    <h2>4.1. Viewing Request List</h2>
+    <p><strong>DCC</strong> can:</p>
+    <ol>
+        <li>Log in to the system</li>
+        <li>Navigate to <strong>Dashboard → DCC → Deletion Requests</strong></li>
+        <li>View all pending deletion requests</li>
+    </ol>
+    
+    <h2>4.2. Information Displayed for DCC</h2>
+    <p>Each request displays:</p>
+    <ul>
+        <li><strong>Document name</strong> and filename</li>
+        <li><strong>Requester</strong>: Name and username</li>
+        <li><strong>Request time</strong>: Date and time the request was submitted</li>
+        <li><strong>Deletion reason</strong>: Reason provided by the user</li>
+        <li><strong>Replacement file</strong> (if applicable): Link to the new file</li>
+    </ul>
+    
+    <h2>4.3. Approving a Request</h2>
+    <p><strong>Approval steps:</strong></p>
+    <ol>
+        <li>Review the request information</li>
+        <li>Click the <strong>"Approve"</strong> button</li>
+        <li>Confirm in the confirmation dialog</li>
+        <li>The system will:
+            <ul>
+                <li>Automatically delete the document (move to "Deleted files" folder)</li>
+                <li>Update the request status to "APPROVED"</li>
+                <li>Send notification to the requester (if applicable)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>4.4. Rejecting a Request</h2>
+    <p><strong>Rejection steps:</strong></p>
+    <ol>
+        <li>Review the request information</li>
+        <li>Click the <strong>"Reject"</strong> button</li>
+        <li>Enter rejection reason (optional but recommended):
+            <ul>
+                <li>Explain why the request is not accepted</li>
+                <li>Guide the user on what to do (if applicable)</li>
+            </ul>
+        </li>
+        <li>Click <strong>"Reject Request"</strong></li>
+        <li>The system will:
+            <ul>
+                <li>Update the request status to "REJECTED"</li>
+                <li>Save the rejection reason</li>
+                <li>Send notification to the requester (if applicable)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <div class="note-box">
+        <h4>📝 Notes for DCC:</h4>
+        <ul>
+            <li><strong>Review carefully</strong>: Read the deletion reason thoroughly and check the replacement file (if provided)</li>
+            <li><strong>Clear notes</strong>: When rejecting, provide clear reasons so users understand</li>
+            <li><strong>Process promptly</strong>: Try to process requests within a reasonable time</li>
+            <li><strong>Verify replacement files</strong>: If a replacement file is provided, verify it is appropriate</li>
+        </ul>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>5. COMMON SCENARIOS</h1>
+    
+    <h2>5.1. Scenario 1: Accidental Upload Within 72 Hours</h2>
+    <p><strong>Problem</strong>: You just uploaded a document by mistake and want to delete it immediately.</p>
+    <p><strong>Solution</strong>:</p>
+    <ul>
+        <li>You can delete it immediately without a request</li>
+        <li>Find the document in the list</li>
+        <li>Click the "Delete" button</li>
+        <li>Confirm deletion</li>
+    </ul>
+    
+    <h2>5.2. Scenario 2: Document Exceeded 72 Hours</h2>
+    <p><strong>Problem</strong>: You want to delete a document but it has exceeded 72 hours.</p>
+    <p><strong>Solution</strong>:</p>
+    <ol>
+        <li>Submit a deletion request with a clear reason</li>
+        <li>Wait for DCC approval</li>
+        <li>If rejected, review the reason and resubmit (if needed)</li>
+    </ol>
+    
+    <h2>5.3. Scenario 3: New Replacement File Available</h2>
+    <p><strong>Problem</strong>: You have uploaded a new file and want to delete the old one.</p>
+    <p><strong>Solution</strong>:</p>
+    <ol>
+        <li>Upload the new file first</li>
+        <li>Copy the new file's ID</li>
+        <li>Submit a deletion request for the old file</li>
+        <li>In the request, enter the new file's ID in the "Replacement file ID" field</li>
+        <li>Clearly explain in the reason: "Old file has been replaced by new file (ID: xxx)"</li>
+    </ol>
+    
+    <h2>5.4. Scenario 4: Request Rejected</h2>
+    <p><strong>Problem</strong>: Your deletion request was rejected by DCC.</p>
+    <p><strong>Solution</strong>:</p>
+    <ol>
+        <li>Click the "Rejected" badge to view the reason</li>
+        <li>Read the rejection reason carefully</li>
+        <li>If needed, update the reason and resubmit the request</li>
+        <li>If you disagree, contact DCC to discuss</li>
+    </ol>
+    
+    <h2>5.5. Scenario 5: Delete Button Not Visible</h2>
+    <p><strong>Problem</strong>: You don't see the delete button or request deletion button.</p>
+    <p><strong>Possible causes</strong>:</p>
+    <ul>
+        <li>You are not the document uploader</li>
+        <li>You are not in the document's department</li>
+        <li>You don't have deletion permission</li>
+    </ul>
+    <p><strong>Solution</strong>:</p>
+    <ul>
+        <li>Contact the uploader or administrator</li>
+        <li>If you are DCC, you can delete any document</li>
+    </ul>
+    
+    <hr class="page-break">
+    
+    <h1>6. FREQUENTLY ASKED QUESTIONS (FAQ)</h1>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q1: Why is there a 72-hour rule?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>: The 72-hour rule helps:
+            <ul>
+                <li>Users have time to correct mistakes if they upload incorrectly</li>
+                <li>Protect important data from accidental deletion</li>
+                <li>Ensure the integrity of the document management system</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q2: How do I know how much time is left for self-deletion?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>The status badge will display: "Can Delete (Xh Ym left)"</li>
+                <li>Example: "Can Delete (5h 30m left)" means 5 hours and 30 minutes remaining</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q3: How long does it take for a deletion request to be processed?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>Depends on DCC</li>
+                <li>Usually within 1-2 business days</li>
+                <li>For urgent requests, contact DCC directly</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q4: Can I cancel a deletion request?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>Currently, there is no cancel function</li>
+                <li>If you want to cancel, contact DCC to reject the request</li>
+                <li>Or wait for DCC to process and explain</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q5: Where do deleted files go?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>Files are not permanently deleted</li>
+                <li>Files are moved to the department's "Deleted files" folder</li>
+                <li>DCC can restore them if needed</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q6: Can I delete multiple documents at once?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>Currently, only one document can be deleted at a time</li>
+                <li>Each document requires a separate request (if exceeded 72 hours)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q7: Can DCC delete documents without a request?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>Yes, DCC can delete any document at any time</li>
+                <li>DCC does not need to wait 72 hours</li>
+                <li>DCC does not need to submit a request</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="faq-item">
+        <div class="faq-question">Q8: How do I know if my request has been processed?</div>
+        <div class="faq-answer">
+            <strong>Answer</strong>:
+            <ul>
+                <li>The status badge will change:
+                    <ul>
+                        <li>"Pending DCC Review" → "Rejected" or the document disappears (if approved)</li>
+                    </ul>
+                </li>
+                <li>The system updates in real-time when DCC processes the request</li>
+            </ul>
+        </div>
+    </div>
+    
+    <hr class="page-break">
+    
+    <h1>7. IMPORTANT NOTES</h1>
+    
+    <h2>7.1. Before Submitting a Request</h2>
+    <ul>
+        <li>✅ Carefully check if the document really needs to be deleted</li>
+        <li>✅ Ensure you have a replacement file (if needed)</li>
+        <li>✅ Write a clear, detailed reason</li>
+        <li>✅ Review the information before submitting</li>
+    </ul>
+    
+    <h2>7.2. After Submitting a Request</h2>
+    <ul>
+        <li>⏰ Monitor the request status</li>
+        <li>📧 Check notifications from the system</li>
+        <li>🔄 Be ready to resubmit if rejected</li>
+    </ul>
+    
+    <h2>7.3. Rights and Responsibilities</h2>
+    <p><strong>Users</strong>:</p>
+    <ul>
+        <li>Responsible for the deletion reason</li>
+        <li>Provide accurate information</li>
+        <li>Follow the process</li>
+    </ul>
+    
+    <p><strong>DCC</strong>:</p>
+    <ul>
+        <li>Review each request carefully</li>
+        <li>Make fair decisions</li>
+        <li>Provide clear notes when rejecting</li>
+    </ul>
+    
+    <hr>
+    
+    <h1>8. SUPPORT AND CONTACT</h1>
+    <p>If you encounter issues or have questions:</p>
+    <ol>
+        <li><strong>Check the FAQ</strong> above first</li>
+        <li><strong>Contact DCC</strong> if you need support regarding deletion requests</li>
+        <li><strong>Contact IT Support</strong> if you encounter technical errors</li>
+        <li><strong>View other guides</strong> in the system</li>
+    </ol>
+    
+    <div class="footer">
+        <p><strong>Document Version</strong>: 1.0</p>
+        <p><strong>Last Updated</strong>: January 23, 2026</p>
+        <p><strong>Prepared by</strong>: Document Management System</p>
+    </div>
+</body>
+</html>

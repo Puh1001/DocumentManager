@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Wrench,
   Building2,
+  FileCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,7 +26,8 @@ export type IconName =
   | "BarChart2"
   | "TrendingUp"
   | "Wrench"
-  | "Building2";
+  | "Building2"
+  | "FileCheck";
 
 /**
  * Map icon name strings to Lucide React icon components
@@ -42,6 +44,7 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
   TrendingUp,
   Wrench,
   Building2,
+  FileCheck,
 };
 
 /**

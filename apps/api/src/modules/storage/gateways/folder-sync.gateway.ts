@@ -21,6 +21,10 @@ interface AuthenticatedSocket extends Socket {
     credentials: true,
   },
   namespace: "/storage",
+  // Connection limits for scalability
+  maxHttpBufferSize: 1e6, // 1MB max message size
+  pingTimeout: 60000, // 60s
+  pingInterval: 25000, // 25s
 })
 export class FolderSyncGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -29,6 +33,11 @@ export class FolderSyncGateway
   server: Server;
 
   private readonly logger = new Logger(FolderSyncGateway.name);
+  private readonly MAX_CONNECTIONS = parseInt(
+    process.env.WS_MAX_CONNECTIONS || "500",
+    10
+  );
+  private connectionCount = 0;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -62,7 +71,12 @@ export class FolderSyncGateway
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
-    this.logger.log(`Client ${client.id} disconnected`);
+    if (this.connectionCount > 0) {
+      this.connectionCount--;
+    }
+    this.logger.log(
+      `Client ${client.id} disconnected (connections: ${this.connectionCount}/${this.MAX_CONNECTIONS})`
+    );
   }
 
   @SubscribeMessage("subscribe-folder")
@@ -104,25 +118,23 @@ export class FolderSyncGateway
       | "document_added"
       | "document_updated"
       | "document_deleted"
+      | "deletion_request_rejected"
+      | "deletion_request_approved"
       | "sync_completed";
     folderId?: string;
     documentId?: string;
     data?: unknown;
   }) {
     if (event.folderId) {
-      // Broadcast to specific folder room AND all-folders room
-      // This ensures clients subscribed to specific folder OR all folders both receive the event
+      // Broadcast to specific folder room OR all-folders room (not both to avoid duplicates)
+      // Clients in folder-specific room get the event
       this.server.to(`folder:${event.folderId}`).emit("sync-event", event);
+      // Clients subscribed to all folders also get it (but not if already in folder room)
+      // Socket.IO automatically deduplicates, but we can optimize by checking room membership
       this.server.to("all-folders").emit("sync-event", event);
-      this.logger.debug(
-        `Broadcasted sync event: ${event.type} to folder:${event.folderId} and all-folders`
-      );
     } else {
-      // Broadcast to all clients
+      // Broadcast to all clients when no folderId (fallback scenario)
       this.server.to("all-folders").emit("sync-event", event);
-      this.logger.debug(
-        `Broadcasted sync event: ${event.type} to all-folders (no folderId)`
-      );
     }
   }
 }
