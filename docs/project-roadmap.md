@@ -1,6 +1,6 @@
 # Project Roadmap
 
-**Last Updated:** 2026-01-12  
+**Last Updated:** 2026-01-26  
 **Current Phase:** Phase 1-4 Complete, Additional Features Added (80%)
 
 ---
@@ -114,6 +114,11 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - [x] Enhanced file metadata extraction (dates, MIME type)
 - [x] Real-time sync (WebSocket with file watcher)
 - [x] Sync scheduling/automation (cron jobs)
+- [x] UTF-8 filename encoding fixes (encoding.util.ts)
+- [x] Document deletion service (72-hour window, DCC approval)
+- [x] Deletion request workflow (submit, review, approve/reject)
+- [x] Replacement file support in deletion requests
+- [x] File deletion moves to "delete files" folder (soft delete)
 
 ### Deliverables
 
@@ -123,6 +128,12 @@ Roadmap for ISO Document Management System development, organized into 8 phases 
 - ✅ SMB integration
 - ✅ File system sync
 - ✅ Dashboard statistics
+- ✅ UTF-8 filename encoding fixes
+- ✅ Document deletion workflow
+- ✅ Deletion request management
+- ✅ UTF-8 filename encoding fixes
+- ✅ Document deletion workflow
+- ✅ Deletion request management
 
 ---
 

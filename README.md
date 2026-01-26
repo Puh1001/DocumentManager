@@ -11,6 +11,7 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 📁 **Quản lý File & Folder**: Browse, upload, download tài liệu từ SMB shared folder
 - 🔄 **File System Sync**: Two-pass sync với soft delete để đồng bộ database với file system
 - 📊 **Dashboard Statistics**: Thống kê tổng quan (documents, folders, users, recent uploads)
+- 🗑️ **Document Deletion**: 72-hour self-deletion window, DCC approval workflow, replacement file support
 - 🔐 **Authentication**: Case-insensitive username login (V210889, v210889, etc.)
 - 🏢 **Department Management**: Quản lý phòng ban với CRUD operations
 - 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
@@ -248,6 +249,10 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
   - ✅ Enhanced metadata extraction (dates, MIME type)
   - ✅ Real-time sync (WebSocket)
   - ✅ Automated sync scheduling
+  - ✅ UTF-8 filename encoding fixes (Vietnamese, Chinese support)
+  - ✅ Document deletion workflow (72-hour window, DCC approval)
+  - ✅ Deletion requests with replacement file support
+  - ✅ File deletion moves to "delete files" folder (soft delete)
 - ✅ Department Management
   - ✅ Department CRUD operations
   - ✅ Department management UI

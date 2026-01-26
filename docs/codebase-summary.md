@@ -64,12 +64,17 @@ src/
         │   ├── folder.service.ts     # Folder CRUD & tree
         │   ├── folder-sync.service.ts # Two-pass file system sync
         │   ├── document.service.ts   # Document CRUD
+        │   ├── document-deletion.service.ts # Deletion workflow (72h window, DCC approval)
         │   ├── version.service.ts    # Version control
         │   ├── local-edit.service.ts # Local app integration
         │   └── stats.service.ts      # Dashboard statistics
+        ├── controllers/
+        │   ├── deletion-request.controller.ts # Deletion request API
+        │   └── ...
         ├── utils/
         │   ├── checksum.util.ts      # SHA-256 checksum calculation
-        │   └── system-user.util.ts   # System user management
+        │   ├── system-user.util.ts   # System user management
+        │   └── encoding.util.ts      # UTF-8 filename encoding fixes
         └── dto/
 ```
 
@@ -93,6 +98,8 @@ src/
 │   ├── ui/                # ShadcnUI components
 │   ├── layout/            # Sidebar, Header
 │   ├── documents/         # Document components
+│   │   ├── deletion-actions.tsx        # Deletion action buttons
+│   │   └── deletion-request-dialog.tsx # Deletion request form
 │   ├── boss/              # Boss role components
 │   │   ├── kpi-attachment-upload.tsx    # KPI PDF upload
 │   │   ├── kpi-attachment-list.tsx      # KPI attachment list
@@ -250,7 +257,11 @@ src/
   - **Soft delete**: `deletedAt` field for history preservation
 - **Document**: Document metadata
   - **Status**: ACTIVE, DELETED (soft delete)
+  - **deletionExpiresAt**: Timestamp for 72-hour deletion window
 - **DocumentVersion**: Version history
+- **DeletionRequest**: Deletion request workflow
+  - **Status**: PENDING, APPROVED, REJECTED
+  - **replacementFileId**: Optional replacement file
 - **Department**: Department information
 - **KpiRecord**: KPI records by department and year
 - **KpiMetric**: KPI metric values (monthly)
@@ -308,9 +319,18 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Recent Updates
 
-### Latest Updates (2026-01-12)
+### Latest Updates (2026-01-26)
 
-- **KPI Attachment Auto-Folder Creation**: Backend now automatically creates `Department/KPI/current` folder structure when `folderId` is not provided during upload
+- **Document Deletion Workflow**: Complete implementation of 72-hour self-deletion window and DCC approval workflow
+  - Users can delete their own documents within 72 hours of upload
+  - After 72 hours, deletion requests require DCC approval
+  - Support for replacement files in deletion requests
+  - File deletion moves to "delete files" folder (soft delete)
+- **UTF-8 Filename Encoding Fixes**: Fixed mojibake issues for Vietnamese, Chinese, and other Unicode filenames
+  - Encoding utility (`encoding.util.ts`) converts Latin1-misdecoded filenames back to UTF-8
+  - Applied to document uploads and KPI attachments
+  - Normalizes filenames to NFC for database compatibility
+- **KPI Attachment Auto-Folder Creation**: Backend automatically creates `Department/KPI/current` folder structure when `folderId` is not provided during upload
 - **Optional folderId Parameter**: `folderId` is now optional in KPI attachment upload DTO; backend handles auto-creation with race condition protection
 - **Robust Folder Management**: Improved folder creation logic with unique constraint error handling (P2002) to prevent race conditions
 - **Translation Support**: Added missing translation keys (common.cancel, common.save, common.saving) for all locales (en, vi, zh)

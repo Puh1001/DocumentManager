@@ -280,7 +280,10 @@ export class DocumentDeletionService {
       this.prisma as PrismaClientLike
     ).deletionRequest.findUnique({
       where: { id: requestId },
-      include: { document: true },
+      include: { 
+        document: true,
+        replacementFile: true,
+      },
     });
 
     if (!request) {
@@ -312,16 +315,49 @@ export class DocumentDeletionService {
       this.logger.log(
         `Executing deletion for document ${request.documentId} after DCC approval`,
       );
-      await this.executeDelete(
-        request.documentId,
-        userId,
-        `DCC approved deletion request: ${request.reason}`,
-      );
-      // document_deleted event is already broadcast by executeDelete
+      
+      // If there's a replacement file, replace the old file with it
+      if (request.replacementFileId && request.replacementFile) {
+        await this.replaceDocumentWithReplacement(
+          request.documentId,
+          request.replacementFileId,
+          userId,
+          `DCC approved deletion request with replacement: ${request.reason}`,
+        );
+      } else {
+        // No replacement file, just delete the old document
+        await this.executeDelete(
+          request.documentId,
+          userId,
+          `DCC approved deletion request: ${request.reason}`,
+        );
+      }
+      // document_deleted event is already broadcast by executeDelete/replaceDocumentWithReplacement
     } else {
       this.logger.log(
         `Deletion request ${requestId} rejected by DCC user ${userId}`,
       );
+      
+      // If there's a replacement file, delete it since request was rejected
+      if (request.replacementFileId && request.replacementFile) {
+        this.logger.log(
+          `Deleting replacement file ${request.replacementFileId} after rejection`,
+        );
+        try {
+          await this.executeDelete(
+            request.replacementFileId,
+            userId,
+            `Replacement file deleted after DCC rejection of deletion request`,
+          );
+        } catch (error) {
+          // Log error but don't fail the rejection
+          this.logger.error(
+            `Failed to delete replacement file ${request.replacementFileId} after rejection`,
+            error,
+          );
+        }
+      }
+      
       // Broadcast event so frontend can update UI
       this.folderSyncGateway.broadcastSyncEvent({
         type: 'deletion_request_rejected',
@@ -414,6 +450,191 @@ export class DocumentDeletionService {
     throw new ForbiddenException(
       'You do not have permission to view this deletion request',
     );
+  }
+
+  private async replaceDocumentWithReplacement(
+    oldDocumentId: string,
+    replacementDocumentId: string,
+    userId: string,
+    reason: string,
+  ): Promise<void> {
+    const oldDocument = await this.documentService.findById(oldDocumentId);
+    const replacementDocument = await this.documentService.findById(replacementDocumentId);
+    const currentFolder = await this.folderService.findById(oldDocument.folderId);
+
+    // Find department ID
+    const departmentId =
+      currentFolder.departmentId ||
+      (await this.findDepartmentIdForFolder(currentFolder));
+
+    if (!departmentId) {
+      throw new BadRequestException('Cannot determine department for document');
+    }
+
+    // Find or create "Deleted files" folder
+    const deleteFolder = await this.findOrCreateDeleteFolder(departmentId);
+
+    const oldFilePath = oldDocument.filePath;
+    const replacementFilePath = replacementDocument.filePath;
+    
+    // Validate both files exist
+    try {
+      const oldFileStats = await this.smbService.getFileStats(oldFilePath);
+      if (oldFileStats.isDirectory()) {
+        throw new BadRequestException(
+          `Cannot replace: old filePath points to a folder. Document ID: ${oldDocumentId}`,
+        );
+      }
+      const replacementFileStats = await this.smbService.getFileStats(replacementFilePath);
+      if (replacementFileStats.isDirectory()) {
+        throw new BadRequestException(
+          `Cannot replace: replacement filePath points to a folder. Document ID: ${replacementDocumentId}`,
+        );
+      }
+    } catch (error: unknown) {
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === 'ENOENT') {
+        throw new NotFoundException(
+          `File not found. Old: ${oldFilePath}, Replacement: ${replacementFilePath}`,
+        );
+      }
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw error;
+    }
+
+    // Extract physical file names
+    const oldPhysicalFileName = path.basename(oldFilePath);
+    
+    // New path for old file (move to deleted folder)
+    const deletedFilePath = path.join(deleteFolder.path, oldPhysicalFileName);
+    
+    // Replacement file will take the old file's location and name
+    // We'll move it and rename it to match the old file's name
+    const newFilePath = oldFilePath; // Same location and name as old file
+
+    // Step 1: Move old file to deleted folder
+    try {
+      await this.smbService.rename(oldFilePath, deletedFilePath);
+    } catch (error: unknown) {
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === 'EPERM') {
+        throw new ForbiddenException(
+          `Permission denied: Cannot move old file to delete folder. Path: ${oldFilePath} -> ${deletedFilePath}`,
+        );
+      }
+      throw error;
+    }
+
+    // Step 2: Move replacement file to old file's location (rename to old file's name)
+    try {
+      await this.smbService.rename(replacementFilePath, newFilePath);
+    } catch (error: unknown) {
+      // If replacement move fails, try to revert old file move
+      try {
+        await this.smbService.rename(deletedFilePath, oldFilePath);
+      } catch (revertError) {
+        this.logger.error(
+          `Failed to revert old file move after replacement move failed. Old file orphaned: ${deletedFilePath}`,
+          revertError,
+        );
+      }
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === 'EPERM') {
+        throw new ForbiddenException(
+          `Permission denied: Cannot move replacement file to old location. Path: ${replacementFilePath} -> ${newFilePath}`,
+        );
+      }
+      if (nodeError.code === 'EEXIST') {
+        // File already exists at new location (shouldn't happen, but handle it)
+        throw new BadRequestException(
+          `Cannot replace: File already exists at target location: ${newFilePath}`,
+        );
+      }
+      throw error;
+    }
+
+    // Step 3: Update database in transaction
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Update old document record with replacement file's metadata
+        await (tx as PrismaClientLike).document.update({
+          where: { id: oldDocumentId },
+          data: {
+            name: replacementDocument.name,
+            fileName: replacementDocument.fileName,
+            fileType: replacementDocument.fileType,
+            mimeType: replacementDocument.mimeType,
+            fileSize: replacementDocument.fileSize,
+            filePath: newFilePath,
+            checksum: replacementDocument.checksum,
+            fileCreatedAt: replacementDocument.fileCreatedAt,
+            fileModifiedAt: replacementDocument.fileModifiedAt,
+            // Reset deletion tracking since this is now a new file
+            uploadedBy: replacementDocument.uploadedBy,
+            uploadedAt: replacementDocument.uploadedAt,
+            deletionExpiresAt: replacementDocument.deletionExpiresAt,
+          },
+        });
+
+        // Delete replacement document record (file has been moved, record no longer needed)
+        await (tx as PrismaClientLike).document.update({
+          where: { id: replacementDocumentId },
+          data: {
+            folderId: deleteFolder.id,
+            filePath: deletedFilePath,
+            status: 'DELETED',
+          },
+        });
+
+        // Create audit log for replacement
+        await (tx as PrismaClientLike).auditLog.create({
+          data: {
+            userId,
+            action: 'REPLACE',
+            resourceType: 'Document',
+            resourceId: oldDocumentId,
+            details: {
+              reason,
+              oldFilePath,
+              newFilePath,
+              replacementDocumentId,
+              deletedFilePath,
+            },
+          },
+        });
+      });
+    } catch (error) {
+      // If DB transaction fails, attempt to revert file moves
+      // This is best-effort recovery
+      try {
+        await this.smbService.rename(newFilePath, replacementFilePath);
+        await this.smbService.rename(deletedFilePath, oldFilePath);
+      } catch (revertError) {
+        this.logger.error(
+          `Failed to revert file moves after DB error. Files may be orphaned.`,
+          revertError,
+        );
+      }
+      throw error;
+    }
+
+    this.logger.log(
+      `Document replacement completed: Old document ${oldDocumentId} replaced with ${replacementDocumentId}. Old file moved to ${deletedFilePath}, replacement moved to ${newFilePath}`,
+    );
+
+    // Broadcast sync event - document was updated (replaced)
+    this.folderSyncGateway.broadcastSyncEvent({
+      type: 'document_updated',
+      documentId: oldDocumentId,
+      folderId: oldDocument.folderId,
+      data: {
+        replacementDocumentId,
+        newFilePath,
+        action: 'replaced',
+      },
+    });
   }
 
   private async executeDelete(

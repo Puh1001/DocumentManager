@@ -1,6 +1,6 @@
 # System Architecture
 
-**Last Updated:** 2026-01-10  
+**Last Updated:** 2026-01-26  
 **Status:** Phase 1-4 Complete, Additional Features Added (80%)
 
 ---
@@ -130,10 +130,12 @@ apps/api/
 │       ├── Folder Watcher Service (chokidar file system watcher)
 │       ├── Sync Scheduler Service (automated cron sync)
 │       ├── Document Service (CRUD, streaming, counts, metadata)
+│       ├── Document Deletion Service (72h window, DCC approval workflow)
 │       ├── Version Service (history, restore)
 │       ├── Local Edit Service (network paths)
 │       ├── Stats Service (dashboard statistics)
 │       ├── Checksum Util (SHA-256 calculation)
+│       ├── Encoding Util (UTF-8 filename encoding fixes)
 │       ├── System User Util (automated operations)
 │       └── Gateways
 │           └── Folder Sync Gateway (WebSocket real-time updates)
@@ -179,11 +181,13 @@ User → Upload button → Select file
   → POST /storage/documents/upload
   → Permission check (create)
   → File buffer received
+  → Encoding Util fixes UTF-8 filename (fixes mojibake)
   → Version Service creates v1
   → Save to SMB: {folder}/current/{filename}
   → Save version: {folder}/versions/{docId}/v001_...
   → Metadata saved to PostgreSQL
   → Checksum calculated (SHA-256 via ChecksumUtil)
+  → deletionExpiresAt set (72 hours from upload)
   → Response with document info
 ```
 
@@ -229,7 +233,31 @@ User → Dashboard page
   → Return aggregated statistics
 ```
 
-### 6. Local Edit Flow
+### 6. Document Deletion Flow
+
+```
+User → Delete button → Check deletion status
+  → GET /storage/documents/:id/deletion-status
+  → DocumentDeletionService.checkDeletionStatus()
+  
+  If within 72 hours:
+    → User can self-delete
+    → DELETE /storage/documents/:id
+    → File moved to "delete files" folder
+    → Document status = DELETED
+  
+  If after 72 hours:
+    → Submit deletion request
+    → POST /storage/documents/:id/deletion-requests
+    → Optional: Upload replacement file
+    → Request status = PENDING
+    → DCC reviews request
+    → POST /storage/deletion-requests/:id/review
+    → If approved: File deleted (or replaced)
+    → If rejected: Request status = REJECTED
+```
+
+### 7. Local Edit Flow
 
 ```
 User → "Open to Edit" button
@@ -275,6 +303,9 @@ Folder ──┬── Folder (self-reference for hierarchy)
 - **Folder**: Self-referential (parent-child)
 - **Document → Folder**: Many-to-one
 - **DocumentVersion → Document**: One-to-many
+- **DeletionRequest → Document**: One-to-one (unique constraint)
+- **DeletionRequest → User**: Many-to-one (requester, reviewer)
+- **DeletionRequest → Document**: Many-to-one (replacement file)
 - **Department → KpiRecord**: One-to-many
 - **KpiRecord → KpiMetric**: One-to-many
 - **FolderPermission**: Folder + Subject (User/Role) + Permission

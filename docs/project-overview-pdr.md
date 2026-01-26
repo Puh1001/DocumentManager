@@ -3,7 +3,7 @@
 **Project Name:** ISO Document Management System (Librarian Model)  
 **Version:** 1.0.0  
 **Created:** 2024-12-18  
-**Last Updated:** 2026-01-12  
+**Last Updated:** 2026-01-26  
 **Status:** 🟢 In Development (Phase 1-4 Complete, Additional Features Added - 80%)
 
 ---
@@ -49,6 +49,13 @@ Xây dựng web-based document management system:
 - **Two-pass file system sync** with soft delete
 - **Dashboard statistics** API
 - Automatic detection of deleted/renamed/moved files
+- **UTF-8 filename encoding fixes** (Vietnamese, Chinese, Unicode support)
+- **Document deletion workflow**:
+  - 72-hour self-deletion window (users can delete their own documents within 72 hours)
+  - DCC approval required after 72 hours
+  - Deletion requests with reason and optional replacement file
+  - File deletion moves to "delete files" folder (soft delete, preserves history)
+  - DCC can approve/reject deletion requests
 
 ### 1.1. Authentication
 

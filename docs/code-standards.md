@@ -426,6 +426,194 @@ export function KpiAttachmentList({
 <KpiAttachmentList />                  // Regular UI (default)
 ```
 
+## Document Deletion Patterns
+
+### Backend: Deletion Status Check
+
+```typescript
+// ✅ Good - Check deletion status before allowing deletion
+@Get(':id/deletion-status')
+async getDeletionStatus(
+  @Param('id') id: string,
+  @Request() req: AuthenticatedRequest,
+) {
+  return this.deletionService.checkDeletionStatus(id, req.user.id);
+}
+
+// ✅ Good - Deletion service checks 72-hour window
+async checkDeletionStatus(
+  documentId: string,
+  userId: string,
+): Promise<DeletionStatus> {
+  const document = await this.documentService.findById(documentId);
+  const isExpired = now >= (document.deletionExpiresAt || calculatedExpiry);
+  const canSelfDelete = (isUploader || isSameDepartment) && !isExpired;
+  
+  return {
+    canDelete: canSelfDelete,
+    isExpired,
+    remainingHours: this.calculateRemainingHours(expiresAt),
+    requiresDCCApproval: isExpired,
+    hasActiveRequest: !!activeRequest,
+  };
+}
+```
+
+### Backend: Deletion Request Submission
+
+```typescript
+// ✅ Good - Submit deletion request with optional replacement file
+async submitDeletionRequest(
+  documentId: string,
+  userId: string,
+  reason: string,
+  replacementFileId?: string,
+) {
+  const status = await this.checkDeletionStatus(documentId, userId);
+  
+  if (!status.requiresDCCApproval) {
+    throw new BadRequestException(
+      'You can still delete this document directly. DCC approval only required after 72 hours.',
+    );
+  }
+  
+  if (status.hasActiveRequest) {
+    throw new BadRequestException(
+      'A deletion request for this document already exists',
+    );
+  }
+  
+  // Handle resubmission of rejected requests
+  const existingRequest = await this.prisma.deletionRequest.findUnique({
+    where: { documentId },
+  });
+  
+  if (existingRequest && existingRequest.status === 'REJECTED') {
+    // Resubmit rejected request
+    return this.prisma.deletionRequest.update({
+      where: { id: existingRequest.id },
+      data: { status: 'PENDING', reason, replacementFileId },
+    });
+  }
+  
+  // Create new request
+  return this.prisma.deletionRequest.create({
+    data: { documentId, requestedBy: userId, reason, replacementFileId },
+  });
+}
+```
+
+### Backend: File Deletion with Move to Delete Folder
+
+```typescript
+// ✅ Good - Move file to delete folder instead of hard deletion
+private async executeDelete(
+  documentId: string,
+  userId: string,
+  reason: string,
+): Promise<void> {
+  const document = await this.documentService.findById(documentId);
+  const currentFolder = await this.folderService.findById(document.folderId);
+  
+  // Find or create "delete files" folder in department
+  const deleteFolder = await this.findOrCreateDeleteFolder(departmentId);
+  
+  const oldFilePath = document.filePath;
+  const newFilePath = path.join(deleteFolder.path, path.basename(oldFilePath));
+  
+  // Move file physically
+  await this.smbService.rename(oldFilePath, newFilePath);
+  
+  // Update document record in transaction
+  await this.prisma.$transaction(async (tx) => {
+    await tx.document.update({
+      where: { id: documentId },
+      data: {
+        folderId: deleteFolder.id,
+        filePath: newFilePath,
+        status: 'DELETED',
+      },
+    });
+    
+    await tx.auditLog.create({
+      data: {
+        userId,
+        action: 'DELETE',
+        resourceType: 'Document',
+        resourceId: documentId,
+        details: { reason, originalPath: oldFilePath, newPath: newFilePath },
+      },
+    });
+  });
+}
+```
+
+### Frontend: Deletion Status Check
+
+```typescript
+// ✅ Good - Use hook to check deletion status
+export function useDeletionStatus(documentId: string) {
+  const [status, setStatus] = useState<DeletionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    if (!documentId) return;
+    
+    deletionRequestApi
+      .getDeletionStatus(documentId)
+      .then(setStatus)
+      .finally(() => setLoading(false));
+  }, [documentId]);
+  
+  return { status, loading, refetch: () => { /* refetch logic */ } };
+}
+
+// ✅ Good - Conditional rendering based on deletion status
+export function DeletionActions({ documentId }: Props) {
+  const { status, loading } = useDeletionStatus(documentId);
+  
+  if (loading || !status) return null;
+  
+  if (status.canDelete) {
+    return <Button onClick={handleSelfDelete}>Delete</Button>;
+  }
+  
+  if (status.requiresDCCApproval) {
+    return (
+      <Button onClick={() => setShowRequestDialog(true)}>
+        Request Deletion
+      </Button>
+    );
+  }
+  
+  return null;
+}
+```
+
+### Frontend: Deletion Request Dialog
+
+```typescript
+// ✅ Good - Submit deletion request with replacement file
+const handleSubmit = async () => {
+  if (!reason.trim() || reason.trim().length < 10) {
+    toast({ title: 'Error', description: 'Reason must be at least 10 characters' });
+    return;
+  }
+  
+  try {
+    await deletionRequestApi.submitDeletionRequest(documentId, {
+      reason: reason.trim(),
+      replacementFileId: replacementFileId || undefined,
+    });
+    
+    onSubmitted?.();
+    onOpenChange(false);
+  } catch (error) {
+    toast({ title: 'Error', description: error.message });
+  }
+};
+```
+
 ## Authorization Patterns
 
 ### Backend: CASL Ability Usage
