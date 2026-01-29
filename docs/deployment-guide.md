@@ -669,6 +669,22 @@ chmod -R 755 /mnt/shared
 
 ````
 
+**5. KPI attachments stored under `KPI/current/current`**
+
+This is legacy data created by older backend versions or filesystem sync. Current code prevents new duplicates, but existing files may remain.
+
+- **Fix (one-off maintenance script)**:
+
+```bash
+npx ts-node apps/api/scripts/fix-kpi-current-current-paths.ts
+```
+
+- **Dry run**:
+
+```bash
+npx ts-node apps/api/scripts/fix-kpi-current-current-paths.ts --dry-run
+```
+
 ## Scaling
 
 ### Horizontal Scaling

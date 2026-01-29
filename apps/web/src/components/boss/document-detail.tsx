@@ -80,14 +80,21 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
   if (error || !document) {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
         <div className="cyber-card p-6 cyber-corner">
           <div className="text-center text-fuchsia-400 cyber-text-glow">
-            <p className="font-cyber font-semibold text-lg">{t("error.loadDocumentsFailed")}</p>
-            <p className="text-sm mt-2 text-cyan-300/90">{error || t("notFound.document")}</p>
+            <p className="font-cyber font-semibold text-lg">
+              {t("error.loadDocumentsFailed")}
+            </p>
+            <p className="text-sm mt-2 text-cyan-300/90">
+              {error || t("notFound.document")}
+            </p>
           </div>
         </div>
       </div>
@@ -99,7 +106,10 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
@@ -130,14 +140,18 @@ export function DocumentDetail({ documentId, onBack }: DocumentDetailProps) {
       {/* Document Info */}
       <div className="cyber-card cyber-corner p-5">
         <div>
-          <h2 className="font-cyber font-bold text-xl mb-2 cyber-neon-cyan">{document.name}</h2>
-          <p className="text-sm font-cyber text-cyan-300/80">{fixFileNameEncoding(document.fileName)}</p>
+          <h2 className="font-cyber font-bold text-xl mb-2 cyber-neon-cyan">
+            {document.name}
+          </h2>
+          <p className="text-sm font-cyber text-cyan-300/80">
+            {fixFileNameEncoding(document.fileName)}
+          </p>
         </div>
       </div>
 
       {/* Viewer */}
       <div
-        className={`relative overflow-hidden cyber-border rounded-lg bg-[#0a0a15] min-h-[600px] ${
+        className={`relative overflow-hidden cyber-border rounded-lg bg-[#0a0a15] h-[calc(100vh-280px)] min-h-[600px] ${
           !canDownload ? "viewer-protected" : ""
         }`}
       >

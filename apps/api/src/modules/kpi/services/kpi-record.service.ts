@@ -10,6 +10,21 @@ import {
   UserDepartmentResolver,
 } from "./user-department.resolver";
 
+// Departments not in KPI scope (exact match on Department.code)
+// These departments may exist for user/doc assignment but must not have KPI records.
+const KPI_EXCLUDED_DEPARTMENT_CODES = new Set([
+  "AC",
+  "IT",
+  "DCC",
+  "LTB(E)",
+  "CN_HUNG_YEN_DET_DAI",
+  "CN_HUNG_YEN_DET_NGANG",
+  "CN_NGHE_AN_2_DET_NGANG",
+  "DET_NGANG_S",
+  "PD",
+  "QC",
+]);
+
 interface FindAllParams {
   departmentId?: string;
   year?: number;
@@ -21,7 +36,7 @@ export class KpiRecordService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly userDepartmentResolver: UserDepartmentResolver
+    private readonly userDepartmentResolver: UserDepartmentResolver,
   ) {}
 
   async findAll(params: FindAllParams, user: UserWithDepartments) {
@@ -86,7 +101,7 @@ export class KpiRecordService {
     if (!record) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -101,24 +116,27 @@ export class KpiRecordService {
     if (user.isKpiViewerAll) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to create KPI record`,
-        { userId: user.userId, departmentId: dto.departmentId }
+        { userId: user.userId, departmentId: dto.departmentId },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED,
-        "kpi_viewer_all role is read-only. Cannot create KPI records."
+        "kpi_viewer_all role is read-only. Cannot create KPI records.",
       );
     }
+
+    // Enforce KPI scope (prevents accidental records for AC/IT/DCC/...)
+    await this.assertDepartmentInKpiScope(dto.departmentId);
 
     // Validate departmentId matches user's departments (unless admin/boss)
     if (!user.isAdmin && !user.isBoss) {
       if (!user.departmentIds || user.departmentIds.length === 0) {
         this.logger.warn(
           `Authorization denied: User ${user.userId} attempted to create KPI record without departments`,
-          { userId: user.userId, departmentId: dto.departmentId }
+          { userId: user.userId, departmentId: dto.departmentId },
         );
         throw CustomException.forbidden(
           ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT,
-          "User must belong to a department to create KPI records"
+          "User must belong to a department to create KPI records",
         );
       }
       if (!user.departmentIds.includes(dto.departmentId)) {
@@ -128,11 +146,11 @@ export class KpiRecordService {
             userId: user.userId,
             userDepartmentIds: user.departmentIds,
             requestedDepartmentId: dto.departmentId,
-          }
+          },
         );
         throw CustomException.forbidden(
           ErrorCodes.KPI.DEPARTMENT_MISMATCH,
-          "Cannot create KPI record for a department you're not assigned to"
+          "Cannot create KPI record for a department you're not assigned to",
         );
       }
     }
@@ -161,7 +179,7 @@ export class KpiRecordService {
     if (!existing) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -172,16 +190,19 @@ export class KpiRecordService {
     if (user.isKpiViewerAll) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to update KPI record`,
-        { userId: user.userId, recordId: id }
+        { userId: user.userId, recordId: id },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED,
-        "kpi_viewer_all role is read-only. Cannot update KPI records."
+        "kpi_viewer_all role is read-only. Cannot update KPI records.",
       );
     }
 
     // If updating departmentId, validate new department (unless admin/boss)
     if (dto.departmentId && dto.departmentId !== existing.departmentId) {
+      // Enforce KPI scope for destination department
+      await this.assertDepartmentInKpiScope(dto.departmentId);
+
       if (!user.isAdmin && !user.isBoss) {
         if (
           !user.departmentIds ||
@@ -189,7 +210,7 @@ export class KpiRecordService {
         ) {
           throw CustomException.forbidden(
             ErrorCodes.KPI.DEPARTMENT_MISMATCH,
-            "Cannot move KPI record to a department you're not assigned to"
+            "Cannot move KPI record to a department you're not assigned to",
           );
         }
       }
@@ -219,7 +240,7 @@ export class KpiRecordService {
     if (!record) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -227,11 +248,11 @@ export class KpiRecordService {
     if (user.isKpiViewerAll) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to delete KPI record`,
-        { userId: user.userId, recordId: id }
+        { userId: user.userId, recordId: id },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED,
-        "kpi_viewer_all role is read-only. Cannot delete KPI records."
+        "kpi_viewer_all role is read-only. Cannot delete KPI records.",
       );
     }
 
@@ -247,11 +268,7 @@ export class KpiRecordService {
    * Update KPI record status manually.
    * Validates department access and user permissions.
    */
-  async updateStatus(
-    id: string,
-    status: KpiStatus,
-    user: UserWithDepartments
-  ) {
+  async updateStatus(id: string, status: KpiStatus, user: UserWithDepartments) {
     // Check existing record
     const existing = await this.prisma.kpiRecord.findUnique({
       where: { id },
@@ -265,7 +282,7 @@ export class KpiRecordService {
     if (!existing) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -276,11 +293,11 @@ export class KpiRecordService {
     if (user.isKpiViewerAll) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} with kpi_viewer_all role attempted to update KPI status`,
-        { userId: user.userId, recordId: id }
+        { userId: user.userId, recordId: id },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED,
-        "kpi_viewer_all role is read-only. Cannot update KPI status."
+        "kpi_viewer_all role is read-only. Cannot update KPI status.",
       );
     }
 
@@ -315,7 +332,7 @@ export class KpiRecordService {
     });
 
     this.logger.log(
-      `KPI record ${id} status updated: ${existing.status} → ${status} by user ${user.userId}`
+      `KPI record ${id} status updated: ${existing.status} → ${status} by user ${user.userId}`,
     );
 
     return updated;
@@ -327,7 +344,7 @@ export class KpiRecordService {
    */
   private validateStatusTransition(
     currentStatus: KpiStatus,
-    newStatus: KpiStatus
+    newStatus: KpiStatus,
   ): void {
     // Same status is always allowed (no-op)
     if (currentStatus === newStatus) {
@@ -345,11 +362,11 @@ export class KpiRecordService {
 
     if (!allowed.includes(newStatus)) {
       this.logger.warn(
-        `Invalid status transition attempted: ${currentStatus} → ${newStatus}`
+        `Invalid status transition attempted: ${currentStatus} → ${newStatus}`,
       );
       throw CustomException.badRequest(
         ErrorCodes.INVALID_INPUT,
-        `Invalid status transition: ${currentStatus} → ${newStatus}`
+        `Invalid status transition: ${currentStatus} → ${newStatus}`,
       );
     }
   }
@@ -360,7 +377,7 @@ export class KpiRecordService {
    */
   private checkDepartmentAccess(
     recordDepartmentId: string,
-    user: UserWithDepartments
+    user: UserWithDepartments,
   ): void {
     // Admin/Boss/KpiViewerAll: Full access (read-only for kpi_viewer_all)
     if (user.isAdmin || user.isBoss || user.isKpiViewerAll) {
@@ -371,11 +388,11 @@ export class KpiRecordService {
     if (!user.departmentIds || user.departmentIds.length === 0) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} attempted to access KPI record without departments`,
-        { userId: user.userId, recordDepartmentId }
+        { userId: user.userId, recordDepartmentId },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT,
-        "User must belong to a department to access KPI records"
+        "User must belong to a department to access KPI records",
       );
     }
 
@@ -386,11 +403,34 @@ export class KpiRecordService {
           userId: user.userId,
           userDepartmentIds: user.departmentIds,
           recordDepartmentId,
-        }
+        },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
-        "Access denied: KPI record belongs to a department you're not assigned to"
+        "Access denied: KPI record belongs to a department you're not assigned to",
+      );
+    }
+  }
+
+  private async assertDepartmentInKpiScope(
+    departmentId: string,
+  ): Promise<void> {
+    const dept = await this.prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { code: true },
+    });
+
+    if (!dept) {
+      throw CustomException.notFound(
+        ErrorCodes.NOT_FOUND,
+        "Department not found",
+      );
+    }
+
+    if (KPI_EXCLUDED_DEPARTMENT_CODES.has(dept.code)) {
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        `Department ${dept.code} is not in KPI scope`,
       );
     }
   }

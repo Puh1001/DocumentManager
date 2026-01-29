@@ -71,7 +71,7 @@ ChartJS.register(
   PointElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 );
 
 // Department type imported from shared types
@@ -90,6 +90,21 @@ interface KpiMetric {
 
 type DisplayType = "PERCENTAGE" | "COUNT";
 type RowMode = "SINGLE" | "DOUBLE";
+
+// Departments not in KPI scope (must be exact match on code)
+// Keep consistent with Boss KPI Status + backend guard.
+const KPI_EXCLUDED_DEPARTMENT_CODES = new Set([
+  "AC",
+  "IT",
+  "DCC",
+  "LTB(E)",
+  "CN_HUNG_YEN_DET_DAI",
+  "CN_HUNG_YEN_DET_NGANG",
+  "CN_NGHE_AN_2_DET_NGANG",
+  "DET_NGANG_S",
+  "PD",
+  "QC",
+]);
 
 interface KpiRecord {
   id: string;
@@ -134,7 +149,7 @@ function getKpiBackupKey(departmentId: string, year: number) {
 // Custom debounce hook
 function useDebounce<T extends (...args: unknown[]) => void>(
   callback: T,
-  delay: number
+  delay: number,
 ): T {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -147,7 +162,7 @@ function useDebounce<T extends (...args: unknown[]) => void>(
         callback(...args);
       }, delay);
     },
-    [callback, delay]
+    [callback, delay],
   ) as T;
 
   useEffect(() => {
@@ -168,7 +183,7 @@ export default function KpiPage() {
   const { toast } = useToast();
   const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | "">(
-    ""
+    "",
   );
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -186,9 +201,13 @@ export default function KpiPage() {
   const [selectedDisplayType, setSelectedDisplayType] =
     useState<DisplayType>("PERCENTAGE");
   const [selectedRowMode, setSelectedRowMode] = useState<RowMode>("DOUBLE");
-  const [departmentFolderId, setDepartmentFolderId] = useState<string | null>(null);
-  const [attachmentsMap, setAttachmentsMap] = useState<Map<string, KpiAttachment[]>>(new Map());
-  const [viewerState, setViewerState] = useState<{ attachmentId: string; fileName: string } | null>(null);
+  const [attachmentsMap, setAttachmentsMap] = useState<
+    Map<string, KpiAttachment[]>
+  >(new Map());
+  const [viewerState, setViewerState] = useState<{
+    attachmentId: string;
+    fileName: string;
+  } | null>(null);
 
   const canViewAttachments = useCanAccess("view", "Kpi");
   const canDeleteAttachments = useCanAccess("delete", "Kpi");
@@ -201,6 +220,16 @@ export default function KpiPage() {
   const departments = useMemo(() => {
     return getAccessibleDepartments(user, allDepartments);
   }, [user, allDepartments]);
+
+  const selectedDepartment = useMemo(() => {
+    if (!selectedDepartmentId) return null;
+    return allDepartments.find((d) => d.id === selectedDepartmentId) || null;
+  }, [allDepartments, selectedDepartmentId]);
+
+  const isSelectedDepartmentInKpiScope = useMemo(() => {
+    if (!selectedDepartment) return false;
+    return !KPI_EXCLUDED_DEPARTMENT_CODES.has(selectedDepartment.code);
+  }, [selectedDepartment]);
 
   // Check if user can create KPIs
   const canCreate = canCreateKpi(user);
@@ -230,7 +259,10 @@ export default function KpiPage() {
       // No accessible departments - clear selection
       setSelectedDepartmentId("");
       setLoading(false);
-    } else if (selectedDepartmentId && !departments.find(d => d.id === selectedDepartmentId)) {
+    } else if (
+      selectedDepartmentId &&
+      !departments.find((d) => d.id === selectedDepartmentId)
+    ) {
       // Current selected department is no longer accessible - reset to first available
       setSelectedDepartmentId(departments[0].id);
     }
@@ -264,7 +296,7 @@ export default function KpiPage() {
       setError(null);
       try {
         const list = await api.get<KpiRecord[]>(
-          `/kpi/records?departmentId=${selectedDepartmentId}&year=${selectedYear}`
+          `/kpi/records?departmentId=${selectedDepartmentId}&year=${selectedYear}`,
         );
 
         // Ensure all records have metrics with proper values format
@@ -339,20 +371,21 @@ export default function KpiPage() {
             const actual = metrics.find((m) => m.type === "ACTUAL");
             const calculated = metrics.find((m) => m.type === "CALCULATED");
             const sortedMetrics = [target, actual, calculated].filter(
-              (m): m is KpiMetric => m != null
+              (m): m is KpiMetric => m != null,
             );
 
             return {
               ...record,
               metrics: sortedMetrics,
             };
-          })
+          }),
         );
 
         // If no records, create first one (only if user can create and haven't attempted yet)
         if (
           recordsWithMetrics.length === 0 &&
           canCreate &&
+          isSelectedDepartmentInKpiScope &&
           !hasAttemptedAutoCreate
         ) {
           setHasAttemptedAutoCreate(true);
@@ -413,10 +446,15 @@ export default function KpiPage() {
         if (canViewAttachments) {
           const attachmentsPromises = recordsWithMetrics.map(async (record) => {
             try {
-              const attachments = await kpiAttachmentApi.getAttachments(record.id);
+              const attachments = await kpiAttachmentApi.getAttachments(
+                record.id,
+              );
               return { kpiId: record.id, attachments };
             } catch (err) {
-              console.warn(`Failed to load attachments for KPI ${record.id}:`, err);
+              console.warn(
+                `Failed to load attachments for KPI ${record.id}:`,
+                err,
+              );
               return { kpiId: record.id, attachments: [] };
             }
           });
@@ -475,47 +513,8 @@ export default function KpiPage() {
     canCreate,
     hasAttemptedAutoCreate,
     canViewAttachments,
+    isSelectedDepartmentInKpiScope,
   ]);
-
-  // Load department folder ID
-  useEffect(() => {
-    const loadFolderId = async () => {
-      if (!selectedDepartmentId) {
-        setDepartmentFolderId(null);
-        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-          console.log("[KPI Page] No selectedDepartmentId, clearing departmentFolderId");
-        }
-        return;
-      }
-      try {
-        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-          console.log("[KPI Page] Loading folder for department:", selectedDepartmentId);
-        }
-        const folders = await api.get<Array<{ id: string; name: string; children?: unknown[] }>>(
-          `/storage/folders/tree/with-documents?departmentId=${selectedDepartmentId}`
-        );
-        if (folders && folders.length > 0) {
-          setDepartmentFolderId(folders[0].id);
-          if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-            console.log("[KPI Page] Loaded folderId:", folders[0].id, "for department:", selectedDepartmentId);
-          }
-        } else {
-          // No folders found for this department
-          setDepartmentFolderId(null);
-          if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-            console.warn("[KPI Page] No folders found for department:", selectedDepartmentId);
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to load department folder:", err);
-        setDepartmentFolderId(null);
-        if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-          console.error("[KPI Page] Error loading folder:", err);
-        }
-      }
-    };
-    loadFolderId();
-  }, [selectedDepartmentId, user]); // Add user dependency to reload on login
 
   // Helper function to calculate average for a metric
   const calculateMetricAverage = (metric: KpiMetric | null | undefined) => {
@@ -572,7 +571,7 @@ export default function KpiPage() {
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
 
     const actualData = MONTH_KEYS.map(
-      (key) => actualMetric?.values?.[key] ?? null
+      (key) => actualMetric?.values?.[key] ?? null,
     );
     const actualAvg = calculateMetricAverage(actualMetric);
 
@@ -602,10 +601,10 @@ export default function KpiPage() {
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
 
     const actualData = MONTH_KEYS.map(
-      (key) => actualMetric?.values?.[key] ?? null
+      (key) => actualMetric?.values?.[key] ?? null,
     );
     const targetData = MONTH_KEYS.map(
-      (key) => targetMetric?.values?.[key] ?? null
+      (key) => targetMetric?.values?.[key] ?? null,
     );
 
     const actualAvg = calculateMetricAverage(actualMetric);
@@ -646,7 +645,7 @@ export default function KpiPage() {
   // Helper function to get chart data for a record (PERCENTAGE table)
   const getChartData = (
     record: KpiRecord,
-    efficiencyValues: (number | null)[]
+    efficiencyValues: (number | null)[],
   ) => {
     const datasets: ChartDataset<"bar" | "line", number[]>[] = [
       {
@@ -696,7 +695,7 @@ export default function KpiPage() {
   const getChartOptionsForCountSingle = (record: KpiRecord) => {
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
     const actualData = MONTH_KEYS.map(
-      (key) => actualMetric?.values?.[key] ?? null
+      (key) => actualMetric?.values?.[key] ?? null,
     );
 
     const allValues = actualData.filter((v): v is number => v != null);
@@ -733,14 +732,14 @@ export default function KpiPage() {
     const actualMetric = record.metrics.find((m) => m.type === "ACTUAL");
 
     const actualData = MONTH_KEYS.map(
-      (key) => actualMetric?.values?.[key] ?? null
+      (key) => actualMetric?.values?.[key] ?? null,
     );
     const targetData = MONTH_KEYS.map(
-      (key) => targetMetric?.values?.[key] ?? null
+      (key) => targetMetric?.values?.[key] ?? null,
     );
 
     const allValues = [...actualData, ...targetData].filter(
-      (v): v is number => v != null
+      (v): v is number => v != null,
     );
     const maxValue = allValues.length > 0 ? Math.max(...allValues) : 100;
     const niceMax = Math.ceil(maxValue * 1.2);
@@ -772,7 +771,7 @@ export default function KpiPage() {
   // Helper function to get chart options with dynamic max (for PERCENTAGE table)
   const getChartOptions = (
     efficiencyValues: (number | null)[],
-    targetValue?: number | null
+    targetValue?: number | null,
   ) => {
     const validValues = efficiencyValues
       .slice(0, 12)
@@ -903,7 +902,7 @@ export default function KpiPage() {
     recordId: string,
     metricId: string,
     key: (typeof MONTH_KEYS)[number],
-    value: string
+    value: string,
   ) => {
     const num = value === "" ? null : Number(value);
     setRecords((prev) =>
@@ -920,18 +919,18 @@ export default function KpiPage() {
                         [key]: Number.isNaN(num) ? null : num,
                       },
                     }
-                  : metric
+                  : metric,
               ),
             }
-          : r
-      )
+          : r,
+      ),
     );
   };
 
   // Handle creating metrics if they don't exist when user starts typing
   const ensureMetricExists = async (
     recordId: string,
-    type: "TARGET" | "ACTUAL" | "CALCULATED"
+    type: "TARGET" | "ACTUAL" | "CALCULATED",
   ) => {
     const record = records.find((r) => r.id === recordId);
     if (!record) return null;
@@ -967,8 +966,8 @@ export default function KpiPage() {
                   { ...newMetric, values: baseValues },
                 ],
               }
-            : r
-        )
+            : r,
+        ),
       );
 
       return { ...newMetric, values: baseValues };
@@ -984,7 +983,7 @@ export default function KpiPage() {
 
     // Check if calculated metric already exists
     const existingCalculated = record.metrics.find(
-      (m) => m.type === "CALCULATED"
+      (m) => m.type === "CALCULATED",
     );
     if (existingCalculated) return;
 
@@ -1012,8 +1011,8 @@ export default function KpiPage() {
                   { ...newCalculated, values: baseValues },
                 ],
               }
-            : r
-        )
+            : r,
+        ),
       );
     } catch (err: unknown) {
       handleKpiApiError(err, "thêm dòng tính toán");
@@ -1022,7 +1021,7 @@ export default function KpiPage() {
 
   const handleRemoveCalculatedMetric = async (
     recordId: string,
-    metricId: string
+    metricId: string,
   ) => {
     if (!isEditMode) return;
 
@@ -1035,8 +1034,8 @@ export default function KpiPage() {
                 ...r,
                 metrics: r.metrics.filter((m) => m.id !== metricId),
               }
-            : r
-        )
+            : r,
+        ),
       );
     } catch (err: unknown) {
       handleKpiApiError(err, "xóa dòng tính toán");
@@ -1047,9 +1046,15 @@ export default function KpiPage() {
 
   const handleAddNewTable = async (
     displayType: DisplayType,
-    rowMode?: RowMode
+    rowMode?: RowMode,
   ) => {
-    if (!selectedDepartmentId || !canCreate || isCreating) return;
+    if (
+      !selectedDepartmentId ||
+      !canCreate ||
+      !isSelectedDepartmentInKpiScope ||
+      isCreating
+    )
+      return;
 
     setIsCreating(true);
     try {
@@ -1213,7 +1218,7 @@ export default function KpiPage() {
         savingState(false);
       }
     },
-    [records, selectedDepartmentId, selectedYear, toast]
+    [records, selectedDepartmentId, selectedYear, toast],
   );
 
   // Debounced auto-save
@@ -1329,7 +1334,7 @@ export default function KpiPage() {
                     if (hasUnsavedChanges && isEditMode) {
                       if (
                         !confirm(
-                          "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển bộ môn không?"
+                          "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển bộ môn không?",
                         )
                       ) {
                         return;
@@ -1356,7 +1361,7 @@ export default function KpiPage() {
                   if (hasUnsavedChanges && isEditMode) {
                     if (
                       !confirm(
-                        "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển năm không?"
+                        "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển năm không?",
                       )
                     ) {
                       return;
@@ -1370,7 +1375,7 @@ export default function KpiPage() {
                     <option key={y} value={y}>
                       {t("year")} {y}
                     </option>
-                  )
+                  ),
                 )}
               </select>
             </div>
@@ -1397,15 +1402,15 @@ export default function KpiPage() {
             {records.map((record) => {
               // Helper to get best metric (prioritize non-empty names, then most recently updated)
               const getBestMetric = (
-                type: "TARGET" | "ACTUAL" | "CALCULATED"
+                type: "TARGET" | "ACTUAL" | "CALCULATED",
               ): KpiMetric | undefined => {
                 const metricsOfType = record.metrics.filter(
-                  (m) => m.type === type
+                  (m) => m.type === type,
                 );
                 if (metricsOfType.length === 0) return undefined;
 
                 const metricsWithName = metricsOfType.filter(
-                  (m) => m.name && m.name.trim() !== ""
+                  (m) => m.name && m.name.trim() !== "",
                 );
 
                 if (metricsWithName.length > 0) {
@@ -1496,8 +1501,8 @@ export default function KpiPage() {
                               prev.map((r) =>
                                 r.id === record.id
                                   ? { ...r, title: e.target.value }
-                                  : r
-                              )
+                                  : r,
+                              ),
                             );
                           }}
                           disabled={!isEditMode}
@@ -1507,18 +1512,34 @@ export default function KpiPage() {
                           <KpiAttachmentList
                             attachments={attachmentsMap.get(record.id) || []}
                             onAttachmentClick={(attachmentId) => {
-                              const attachments = attachmentsMap.get(record.id) || [];
-                              const attachment = attachments.find((a) => a.id === attachmentId);
+                              const attachments =
+                                attachmentsMap.get(record.id) || [];
+                              const attachment = attachments.find(
+                                (a) => a.id === attachmentId,
+                              );
                               if (attachment) {
-                                setViewerState({ attachmentId, fileName: attachment.fileName });
+                                setViewerState({
+                                  attachmentId,
+                                  fileName: attachment.fileName,
+                                });
                               }
                             }}
                             onAttachmentDelete={async (attachmentId) => {
                               try {
-                                await kpiAttachmentApi.deleteAttachment(attachmentId);
-                                const currentAttachments = attachmentsMap.get(record.id) || [];
+                                await kpiAttachmentApi.deleteAttachment(
+                                  attachmentId,
+                                );
+                                const currentAttachments =
+                                  attachmentsMap.get(record.id) || [];
                                 setAttachmentsMap(
-                                  new Map(attachmentsMap.set(record.id, currentAttachments.filter((a) => a.id !== attachmentId)))
+                                  new Map(
+                                    attachmentsMap.set(
+                                      record.id,
+                                      currentAttachments.filter(
+                                        (a) => a.id !== attachmentId,
+                                      ),
+                                    ),
+                                  ),
                                 );
                                 toast({
                                   title: "Thành công",
@@ -1526,9 +1547,14 @@ export default function KpiPage() {
                                   variant: "default",
                                 });
                               } catch (error: unknown) {
-                                console.error("Failed to delete attachment:", error);
+                                console.error(
+                                  "Failed to delete attachment:",
+                                  error,
+                                );
                                 const errorMessage =
-                                  error instanceof Error ? error.message : "Không thể xóa file";
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Không thể xóa file";
                                 toast({
                                   title: "Lỗi",
                                   description: errorMessage,
@@ -1539,12 +1565,20 @@ export default function KpiPage() {
                             onAttachmentRenamed={async (_attachmentId) => {
                               try {
                                 // Refresh attachments for this KPI record
-                                const attachments = await kpiAttachmentApi.getAttachments(record.id);
+                                const attachments =
+                                  await kpiAttachmentApi.getAttachments(
+                                    record.id,
+                                  );
                                 setAttachmentsMap(
-                                  new Map(attachmentsMap.set(record.id, attachments))
+                                  new Map(
+                                    attachmentsMap.set(record.id, attachments),
+                                  ),
                                 );
                               } catch (error: unknown) {
-                                console.error("Failed to refresh attachments after rename:", error);
+                                console.error(
+                                  "Failed to refresh attachments after rename:",
+                                  error,
+                                );
                               }
                             }}
                             canView={canViewAttachments}
@@ -1564,8 +1598,8 @@ export default function KpiPage() {
                               prev.map((r) =>
                                 r.id === record.id
                                   ? { ...r, target: e.target.value }
-                                  : r
-                              )
+                                  : r,
+                              ),
                             );
                           }}
                           disabled={!isEditMode}
@@ -1624,7 +1658,7 @@ export default function KpiPage() {
                                     if (targetMetric.id.startsWith("temp-")) {
                                       const created = await ensureMetricExists(
                                         record.id,
-                                        "TARGET"
+                                        "TARGET",
                                       );
                                       if (created) metricToUse = created;
                                     }
@@ -1640,11 +1674,11 @@ export default function KpiPage() {
                                                       ...m,
                                                       name: e.target.value,
                                                     }
-                                                  : m
+                                                  : m,
                                               ),
                                             }
-                                          : r
-                                      )
+                                          : r,
+                                      ),
                                     );
                                   }}
                                   placeholder="Dòng 1: TARGET / Mục tiêu (ví dụ: Số lượng kế hoạch)"
@@ -1671,7 +1705,7 @@ export default function KpiPage() {
                                         const created =
                                           await ensureMetricExists(
                                             record.id,
-                                            "TARGET"
+                                            "TARGET",
                                           );
                                         if (created) metricToUse = created;
                                       }
@@ -1680,7 +1714,7 @@ export default function KpiPage() {
                                         record.id,
                                         metricToUse.id,
                                         key,
-                                        e.target.value
+                                        e.target.value,
                                       );
                                     }}
                                     className="h-7 w-20 mx-auto text-xs text-center"
@@ -1708,7 +1742,7 @@ export default function KpiPage() {
                                   if (actualMetric.id.startsWith("temp-")) {
                                     const created = await ensureMetricExists(
                                       record.id,
-                                      "ACTUAL"
+                                      "ACTUAL",
                                     );
                                     if (created) metricToUse = created;
                                   }
@@ -1721,11 +1755,11 @@ export default function KpiPage() {
                                             metrics: r.metrics.map((m) =>
                                               m.id === metricToUse.id
                                                 ? { ...m, name: e.target.value }
-                                                : m
+                                                : m,
                                             ),
                                           }
-                                        : r
-                                    )
+                                        : r,
+                                    ),
                                   );
                                 }}
                                 placeholder="Dòng 2: ACTUAL / Thực tế (ví dụ: Số lượng thực hiện)"
@@ -1751,7 +1785,7 @@ export default function KpiPage() {
                                     if (actualMetric.id.startsWith("temp-")) {
                                       const created = await ensureMetricExists(
                                         record.id,
-                                        "ACTUAL"
+                                        "ACTUAL",
                                       );
                                       if (created) metricToUse = created;
                                     }
@@ -1760,7 +1794,7 @@ export default function KpiPage() {
                                       record.id,
                                       metricToUse.id,
                                       key,
-                                      e.target.value
+                                      e.target.value,
                                     );
                                   }}
                                   className="h-7 w-20 mx-auto text-xs text-center"
@@ -1812,13 +1846,13 @@ export default function KpiPage() {
                                         let metricToUse = calculatedMetric;
                                         if (
                                           calculatedMetric.id.startsWith(
-                                            "temp-"
+                                            "temp-",
                                           )
                                         ) {
                                           const created =
                                             await ensureMetricExists(
                                               record.id,
-                                              "CALCULATED"
+                                              "CALCULATED",
                                             );
                                           if (created) metricToUse = created;
                                         }
@@ -1834,11 +1868,11 @@ export default function KpiPage() {
                                                           ...m,
                                                           name: e.target.value,
                                                         }
-                                                      : m
+                                                      : m,
                                                   ),
                                                 }
-                                              : r
-                                          )
+                                              : r,
+                                          ),
                                         );
                                       }}
                                       placeholder="Nhập tên dòng tính toán (ví dụ: Tỷ lệ lỗi)"
@@ -1851,7 +1885,7 @@ export default function KpiPage() {
                                         onClick={() =>
                                           handleRemoveCalculatedMetric(
                                             record.id,
-                                            calculatedMetric.id
+                                            calculatedMetric.id,
                                           )
                                         }
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
@@ -1887,11 +1921,18 @@ export default function KpiPage() {
                           variant="outline"
                           size="sm"
                           onClick={openAddTableDialog}
-                          disabled={!isEditMode || !canCreate || isCreating}
+                          disabled={
+                            !isEditMode ||
+                            !canCreate ||
+                            !isSelectedDepartmentInKpiScope ||
+                            isCreating
+                          }
                           title={
                             !canCreate
                               ? "Bạn không có quyền tạo KPI mới"
-                              : undefined
+                              : !isSelectedDepartmentInKpiScope
+                                ? "Bộ môn này không nằm trong phạm vi KPI"
+                                : undefined
                           }
                         >
                           {isCreating ? "Đang tạo..." : t("addNewTable")}
@@ -1912,11 +1953,17 @@ export default function KpiPage() {
                         {canCreateAttachments && (
                           <KpiAttachmentUpload
                             kpiRecordId={record.id}
-                            folderId={departmentFolderId || undefined} // Optional - backend will auto-create if not provided
+                            folderId={undefined} // Backend enforces canonical {dept}/KPI/current
                             onUploadSuccess={(attachment) => {
-                              const currentAttachments = attachmentsMap.get(record.id) || [];
+                              const currentAttachments =
+                                attachmentsMap.get(record.id) || [];
                               setAttachmentsMap(
-                                new Map(attachmentsMap.set(record.id, [attachment, ...currentAttachments]))
+                                new Map(
+                                  attachmentsMap.set(record.id, [
+                                    attachment,
+                                    ...currentAttachments,
+                                  ]),
+                                ),
                               );
                             }}
                           />
@@ -1985,7 +2032,7 @@ export default function KpiPage() {
                         <Bar
                           options={getChartOptions(
                             chartValues,
-                            record.targetValue
+                            record.targetValue,
                           )}
                           data={getChartData(record, chartValues)}
                         />

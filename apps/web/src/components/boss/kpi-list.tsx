@@ -35,7 +35,6 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const [error, setError] = useState<string | null>(null);
   const [attachmentsMap, setAttachmentsMap] = useState<Map<string, KpiAttachment[]>>(new Map());
   const [viewerState, setViewerState] = useState<{ attachmentId: string; fileName: string } | null>(null);
-  const [departmentFolderId, setDepartmentFolderId] = useState<string | null>(null);
 
   const canViewAttachments = useCanAccess("view", "Kpi");
   const canDeleteAttachments = useCanAccess("delete", "Kpi");
@@ -78,25 +77,6 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
       setLoading(false);
     }
   }, [departmentId, selectedYear, tCommon, canViewAttachments]);
-
-  // Load department folder ID
-  useEffect(() => {
-    const loadFolderId = async () => {
-      try {
-        const folders = await api.get<Array<{ id: string; name: string; children?: unknown[] }>>(
-          `/storage/folders/tree/with-documents?departmentId=${departmentId}`
-        );
-        if (folders && folders.length > 0) {
-          setDepartmentFolderId(folders[0].id);
-        }
-      } catch (err) {
-        console.warn("Failed to load department folder:", err);
-      }
-    };
-    if (departmentId) {
-      loadFolderId();
-    }
-  }, [departmentId]);
 
   useEffect(() => {
     loadRecords();
@@ -194,21 +174,19 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
                     <h3 className="font-cyber font-bold text-base cyber-neon-cyan break-words whitespace-normal flex-1">
                       {record.title || t("kpi.untitled")}
                     </h3>
-                    {departmentFolderId && (
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <KpiAttachmentUpload
-                          kpiRecordId={record.id}
-                          folderId={departmentFolderId}
-                          onUploadSuccess={(attachment) => {
-                            const currentAttachments = attachmentsMap.get(record.id) || [];
-                            setAttachmentsMap(
-                              new Map(attachmentsMap.set(record.id, [attachment, ...currentAttachments]))
-                            );
-                          }}
-                          variant="cyber"
-                        />
-                      </div>
-                    )}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <KpiAttachmentUpload
+                        kpiRecordId={record.id}
+                        folderId={undefined} // Backend enforces canonical {dept}/KPI/current
+                        onUploadSuccess={(attachment) => {
+                          const currentAttachments = attachmentsMap.get(record.id) || [];
+                          setAttachmentsMap(
+                            new Map(attachmentsMap.set(record.id, [attachment, ...currentAttachments]))
+                          );
+                        }}
+                        variant="cyber"
+                      />
+                    </div>
                   </div>
                   <KpiAttachmentList
                     attachments={attachments}

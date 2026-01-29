@@ -52,13 +52,16 @@ export class VersionService {
     const versionFileName = `v${String(nextVersion).padStart(3, "0")}_${timestamp}_${userId.slice(0, 8)}${ext}`;
 
     // File paths
-    // Normalize base folder path so we don't accidentally append "current" twice.
-    // Example:
-    // - Standard documents: folder.path = "DH/Documents"           -> "DH/Documents/current/..."
-    // - KPI attachments:     folder.path = "DH/KPI/current"  -> "DH/KPI/current/..." (no duplicate)
-    const baseFolderPath = document.folder.path.endsWith("/current")
-      ? document.folder.path.replace(/\/current$/, "")
-      : document.folder.path;
+    // Normalize base folder path so we don't accidentally append "current" multiple times.
+    // This is defensive against legacy / synced structures like ".../KPI/current/current".
+    // Examples:
+    // - Standard documents: folder.path = "DH/Documents"                 -> "DH/Documents/current/..."
+    // - KPI attachments:     folder.path = "DH/KPI/current"              -> "DH/KPI/current/..." (no duplicate)
+    // - Legacy bad data:     folder.path = "DH/KPI/current/current"      -> "DH/KPI/current/..." (fixed)
+    let baseFolderPath = document.folder.path;
+    while (baseFolderPath.endsWith("/current")) {
+      baseFolderPath = baseFolderPath.replace(/\/current$/, "");
+    }
 
     // Use Unique ID for physical file name on SMB (more stable format)
     // Keep original fileName in database for display to users

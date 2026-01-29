@@ -72,6 +72,9 @@ describe("KpiRecordService", () => {
 
   beforeEach(async () => {
     const mockPrismaService = {
+      department: {
+        findUnique: jest.fn(),
+      },
       kpiRecord: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
@@ -100,6 +103,11 @@ describe("KpiRecordService", () => {
 
     service = module.get<KpiRecordService>(KpiRecordService);
     prismaService = module.get(PrismaService);
+
+    // Default: departments are in KPI scope
+    prismaService.department.findUnique = jest
+      .fn()
+      .mockResolvedValue({ code: "TEST" });
   });
 
   afterEach(() => {
@@ -139,7 +147,7 @@ describe("KpiRecordService", () => {
 
       const result = await service.findAll(
         { departmentId: "dept-1" },
-        mockAdminUser
+        mockAdminUser,
       );
 
       expect(result).toEqual(mockRecords);
@@ -193,7 +201,7 @@ describe("KpiRecordService", () => {
           departmentId: "dept-1",
           year: 2025,
         },
-        mockAdminUser
+        mockAdminUser,
       );
 
       expect(result).toEqual(mockRecords);
@@ -275,7 +283,7 @@ describe("KpiRecordService", () => {
 
       const result = await service.findAll(
         { departmentId: "dept-2" },
-        mockMultiDeptUser
+        mockMultiDeptUser,
       );
 
       expect(result).toEqual(mockRecords);
@@ -324,7 +332,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.RECORD_NOT_FOUND
+          ErrorCodes.KPI.RECORD_NOT_FOUND,
         );
       }
     });
@@ -344,7 +352,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
         );
       }
     });
@@ -370,6 +378,10 @@ describe("KpiRecordService", () => {
       prismaService.kpiRecord.create = jest
         .fn()
         .mockResolvedValue(createdRecord);
+
+      prismaService.department.findUnique = jest
+        .fn()
+        .mockResolvedValue({ code: "TEST" });
 
       const result = await service.create(dto, mockAdminUser);
 
@@ -404,6 +416,10 @@ describe("KpiRecordService", () => {
         .fn()
         .mockResolvedValue(createdRecord);
 
+      prismaService.department.findUnique = jest
+        .fn()
+        .mockResolvedValue({ code: "TEST" });
+
       const result = await service.create(dto, mockAdminUser);
 
       expect(result).toEqual(createdRecord);
@@ -427,13 +443,17 @@ describe("KpiRecordService", () => {
         targetValue: 90,
       };
 
+      prismaService.department.findUnique = jest
+        .fn()
+        .mockResolvedValue({ code: "TEST" });
+
       try {
         await service.create(dto, mockRegularUser);
         fail("Expected CustomException to be thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.DEPARTMENT_MISMATCH
+          ErrorCodes.KPI.DEPARTMENT_MISMATCH,
         );
       }
     });
@@ -446,13 +466,40 @@ describe("KpiRecordService", () => {
         target: "≥90%",
       };
 
+      prismaService.department.findUnique = jest
+        .fn()
+        .mockResolvedValue({ code: "TEST" });
+
       try {
         await service.create(dto, mockUserNoDept);
         fail("Expected CustomException to be thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT
+          ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT,
+        );
+      }
+    });
+
+    it("should throw 403 when creating KPI for out-of-scope department code", async () => {
+      const dto: CreateKpiRecordDto = {
+        departmentId: "dept-ac",
+        year: 2025,
+        title: "Should not be allowed",
+        target: "N/A",
+      };
+
+      prismaService.department.findUnique = jest
+        .fn()
+        .mockResolvedValue({ code: "AC" });
+
+      try {
+        await service.create(dto, mockAdminUser);
+        fail("Expected CustomException to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.KPI.ACCESS_DENIED,
         );
       }
     });
@@ -512,7 +559,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.RECORD_NOT_FOUND
+          ErrorCodes.KPI.RECORD_NOT_FOUND,
         );
       }
     });
@@ -532,7 +579,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
         );
       }
     });
@@ -568,7 +615,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.RECORD_NOT_FOUND
+          ErrorCodes.KPI.RECORD_NOT_FOUND,
         );
       }
     });
@@ -584,7 +631,7 @@ describe("KpiRecordService", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
-          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT
+          ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
         );
       }
     });

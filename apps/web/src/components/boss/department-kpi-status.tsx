@@ -12,6 +12,25 @@ import {
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
 
+// Departments not in KPI scope (must be exact match on code)
+// NOTE: These depts are active for user/doc assignment, but should be hidden from KPI views.
+const KPI_EXCLUDED_DEPARTMENT_CODES = new Set([
+  "AC",
+  "IT",
+  "DCC",
+  "LTB(E)",
+  "CN_HUNG_YEN_DET_DAI",
+  "CN_HUNG_YEN_DET_NGANG",
+  "CN_NGHE_AN_2_DET_NGANG",
+  "DET_NGANG_S",
+  "PD",
+  "QC",
+]);
+
+function isDepartmentInKpiScope(dept: Department): boolean {
+  return !KPI_EXCLUDED_DEPARTMENT_CODES.has(dept.code);
+}
+
 interface KpiRecord {
   id: string;
   departmentId: string;
@@ -66,7 +85,7 @@ function isKpiCompleted(record: KpiRecord): boolean {
 // Calculate department KPI status
 function calculateDepartmentStatus(
   department: Department,
-  kpiRecords: KpiRecord[]
+  kpiRecords: KpiRecord[],
 ): DepartmentKpiStatus {
   const totalKpis = kpiRecords.length;
   const completedKpis = kpiRecords.filter(isKpiCompleted).length;
@@ -115,11 +134,14 @@ export function DepartmentKpiStatus({
       setLoading(true);
       setError(null);
 
-      // Fetch KPI records for all departments in parallel
-      const statusPromises = departments.map(async (dept) => {
+      // Fetch KPI records for KPI-scope departments only (skip AC/IT/DCC/...)
+      const kpiScopeDepartments = departments.filter(isDepartmentInKpiScope);
+
+      // Fetch KPI records for all KPI-scope departments in parallel
+      const statusPromises = kpiScopeDepartments.map(async (dept) => {
         try {
           const records = await api.get<KpiRecord[]>(
-            `/kpi/records?departmentId=${dept.id}&year=${selectedYear}`
+            `/kpi/records?departmentId=${dept.id}&year=${selectedYear}`,
           );
 
           // Parse metrics values correctly - handle both object and string
@@ -180,11 +202,14 @@ export function DepartmentKpiStatus({
   }, [departments.length, loadStatuses]);
 
   // Filter statuses based on selected filter
-  // Only show departments with KPI records (totalKpis > 0)
+  // Only show departments:
+  // - in KPI scope (exclude AC/IT/DCC/...)
+  // - with KPI records (totalKpis > 0)
   const filteredStatuses = useMemo(() => {
-    // Filter out departments with no KPI records (e.g., IT, DCC, AC)
-    const deptsWithKpi = statuses.filter((s) => s.totalKpis > 0);
-    
+    const deptsWithKpi = statuses.filter(
+      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0,
+    );
+
     if (filter === "all") {
       return deptsWithKpi;
     }
@@ -193,13 +218,19 @@ export function DepartmentKpiStatus({
 
   // Calculate summary statistics (only for departments with KPI records)
   const summary = useMemo(() => {
-    // Only count departments with KPI records
-    const deptsWithKpi = statuses.filter((s) => s.totalKpis > 0);
-    
+    // Only count KPI-scope departments with KPI records
+    const deptsWithKpi = statuses.filter(
+      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0,
+    );
+
     const total = deptsWithKpi.length;
-    const completed = deptsWithKpi.filter((s) => s.status === "completed").length;
+    const completed = deptsWithKpi.filter(
+      (s) => s.status === "completed",
+    ).length;
     const partial = deptsWithKpi.filter((s) => s.status === "partial").length;
-    const incomplete = deptsWithKpi.filter((s) => s.status === "incomplete").length;
+    const incomplete = deptsWithKpi.filter(
+      (s) => s.status === "incomplete",
+    ).length;
 
     return { total, completed, partial, incomplete };
   }, [statuses]);
@@ -246,7 +277,7 @@ export function DepartmentKpiStatus({
                 <option key={y} value={y} className="bg-gray-900 text-cyan-300">
                   {t("year")} {y}
                 </option>
-              )
+              ),
             )}
           </select>
 
@@ -267,7 +298,7 @@ export function DepartmentKpiStatus({
                 >
                   {t(`kpiStatus.filter.${f}`)}
                 </button>
-              )
+              ),
             )}
           </div>
         </div>

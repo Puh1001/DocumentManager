@@ -87,13 +87,13 @@ export function PdfViewer({
             iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
             iframeDoc.addEventListener("contextmenu", (e) =>
-              e.preventDefault()
+              e.preventDefault(),
             );
           }
         } catch (e) {
           // Cross-origin restrictions prevent access
           console.debug(
-            "Cannot access iframe content (expected for PDF viewer)"
+            "Cannot access iframe content (expected for PDF viewer)",
           );
         }
       });
@@ -102,7 +102,7 @@ export function PdfViewer({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[600px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
@@ -110,7 +110,7 @@ export function PdfViewer({
 
   if (error || !blobUrl) {
     return (
-      <div className="flex items-center justify-center h-full text-red-500">
+      <div className="flex items-center justify-center h-full min-h-[600px] text-red-500">
         {error || t("loadError")}
       </div>
     );
@@ -121,12 +121,12 @@ export function PdfViewer({
   const pdfUrl = `${blobUrl}#toolbar=${canDownload ? 1 : 0}&navpanes=${canDownload ? 1 : 0}`;
 
   return (
-    <div className="relative h-full w-full pdf-viewer-container">
+    <div className="relative h-full min-h-[600px] w-full pdf-viewer-container">
       {/* Use object tag as primary method - better compatibility with blob URLs for PDF */}
       <object
-        data={blobUrl}
+        data={pdfUrl}
         type="application/pdf"
-        className="w-full h-full"
+        className="block w-full h-full min-h-[600px]"
         style={{
           pointerEvents: canDownload ? "auto" : "none",
         }}
@@ -135,7 +135,7 @@ export function PdfViewer({
         <iframe
           ref={iframeRef}
           src={pdfUrl}
-          className="w-full h-full border-0"
+          className="block w-full h-full min-h-[600px] border-0"
           title="PDF Viewer"
           style={{
             pointerEvents: canDownload ? "auto" : "none",

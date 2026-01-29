@@ -4,7 +4,10 @@ import { PrismaClientLike } from "@/common/types/prisma.types";
 import { DocumentService } from "@/modules/storage/services/document.service";
 import { FolderService } from "@/modules/storage/services/folder.service";
 import { SmbService } from "@/modules/storage/services/smb.service";
-import { DocumentDeletionService, DeletionStatus } from "@/modules/storage/services/document-deletion.service";
+import {
+  DocumentDeletionService,
+  DeletionStatus,
+} from "@/modules/storage/services/document-deletion.service";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { KpiStatus } from "@prisma/client";
@@ -36,7 +39,7 @@ export class KpiAttachmentService {
     private readonly folderService: FolderService,
     private readonly smbService: SmbService,
     private readonly userDepartmentResolver: UserDepartmentResolver,
-    private readonly deletionService: DocumentDeletionService
+    private readonly deletionService: DocumentDeletionService,
   ) {}
 
   async uploadAttachment(
@@ -45,19 +48,19 @@ export class KpiAttachmentService {
     folderId: string | undefined,
     description: string | undefined,
     user: UserWithDepartments,
-    fileName?: string
+    fileName?: string,
   ) {
     const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
       {
         where: { id: kpiRecordId },
         select: { id: true, departmentId: true, title: true },
-      }
+      },
     );
 
     if (!record) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -66,7 +69,7 @@ export class KpiAttachmentService {
     if (!file) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.FILE_REQUIRED,
-        "file is required"
+        "file is required",
       );
     }
 
@@ -74,21 +77,66 @@ export class KpiAttachmentService {
     if (ext !== ".pdf") {
       throw CustomException.badRequest(
         ErrorCodes.INVALID_INPUT,
-        "Only PDF files are allowed for KPI attachments"
+        "Only PDF files are allowed for KPI attachments",
       );
     }
 
-    // Find or create folder for department if folderId is not provided
-    let targetFolderId = folderId;
-    if (!targetFolderId) {
-      // Use folder service to ensure department folder structure exists
-      const folderStructure = await this.folderService.ensureDepartmentFolderStructure(
-        record.departmentId
+    // Always resolve canonical KPI/current folder for this department.
+    // We intentionally ignore any non-canonical folderId to prevent legacy "/current/current" writes
+    // and to enforce that KPI attachments always live under "{dept}/KPI/current".
+    const folderStructure =
+      await this.folderService.ensureDepartmentFolderStructure(
+        record.departmentId,
       );
-      targetFolderId = folderStructure.kpiCurrent;
-      this.logger.log(
-        `Auto-created KPI folder for department ${record.departmentId}: ${targetFolderId}`
+    const canonicalKpiCurrentId = folderStructure.kpiCurrent;
+    if (!canonicalKpiCurrentId) {
+      throw CustomException.internalServerError(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        "Failed to resolve KPI/current folder for department",
       );
+    }
+
+    const targetFolderId = canonicalKpiCurrentId;
+    if (folderId && folderId !== canonicalKpiCurrentId) {
+      // Extra context for investigation: log provided folder path vs canonical folder path.
+      try {
+        const providedFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
+          where: { id: folderId },
+          select: { id: true, path: true },
+        });
+        const canonicalFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
+          where: { id: canonicalKpiCurrentId },
+          select: { id: true, path: true },
+        });
+
+        this.logger.warn(
+          `KPI attachment upload: overriding non-canonical folderId`,
+          {
+            departmentId: record.departmentId,
+            kpiRecordId: record.id,
+            provided: providedFolder ?? { id: folderId, path: null },
+            canonical: canonicalFolder ?? {
+              id: canonicalKpiCurrentId,
+              path: null,
+            },
+          },
+        );
+      } catch (error) {
+        this.logger.warn(
+          `KPI attachment upload: overriding non-canonical folderId (failed to load folder paths)`,
+          {
+            departmentId: record.departmentId,
+            kpiRecordId: record.id,
+            folderId,
+            canonicalKpiCurrentId,
+            error,
+          },
+        );
+      }
     }
 
     // Store file using existing document pipeline on SMB-backed storage
@@ -98,7 +146,7 @@ export class KpiAttachmentService {
       file,
       user.userId,
       record.title,
-      fileName
+      fileName,
     );
 
     // Use transaction for atomic operations: attachment creation + audit log + status update
@@ -138,11 +186,11 @@ export class KpiAttachmentService {
         });
 
         this.logger.log(
-          `Auto-updated KPI record ${record.id} status to COMPLETED after attachment upload`
+          `Auto-updated KPI record ${record.id} status to COMPLETED after attachment upload`,
         );
 
         return createdAttachment;
-      }
+      },
     );
 
     return attachment;
@@ -150,19 +198,19 @@ export class KpiAttachmentService {
 
   async listAttachments(
     kpiRecordId: string,
-    user: UserWithDepartments
+    user: UserWithDepartments,
   ): Promise<KpiAttachmentListItem[]> {
     const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
       {
         where: { id: kpiRecordId },
         select: { id: true, departmentId: true },
-      }
+      },
     );
 
     if (!record) {
       throw CustomException.notFound(
         ErrorCodes.KPI.RECORD_NOT_FOUND,
-        "KPI record not found"
+        "KPI record not found",
       );
     }
 
@@ -188,7 +236,7 @@ export class KpiAttachmentService {
         createdAt: a.createdAt,
         description: a.description ?? undefined,
         deletionExpiresAt: a.document.deletionExpiresAt ?? null,
-      })
+      }),
     );
   }
 
@@ -240,7 +288,7 @@ export class KpiAttachmentService {
     user: UserWithDepartments,
   ): Promise<DeletionStatus> {
     const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
-    
+
     // Use DocumentDeletionService to check deletion status
     return this.deletionService.checkDeletionStatus(
       attachment.documentId,
@@ -259,7 +307,7 @@ export class KpiAttachmentService {
     replacementFileId?: string,
   ) {
     const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
-    
+
     return this.deletionService.submitDeletionRequest(
       attachment.documentId,
       user.userId,
@@ -272,32 +320,34 @@ export class KpiAttachmentService {
    * Get deletion request for a KPI attachment
    * Uses DocumentDeletionService to get request by documentId
    */
-  async getDeletionRequest(
-    attachmentId: string,
-    user: UserWithDepartments,
-  ) {
+  async getDeletionRequest(attachmentId: string, user: UserWithDepartments) {
     const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
-    
-    return this.deletionService.getRequestByDocumentId(attachment.documentId, user.userId);
+
+    return this.deletionService.getRequestByDocumentId(
+      attachment.documentId,
+      user.userId,
+    );
   }
 
   async renameAttachment(
     attachmentId: string,
     newName: string,
     newFileName: string,
-    user: UserWithDepartments
+    user: UserWithDepartments,
   ) {
     const attachment = await this.loadAttachmentWithRecord(attachmentId, user);
 
     // Get current document to get old filename for audit log
-    const currentDocument = await this.documentService.findById(attachment.documentId);
+    const currentDocument = await this.documentService.findById(
+      attachment.documentId,
+    );
 
     // Use DocumentService to rename the underlying document
     const updatedDocument = await this.documentService.rename(
       attachment.documentId,
       newName,
       newFileName,
-      user.userId
+      user.userId,
     );
 
     // Create audit log for KPI attachment rename
@@ -318,7 +368,9 @@ export class KpiAttachmentService {
       });
     } catch (error) {
       // Don't fail if audit log fails
-      this.logger.warn(`Failed to create audit log for KPI attachment rename: ${error}`);
+      this.logger.warn(
+        `Failed to create audit log for KPI attachment rename: ${error}`,
+      );
     }
 
     return {
@@ -344,25 +396,22 @@ export class KpiAttachmentService {
           `Deletion blocked: KPI attachment ${attachmentId} expired for user ${user.userId}`,
         );
         throw new ForbiddenException(
-          'Cannot delete: 72-hour window expired. Please submit a deletion request to DCC.',
+          "Cannot delete: 72-hour window expired. Please submit a deletion request to DCC.",
         );
       }
       this.logger.warn(
         `Deletion blocked: User ${user.userId} lacks permission for KPI attachment ${attachmentId}`,
       );
       throw new ForbiddenException(
-        'You do not have permission to delete this attachment',
+        "You do not have permission to delete this attachment",
       );
     }
 
     // Use DocumentDeletionService for self-deletion (handles file deletion)
-    await this.deletionService.selfDelete(
-      attachment.documentId,
-      user.userId,
-    );
+    await this.deletionService.selfDelete(attachment.documentId, user.userId);
 
     this.logger.log(
-      `KPI attachment ${attachmentId} document deleted, removing attachment record`
+      `KPI attachment ${attachmentId} document deleted, removing attachment record`,
     );
 
     // Use transaction for atomic operations: delete attachment + status revert + audit log
@@ -391,7 +440,7 @@ export class KpiAttachmentService {
           });
 
           this.logger.log(
-            `Auto-reverted KPI record ${attachment.kpiRecordId} status to PENDING after deleting last attachment`
+            `Auto-reverted KPI record ${attachment.kpiRecordId} status to PENDING after deleting last attachment`,
           );
         }
       }
@@ -427,7 +476,7 @@ export class KpiAttachmentService {
       path: string;
       parentId: string | null;
       departmentId: string | null;
-    }
+    },
   ) {
     // The current folder should be in kpi/maintenance/documents subfolder
     // We need to find the department root folder (parent of kpi/maintenance/documents)
@@ -476,7 +525,7 @@ export class KpiAttachmentService {
       if (!deptFolder) {
         throw CustomException.notFound(
           ErrorCodes.FOLDER.NOT_FOUND,
-          "Department folder not found"
+          "Department folder not found",
         );
       }
       departmentFolder = deptFolder;
@@ -491,7 +540,7 @@ export class KpiAttachmentService {
    * Returns the "current" folder ID where KPI attachments should be stored
    */
   private async findOrCreateDepartmentKpiFolder(
-    departmentId: string
+    departmentId: string,
   ): Promise<string> {
     // Step 1: Get department info first
     const department = await (
@@ -504,7 +553,7 @@ export class KpiAttachmentService {
     if (!department) {
       throw CustomException.notFound(
         ErrorCodes.DEPARTMENT.NOT_FOUND,
-        "Department not found"
+        "Department not found",
       );
     }
 
@@ -546,7 +595,7 @@ export class KpiAttachmentService {
 
         if (isUniqueConstraintError) {
           this.logger.warn(
-            `Folder ${folderPath} already exists (race condition), fetching existing folder`
+            `Folder ${folderPath} already exists (race condition), fetching existing folder`,
           );
           // Fetch the existing folder
           departmentFolder = await (
@@ -557,7 +606,7 @@ export class KpiAttachmentService {
           if (!departmentFolder) {
             throw CustomException.notFound(
               ErrorCodes.FOLDER.NOT_FOUND,
-              `Failed to create or find folder: ${folderPath}`
+              `Failed to create or find folder: ${folderPath}`,
             );
           }
         } else {
@@ -577,7 +626,7 @@ export class KpiAttachmentService {
           },
         });
         this.logger.log(
-          `Updated department folder: ${folderPath} with departmentId: ${department.id}`
+          `Updated department folder: ${folderPath} with departmentId: ${department.id}`,
         );
         // Reload folder to get updated data
         const updatedFolder = await (
@@ -595,14 +644,14 @@ export class KpiAttachmentService {
     if (!departmentFolder) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        `Failed to find or create department folder: ${folderPath}`
+        `Failed to find or create department folder: ${folderPath}`,
       );
     }
 
     // Step 2: Find or create "KPI" subfolder
     const kpiFolder = await this.findOrCreateFolderByName(
       departmentFolder.id,
-      "KPI"
+      "KPI",
     );
 
     // Step 3: Find or create "current" subfolder in KPI folder (if it exists in structure)
@@ -611,13 +660,13 @@ export class KpiAttachmentService {
     try {
       const currentFolder = await this.findOrCreateFolderByName(
         kpiFolder.id,
-        "current"
+        "current",
       );
       targetFolder = currentFolder;
     } catch (error) {
       // If "current" folder creation fails, use KPI folder directly
       this.logger.warn(
-        `Could not create "current" subfolder in KPI folder, using KPI folder directly: ${error}`
+        `Could not create "current" subfolder in KPI folder, using KPI folder directly: ${error}`,
       );
     }
 
@@ -680,7 +729,7 @@ export class KpiAttachmentService {
 
       if (isUniqueConstraintError) {
         this.logger.warn(
-          `Folder ${folderPath} already exists (race condition), fetching existing folder`
+          `Folder ${folderPath} already exists (race condition), fetching existing folder`,
         );
         // Fetch the existing folder
         const existingFolder = await (
@@ -699,7 +748,7 @@ export class KpiAttachmentService {
 
   private async loadAttachmentWithRecord(
     attachmentId: string,
-    user: UserWithDepartments
+    user: UserWithDepartments,
   ) {
     const attachment = await (
       this.prisma as PrismaClientLike
@@ -717,7 +766,7 @@ export class KpiAttachmentService {
     if (!attachment) {
       throw CustomException.notFound(
         ErrorCodes.NOT_FOUND,
-        "KPI attachment not found"
+        "KPI attachment not found",
       );
     }
 
@@ -728,7 +777,7 @@ export class KpiAttachmentService {
 
   private checkDepartmentAccess(
     recordDepartmentId: string,
-    user: UserWithDepartments
+    user: UserWithDepartments,
   ): void {
     // Admin/Boss/KpiViewerAll: Full access (read-only for kpi_viewer_all)
     if (user.isAdmin || user.isBoss || user.isKpiViewerAll) {
@@ -738,11 +787,11 @@ export class KpiAttachmentService {
     if (!user.departmentIds || user.departmentIds.length === 0) {
       this.logger.warn(
         `Authorization denied: User ${user.userId} attempted to access KPI attachment without departments`,
-        { userId: user.userId, recordDepartmentId }
+        { userId: user.userId, recordDepartmentId },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_NO_DEPARTMENT,
-        "User must belong to a department to access KPI attachments"
+        "User must belong to a department to access KPI attachments",
       );
     }
 
@@ -753,11 +802,11 @@ export class KpiAttachmentService {
           userId: user.userId,
           userDepartmentIds: user.departmentIds,
           recordDepartmentId,
-        }
+        },
       );
       throw CustomException.forbidden(
         ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
-        "Access denied: KPI attachment belongs to a department you're not assigned to"
+        "Access denied: KPI attachment belongs to a department you're not assigned to",
       );
     }
   }
