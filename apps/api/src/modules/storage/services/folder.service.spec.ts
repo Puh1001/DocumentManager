@@ -145,7 +145,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.findById("invalid-id")).rejects.toThrow(
-        CustomException
+        CustomException,
       );
     });
 
@@ -156,7 +156,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.findById("folder-1")).rejects.toThrow(
-        CustomException
+        CustomException,
       );
     });
   });
@@ -220,7 +220,7 @@ describe("FolderService", () => {
         where: { id: "parent-1" },
       });
       expect(smbService.createDirectory).toHaveBeenCalledWith(
-        "parent-folder/Child Folder"
+        "parent-folder/Child Folder",
       );
       expect(result.path).toBe("parent-folder/Child Folder");
     });
@@ -276,7 +276,7 @@ describe("FolderService", () => {
 
       expect(smbService.rename).toHaveBeenCalledWith(
         "test-folder",
-        "Renamed Folder"
+        "Renamed Folder",
       );
       expect(prismaService.folder.update).toHaveBeenCalledWith({
         where: { id: "folder-1" },
@@ -317,7 +317,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.update("invalid-id", dto)).rejects.toThrow(
-        CustomException
+        CustomException,
       );
     });
 
@@ -330,7 +330,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.update("folder-1", dto)).rejects.toThrow(
-        CustomException
+        CustomException,
       );
     });
   });
@@ -354,7 +354,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.delete("invalid-id")).rejects.toThrow(
-        CustomException
+        CustomException,
       );
     });
 
@@ -369,7 +369,7 @@ describe("FolderService", () => {
         .mockResolvedValue(folderWithChildren);
 
       await expect(service.delete("folder-1")).rejects.toThrow(
-        "Cannot delete non-empty folder"
+        "Cannot delete non-empty folder",
       );
     });
 
@@ -384,7 +384,7 @@ describe("FolderService", () => {
         .mockResolvedValue(folderWithDocuments);
 
       await expect(service.delete("folder-1")).rejects.toThrow(
-        "Cannot delete non-empty folder"
+        "Cannot delete non-empty folder",
       );
     });
   });
@@ -427,6 +427,51 @@ describe("FolderService", () => {
       const result = await service.getTree();
 
       expect(result).toEqual([]);
+    });
+
+    it("should hide internal folders for non-privileged users", async () => {
+      const folders = [
+        {
+          ...mockFolder,
+          id: "root-1",
+          name: "Root 1",
+          path: "root-1",
+          parentId: null,
+          _count: { documents: 0 },
+          isInternal: false,
+          internalType: null,
+        },
+        {
+          ...mockFolder,
+          id: "internal-1",
+          name: "delete files",
+          path: "root-1/delete files",
+          parentId: "root-1",
+          _count: { documents: 5 },
+          isInternal: false,
+          internalType: null,
+        },
+        {
+          ...mockFolder,
+          id: "internal-2",
+          name: "versions",
+          path: "root-1/versions",
+          parentId: "root-1",
+          _count: { documents: 3 },
+          isInternal: true,
+          internalType: "VERSIONS",
+        },
+      ];
+
+      prismaService.folder.findMany = jest
+        .fn()
+        .mockResolvedValue(folders as unknown as typeof folders);
+
+      const result = await service.getTree(undefined, false);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("root-1");
+      expect(result[0].children).toHaveLength(0);
     });
   });
 

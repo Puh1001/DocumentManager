@@ -213,6 +213,43 @@ export class FolderService {
     return (this.prisma as PrismaClientLike).folder.delete({ where: { id } });
   }
 
+  /**
+   * Determine whether a folder should be treated as internal/hidden
+   * for non-privileged users.
+   *
+   * We use multiple signals to be robust against legacy data:
+   * - Explicit flags: isInternal / internalType
+   * - Name-based fallback (case-insensitive): versions, version, deleted files, delete files
+   */
+  private isInternalFolderForTree(folder: {
+    name: string;
+    isInternal?: boolean | null;
+    internalType?: string | null;
+  }): boolean {
+    if (folder.isInternal) {
+      return true;
+    }
+
+    if (
+      folder.internalType === "VERSIONS" ||
+      folder.internalType === "DELETE_FILES"
+    ) {
+      return true;
+    }
+
+    const normalizedName = folder.name.trim().toLowerCase();
+    if (
+      normalizedName === "versions" ||
+      normalizedName === "version" ||
+      normalizedName === "deleted files" ||
+      normalizedName === "delete files"
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
   async getTree(departmentId?: string, includeInternal: boolean = false) {
     try {
       // Build where clause
@@ -244,7 +281,7 @@ export class FolderService {
             }
             // Hide internal folders (versions, Deleted files) for non-privileged users
             if (!includeInternal) {
-              if (f.name === "versions" || f.name === "Deleted files") {
+              if (this.isInternalFolderForTree(f)) {
                 return false;
               }
             }
@@ -322,7 +359,7 @@ export class FolderService {
             }
             // Hide internal folders (versions, Deleted files) for non-privileged users
             if (!includeInternal) {
-              if (f.name === "versions" || f.name === "Deleted files") {
+              if (this.isInternalFolderForTree(f)) {
                 return false;
               }
             }
