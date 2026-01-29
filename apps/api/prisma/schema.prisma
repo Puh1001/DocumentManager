@@ -141,6 +141,8 @@ model Folder {
   parentId         String?   @map("parent_id")
   physicalLocation String?   @map("physical_location") // Vị trí lưu trữ bản cứng
   departmentId     String?   @map("department_id") // Link to department
+  isInternal       Boolean   @default(false) @map("is_internal") // Internal/system folder (hidden from normal users)
+  internalType     InternalFolderType? @map("internal_type") // VERSIONS, DELETE_FILES, etc.
   deletedAt        DateTime? @map("deleted_at") // Soft delete timestamp
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -159,6 +161,11 @@ model Folder {
   @@index([departmentId])
   @@index([deletedAt])
   @@map("folders")
+}
+
+enum InternalFolderType {
+  VERSIONS
+  DELETE_FILES
 }
 
 model Document {

@@ -4,16 +4,16 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
-import { PrismaClientLike } from '@/common/types/prisma.types';
-import { DocumentService } from './document.service';
-import { FolderService } from './folder.service';
-import { SmbService } from './smb.service';
-import { UsersService } from '@/modules/users/users.service';
-import { FolderSyncGateway } from '../gateways/folder-sync.gateway';
-import { Folder } from '@prisma/client';
-import * as path from 'path';
+} from "@nestjs/common";
+import { PrismaService } from "@/common/prisma/prisma.service";
+import { PrismaClientLike } from "@/common/types/prisma.types";
+import { DocumentService } from "./document.service";
+import { FolderService } from "./folder.service";
+import { SmbService } from "./smb.service";
+import { UsersService } from "@/modules/users/users.service";
+import { FolderSyncGateway } from "../gateways/folder-sync.gateway";
+import { Folder } from "@prisma/client";
+import * as path from "path";
 
 // Type definitions for Prisma includes
 // Note: UsersService.findById() transforms roles: user.roles.map(r => r.role)
@@ -62,7 +62,8 @@ export class DocumentDeletionService {
     // Check if user is DCC (can always delete)
     // Note: UsersService.findById() already transforms roles to Array<{ name: string }>
     const userWithRelations = user as unknown as UserWithRelations;
-    const isDCC = userWithRelations.roles?.some((role) => role.name === 'dcc') || false;
+    const isDCC =
+      userWithRelations.roles?.some((role) => role.name === "dcc") || false;
     if (isDCC) {
       return {
         canDelete: true,
@@ -85,7 +86,7 @@ export class DocumentDeletionService {
     // Debug logging for deletion status calculation
     if (!document.deletionExpiresAt) {
       this.logger.warn(
-        `Document ${documentId} missing deletionExpiresAt. Using fallback: uploadedAt=${document.uploadedAt}, createdAt=${document.createdAt}, calculated expiresAt=${expiresAt}`
+        `Document ${documentId} missing deletionExpiresAt. Using fallback: uploadedAt=${document.uploadedAt}, createdAt=${document.createdAt}, calculated expiresAt=${expiresAt}`,
       );
     }
 
@@ -107,7 +108,7 @@ export class DocumentDeletionService {
     ).deletionRequest.findFirst({
       where: {
         documentId,
-        status: 'PENDING',
+        status: "PENDING",
       },
     });
 
@@ -122,7 +123,9 @@ export class DocumentDeletionService {
   }
 
   async selfDelete(documentId: string, userId: string): Promise<void> {
-    this.logger.log(`User ${userId} attempting to delete document ${documentId}`);
+    this.logger.log(
+      `User ${userId} attempting to delete document ${documentId}`,
+    );
     const status = await this.checkDeletionStatus(documentId, userId);
 
     if (!status.canDelete) {
@@ -131,21 +134,21 @@ export class DocumentDeletionService {
           `Deletion blocked: Document ${documentId} expired for user ${userId}`,
         );
         throw new ForbiddenException(
-          'Cannot delete: 72-hour window expired. Please submit a deletion request to DCC.',
+          "Cannot delete: 72-hour window expired. Please submit a deletion request to DCC.",
         );
       }
       this.logger.warn(
         `Deletion blocked: User ${userId} lacks permission for document ${documentId}`,
       );
       throw new ForbiddenException(
-        'You do not have permission to delete this document',
+        "You do not have permission to delete this document",
       );
     }
 
     await this.executeDelete(
       documentId,
       userId,
-      'Self-deletion within 72-hour window',
+      "Self-deletion within 72-hour window",
     );
     this.logger.log(
       `Document ${documentId} deleted successfully by user ${userId}`,
@@ -165,13 +168,13 @@ export class DocumentDeletionService {
 
     if (!status.requiresDCCApproval) {
       throw new BadRequestException(
-        'You can still delete this document directly. DCC approval only required after 72 hours.',
+        "You can still delete this document directly. DCC approval only required after 72 hours.",
       );
     }
 
     if (status.hasActiveRequest) {
       throw new BadRequestException(
-        'A deletion request for this document already exists',
+        "A deletion request for this document already exists",
       );
     }
 
@@ -189,7 +192,7 @@ export class DocumentDeletionService {
     });
 
     // If request exists and is REJECTED, update it to PENDING (resubmit)
-    if (existingRequest && existingRequest.status === 'REJECTED') {
+    if (existingRequest && existingRequest.status === "REJECTED") {
       this.logger.log(
         `Resubmitting rejected deletion request ${existingRequest.id} for document ${documentId}`,
       );
@@ -198,7 +201,7 @@ export class DocumentDeletionService {
       ).deletionRequest.update({
         where: { id: existingRequest.id },
         data: {
-          status: 'PENDING',
+          status: "PENDING",
           reason,
           replacementFileId,
           requestedBy: userId,
@@ -225,7 +228,7 @@ export class DocumentDeletionService {
     // If request exists with other status (APPROVED), throw error
     if (existingRequest) {
       throw new BadRequestException(
-        'A deletion request for this document already exists with status: ' +
+        "A deletion request for this document already exists with status: " +
           existingRequest.status,
       );
     }
@@ -239,7 +242,7 @@ export class DocumentDeletionService {
         requestedBy: userId,
         reason,
         replacementFileId,
-        status: 'PENDING',
+        status: "PENDING",
       },
       include: {
         document: true,
@@ -263,16 +266,17 @@ export class DocumentDeletionService {
     comment?: string,
   ) {
     this.logger.log(
-      `DCC user ${userId} reviewing deletion request ${requestId}: ${approve ? 'APPROVE' : 'REJECT'}`,
+      `DCC user ${userId} reviewing deletion request ${requestId}: ${approve ? "APPROVE" : "REJECT"}`,
     );
     const user = await this.usersService.findById(userId);
     // Note: UsersService.findById() already transforms roles to Array<{ name: string }>
     const userWithRelations = user as unknown as UserWithRelations;
-    const isDCC = userWithRelations.roles?.some((role) => role.name === 'dcc') || false;
+    const isDCC =
+      userWithRelations.roles?.some((role) => role.name === "dcc") || false;
 
     if (!isDCC) {
       throw new ForbiddenException(
-        'Only DCC members can review deletion requests',
+        "Only DCC members can review deletion requests",
       );
     }
 
@@ -280,18 +284,18 @@ export class DocumentDeletionService {
       this.prisma as PrismaClientLike
     ).deletionRequest.findUnique({
       where: { id: requestId },
-      include: { 
+      include: {
         document: true,
         replacementFile: true,
       },
     });
 
     if (!request) {
-      throw new NotFoundException('Deletion request not found');
+      throw new NotFoundException("Deletion request not found");
     }
 
-    if (request.status !== 'PENDING') {
-      throw new BadRequestException('This request has already been reviewed');
+    if (request.status !== "PENDING") {
+      throw new BadRequestException("This request has already been reviewed");
     }
 
     const updatedRequest = await (
@@ -299,7 +303,7 @@ export class DocumentDeletionService {
     ).deletionRequest.update({
       where: { id: requestId },
       data: {
-        status: approve ? 'APPROVED' : 'REJECTED',
+        status: approve ? "APPROVED" : "REJECTED",
         reviewedBy: userId,
         reviewedAt: new Date(),
         reviewerComment: comment,
@@ -315,7 +319,7 @@ export class DocumentDeletionService {
       this.logger.log(
         `Executing deletion for document ${request.documentId} after DCC approval`,
       );
-      
+
       // If there's a replacement file, replace the old file with it
       if (request.replacementFileId && request.replacementFile) {
         await this.replaceDocumentWithReplacement(
@@ -337,7 +341,7 @@ export class DocumentDeletionService {
       this.logger.log(
         `Deletion request ${requestId} rejected by DCC user ${userId}`,
       );
-      
+
       // If there's a replacement file, delete it since request was rejected
       if (request.replacementFileId && request.replacementFile) {
         this.logger.log(
@@ -357,10 +361,10 @@ export class DocumentDeletionService {
           );
         }
       }
-      
+
       // Broadcast event so frontend can update UI
       this.folderSyncGateway.broadcastSyncEvent({
-        type: 'deletion_request_rejected',
+        type: "deletion_request_rejected",
         documentId: request.documentId,
         data: { requestId: updatedRequest.id },
       });
@@ -373,7 +377,7 @@ export class DocumentDeletionService {
 
   async listPendingRequests() {
     return (this.prisma as PrismaClientLike).deletionRequest.findMany({
-      where: { status: 'PENDING' },
+      where: { status: "PENDING" },
       include: {
         document: {
           include: { folder: true },
@@ -381,7 +385,7 @@ export class DocumentDeletionService {
         requester: true,
         replacementFile: true,
       },
-      orderBy: { requestedAt: 'asc' },
+      orderBy: { requestedAt: "asc" },
     });
   }
 
@@ -401,7 +405,7 @@ export class DocumentDeletionService {
     });
 
     if (!request) {
-      throw new NotFoundException('Deletion request not found');
+      throw new NotFoundException("Deletion request not found");
     }
 
     return request;
@@ -417,22 +421,25 @@ export class DocumentDeletionService {
         reviewer: true,
         replacementFile: true,
       },
-      orderBy: { requestedAt: 'desc' },
+      orderBy: { requestedAt: "desc" },
     });
   }
 
   async getRequestByDocumentId(documentId: string, userId: string) {
     const user = await this.usersService.findById(userId);
     const userWithRelations = user as unknown as UserWithRelations;
-    const isDCC = userWithRelations.roles?.some((role) => role.name === 'dcc') || false;
+    const isDCC =
+      userWithRelations.roles?.some((role) => role.name === "dcc") || false;
 
-    const request = await (this.prisma as PrismaClientLike).deletionRequest.findFirst({
+    const request = await (
+      this.prisma as PrismaClientLike
+    ).deletionRequest.findFirst({
       where: { documentId },
       include: {
         reviewer: true,
         requester: true,
       },
-      orderBy: { requestedAt: 'desc' },
+      orderBy: { requestedAt: "desc" },
     });
 
     if (!request) {
@@ -448,7 +455,7 @@ export class DocumentDeletionService {
 
     // User is neither DCC nor requester - deny access
     throw new ForbiddenException(
-      'You do not have permission to view this deletion request',
+      "You do not have permission to view this deletion request",
     );
   }
 
@@ -459,8 +466,12 @@ export class DocumentDeletionService {
     reason: string,
   ): Promise<void> {
     const oldDocument = await this.documentService.findById(oldDocumentId);
-    const replacementDocument = await this.documentService.findById(replacementDocumentId);
-    const currentFolder = await this.folderService.findById(oldDocument.folderId);
+    const replacementDocument = await this.documentService.findById(
+      replacementDocumentId,
+    );
+    const currentFolder = await this.folderService.findById(
+      oldDocument.folderId,
+    );
 
     // Find department ID
     const departmentId =
@@ -468,7 +479,7 @@ export class DocumentDeletionService {
       (await this.findDepartmentIdForFolder(currentFolder));
 
     if (!departmentId) {
-      throw new BadRequestException('Cannot determine department for document');
+      throw new BadRequestException("Cannot determine department for document");
     }
 
     // Find or create "Deleted files" folder
@@ -476,7 +487,7 @@ export class DocumentDeletionService {
 
     const oldFilePath = oldDocument.filePath;
     const replacementFilePath = replacementDocument.filePath;
-    
+
     // Validate both files exist
     try {
       const oldFileStats = await this.smbService.getFileStats(oldFilePath);
@@ -485,7 +496,8 @@ export class DocumentDeletionService {
           `Cannot replace: old filePath points to a folder. Document ID: ${oldDocumentId}`,
         );
       }
-      const replacementFileStats = await this.smbService.getFileStats(replacementFilePath);
+      const replacementFileStats =
+        await this.smbService.getFileStats(replacementFilePath);
       if (replacementFileStats.isDirectory()) {
         throw new BadRequestException(
           `Cannot replace: replacement filePath points to a folder. Document ID: ${replacementDocumentId}`,
@@ -493,12 +505,15 @@ export class DocumentDeletionService {
       }
     } catch (error: unknown) {
       const nodeError = error as NodeJS.ErrnoException;
-      if (nodeError.code === 'ENOENT') {
+      if (nodeError.code === "ENOENT") {
         throw new NotFoundException(
           `File not found. Old: ${oldFilePath}, Replacement: ${replacementFilePath}`,
         );
       }
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw error;
@@ -506,10 +521,10 @@ export class DocumentDeletionService {
 
     // Extract physical file names
     const oldPhysicalFileName = path.basename(oldFilePath);
-    
+
     // New path for old file (move to deleted folder)
     const deletedFilePath = path.join(deleteFolder.path, oldPhysicalFileName);
-    
+
     // Replacement file will take the old file's location and name
     // We'll move it and rename it to match the old file's name
     const newFilePath = oldFilePath; // Same location and name as old file
@@ -519,7 +534,7 @@ export class DocumentDeletionService {
       await this.smbService.rename(oldFilePath, deletedFilePath);
     } catch (error: unknown) {
       const nodeError = error as NodeJS.ErrnoException;
-      if (nodeError.code === 'EPERM') {
+      if (nodeError.code === "EPERM") {
         throw new ForbiddenException(
           `Permission denied: Cannot move old file to delete folder. Path: ${oldFilePath} -> ${deletedFilePath}`,
         );
@@ -541,12 +556,12 @@ export class DocumentDeletionService {
         );
       }
       const nodeError = error as NodeJS.ErrnoException;
-      if (nodeError.code === 'EPERM') {
+      if (nodeError.code === "EPERM") {
         throw new ForbiddenException(
           `Permission denied: Cannot move replacement file to old location. Path: ${replacementFilePath} -> ${newFilePath}`,
         );
       }
-      if (nodeError.code === 'EEXIST') {
+      if (nodeError.code === "EEXIST") {
         // File already exists at new location (shouldn't happen, but handle it)
         throw new BadRequestException(
           `Cannot replace: File already exists at target location: ${newFilePath}`,
@@ -584,7 +599,7 @@ export class DocumentDeletionService {
           data: {
             folderId: deleteFolder.id,
             filePath: deletedFilePath,
-            status: 'DELETED',
+            status: "DELETED",
           },
         });
 
@@ -592,8 +607,8 @@ export class DocumentDeletionService {
         await (tx as PrismaClientLike).auditLog.create({
           data: {
             userId,
-            action: 'REPLACE',
-            resourceType: 'Document',
+            action: "REPLACE",
+            resourceType: "Document",
             resourceId: oldDocumentId,
             details: {
               reason,
@@ -626,13 +641,13 @@ export class DocumentDeletionService {
 
     // Broadcast sync event - document was updated (replaced)
     this.folderSyncGateway.broadcastSyncEvent({
-      type: 'document_updated',
+      type: "document_updated",
       documentId: oldDocumentId,
       folderId: oldDocument.folderId,
       data: {
         replacementDocumentId,
         newFilePath,
-        action: 'replaced',
+        action: "replaced",
       },
     });
   }
@@ -651,7 +666,7 @@ export class DocumentDeletionService {
       (await this.findDepartmentIdForFolder(currentFolder));
 
     if (!departmentId) {
-      throw new BadRequestException('Cannot determine department for document');
+      throw new BadRequestException("Cannot determine department for document");
     }
 
     // Find or create "Deleted files" folder
@@ -661,22 +676,22 @@ export class DocumentDeletionService {
     // Use filename from filePath (which uses Unique ID format) instead of original fileName
     // This ensures consistency with the new storage format
     const oldFilePath = document.filePath;
-    
+
     // Validate filePath points to a file, not a folder
     try {
       const fileStats = await this.smbService.getFileStats(oldFilePath);
       if (fileStats.isDirectory()) {
         throw new BadRequestException(
           `Cannot delete: filePath points to a folder instead of a file. ` +
-          `Document may be corrupted. Document ID: ${documentId}, filePath: ${oldFilePath}`
+            `Document may be corrupted. Document ID: ${documentId}, filePath: ${oldFilePath}`,
         );
       }
     } catch (error: unknown) {
       const nodeError = error as NodeJS.ErrnoException;
       // If file doesn't exist, check if it's a permission issue or missing file
-      if (nodeError.code === 'ENOENT') {
+      if (nodeError.code === "ENOENT") {
         throw new NotFoundException(
-          `File not found at path: ${oldFilePath}. Document may have been moved or deleted.`
+          `File not found at path: ${oldFilePath}. Document may have been moved or deleted.`,
         );
       }
       // Re-throw if it's the BadRequestException we just threw
@@ -684,12 +699,13 @@ export class DocumentDeletionService {
         throw error;
       }
       // For other errors, log and continue (might be permission issue, will fail on rename)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(
-        `Failed to validate filePath before deletion: ${errorMessage}. Will attempt rename anyway.`
+        `Failed to validate filePath before deletion: ${errorMessage}. Will attempt rename anyway.`,
       );
     }
-    
+
     const physicalFileName = path.basename(oldFilePath); // Extract ID-based filename from filePath
     const newFilePath = path.join(deleteFolder.path, physicalFileName);
 
@@ -699,27 +715,28 @@ export class DocumentDeletionService {
       await this.smbService.rename(oldFilePath, newFilePath);
     } catch (error: unknown) {
       const nodeError = error as NodeJS.ErrnoException;
-      if (nodeError.code === 'EPERM') {
+      if (nodeError.code === "EPERM") {
         // Check if source is actually a folder (permission error might indicate folder)
         try {
           const stats = await this.smbService.getFileStats(oldFilePath);
           if (stats.isDirectory()) {
             throw new BadRequestException(
               `Cannot delete: filePath points to a folder. ` +
-              `Document ID: ${documentId}, filePath: ${oldFilePath}. ` +
-              `Please contact administrator to fix document record.`
+                `Document ID: ${documentId}, filePath: ${oldFilePath}. ` +
+                `Please contact administrator to fix document record.`,
             );
           }
         } catch (statsError: unknown) {
           // If we can't check stats, provide generic permission error
-          const statsErrorMessage = statsError instanceof Error ? statsError.message : 'Unknown error';
+          const statsErrorMessage =
+            statsError instanceof Error ? statsError.message : "Unknown error";
           this.logger.warn(
-            `Failed to check file stats after EPERM error: ${statsErrorMessage}`
+            `Failed to check file stats after EPERM error: ${statsErrorMessage}`,
           );
         }
         throw new ForbiddenException(
           `Permission denied: Cannot move file to delete folder. ` +
-          `Check SMB share permissions for path: ${oldFilePath} -> ${newFilePath}`
+            `Check SMB share permissions for path: ${oldFilePath} -> ${newFilePath}`,
         );
       }
       throw error;
@@ -735,7 +752,7 @@ export class DocumentDeletionService {
           data: {
             folderId: deleteFolder.id,
             filePath: newFilePath,
-            status: 'DELETED',
+            status: "DELETED",
           },
         });
 
@@ -743,8 +760,8 @@ export class DocumentDeletionService {
         await (tx as PrismaClientLike).auditLog.create({
           data: {
             userId,
-            action: 'DELETE',
-            resourceType: 'Document',
+            action: "DELETE",
+            resourceType: "Document",
             resourceId: documentId,
             details: {
               reason,
@@ -781,7 +798,7 @@ export class DocumentDeletionService {
     });
 
     if (!department) {
-      throw new BadRequestException('Department not found');
+      throw new BadRequestException("Department not found");
     }
 
     const deleteFolderPath = `${department.code}/Deleted files`;
@@ -798,17 +815,15 @@ export class DocumentDeletionService {
 
       // Create database record (handle race condition)
       try {
-        deleteFolder = await (
-          this.prisma as PrismaClientLike
-        ).folder.create({
+        deleteFolder = await (this.prisma as PrismaClientLike).folder.create({
           data: {
-            name: 'Deleted files',
+            name: "Deleted files",
             path: deleteFolderPath,
             departmentId,
           },
         });
       } catch (error) {
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           deleteFolder = await (
             this.prisma as PrismaClientLike
           ).folder.findUnique({
@@ -821,13 +836,15 @@ export class DocumentDeletionService {
     }
 
     if (!deleteFolder) {
-      throw new BadRequestException('Failed to create or find delete folder');
+      throw new BadRequestException("Failed to create or find delete folder");
     }
 
     return deleteFolder;
   }
 
-  private async findDepartmentIdForFolder(folder: FolderWithDepartment): Promise<string | null> {
+  private async findDepartmentIdForFolder(
+    folder: FolderWithDepartment,
+  ): Promise<string | null> {
     if (folder.departmentId) return folder.departmentId;
     if (!folder.parentId) return null;
 

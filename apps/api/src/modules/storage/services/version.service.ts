@@ -3,10 +3,10 @@ import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { PrismaClientLike } from "@/common/types/prisma.types";
 import * as crypto from "crypto";
-import * as path from "path";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { getSafeExtension } from "@/common/utils/file.util";
+import { StoragePathBuilder } from "../utils/storage-path.util";
 
 @Injectable()
 export class VersionService {
@@ -14,14 +14,14 @@ export class VersionService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smbService: SmbService
+    private readonly smbService: SmbService,
   ) {}
 
   async createVersion(
     documentId: string,
     fileData: Buffer,
     userId: string,
-    comment?: string
+    comment?: string,
   ) {
     const document = await (
       this.prisma as PrismaClientLike
@@ -39,35 +39,39 @@ export class VersionService {
     if (!document) {
       throw CustomException.notFound(
         ErrorCodes.VERSION.DOCUMENT_NOT_FOUND,
-        "Document not found"
+        "Document not found",
       );
     }
 
     // Calculate next version
     const nextVersion = (document.versions[0]?.version || 0) + 1;
 
-    // Generate version filename
+    // Generate safe extension and derive canonical section root from folder path
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const ext = getSafeExtension(document.fileName);
-    const versionFileName = `v${String(nextVersion).padStart(3, "0")}_${timestamp}_${userId.slice(0, 8)}${ext}`;
 
-    // File paths
-    // Normalize base folder path so we don't accidentally append "current" multiple times.
-    // This is defensive against legacy / synced structures like ".../KPI/current/current".
-    // Examples:
-    // - Standard documents: folder.path = "DH/Documents"                 -> "DH/Documents/current/..."
-    // - KPI attachments:     folder.path = "DH/KPI/current"              -> "DH/KPI/current/..." (no duplicate)
-    // - Legacy bad data:     folder.path = "DH/KPI/current/current"      -> "DH/KPI/current/..." (fixed)
-    let baseFolderPath = document.folder.path;
-    while (baseFolderPath.endsWith("/current")) {
-      baseFolderPath = baseFolderPath.replace(/\/current$/, "");
-    }
+    // Derive canonical section root path so business logic does not depend
+    // on legacy "{Section}/current" layout. This keeps backward compatibility
+    // for existing folders while new writes follow the "{Section}/" + "versions/" layout.
+    const sectionRootPath = StoragePathBuilder.deriveSectionRootFromFolderPath(
+      document.folder.path,
+    );
 
     // Use Unique ID for physical file name on SMB (more stable format)
     // Keep original fileName in database for display to users
-    const physicalFileName = `${document.id}${ext}`;
-    const currentPath = `${baseFolderPath}/current/${physicalFileName}`;
-    const versionPath = `${baseFolderPath}/version/${document.id}/${versionFileName}`;
+    const currentPath = StoragePathBuilder.buildCurrentFilePath(
+      sectionRootPath,
+      document.id,
+      ext,
+    );
+    const versionPath = StoragePathBuilder.buildVersionFilePath(
+      sectionRootPath,
+      document.id,
+      nextVersion,
+      userId,
+      ext,
+      timestamp,
+    );
 
     // Calculate checksum
     const checksum = crypto.createHash("sha256").update(fileData).digest("hex");
@@ -119,7 +123,7 @@ export class VersionService {
               documentId,
               oldPath: document.filePath,
               newPath: currentPath,
-            }
+            },
           );
         }
       } catch (error: unknown) {
@@ -130,12 +134,12 @@ export class VersionService {
           if (nodeError.code !== "ENOENT") {
             this.logger.warn(
               `Failed to cleanup old file ${document.filePath}: ${error.message}`,
-              { error: error.stack }
+              { error: error.stack },
             );
           }
         } else {
           this.logger.warn(
-            `Failed to cleanup old file ${document.filePath}: Unknown error`
+            `Failed to cleanup old file ${document.filePath}: Unknown error`,
           );
         }
       }
@@ -173,7 +177,7 @@ export class VersionService {
     if (!docVersion) {
       throw CustomException.notFound(
         ErrorCodes.VERSION.NOT_FOUND,
-        "Version not found"
+        "Version not found",
       );
     }
 
@@ -200,7 +204,7 @@ export class VersionService {
       documentId,
       fileData,
       userId,
-      `Restored from version ${version}`
+      `Restored from version ${version}`,
     );
   }
 }

@@ -34,7 +34,7 @@ export interface FolderTreeNodeWithDocuments extends FolderTreeNode {
 export class FolderService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smbService: SmbService
+    private readonly smbService: SmbService,
   ) {}
 
   async findAll(parentId?: string | null, departmentId?: string) {
@@ -100,7 +100,7 @@ export class FolderService {
     if (!folder || folder.deletedAt) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found"
+        "Folder not found",
       );
     }
 
@@ -118,7 +118,7 @@ export class FolderService {
       if (!parent || parent.deletedAt) {
         throw CustomException.notFound(
           ErrorCodes.FOLDER.PARENT_NOT_FOUND,
-          "Parent folder not found or deleted"
+          "Parent folder not found or deleted",
         );
       }
       if (parent) {
@@ -148,7 +148,7 @@ export class FolderService {
     if (!folder || folder.deletedAt) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found or deleted"
+        "Folder not found or deleted",
       );
     }
 
@@ -194,12 +194,12 @@ export class FolderService {
     if (!folder) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found"
+        "Folder not found",
       );
     }
 
     const hasActiveDocs = folder.documents.some(
-      (doc) => doc.status !== "DELETED"
+      (doc) => doc.status !== "DELETED",
     );
 
     if (folder.children.length > 0 || hasActiveDocs) {
@@ -213,7 +213,7 @@ export class FolderService {
     return (this.prisma as PrismaClientLike).folder.delete({ where: { id } });
   }
 
-  async getTree(departmentId?: string) {
+  async getTree(departmentId?: string, includeInternal: boolean = false) {
     try {
       // Build where clause
       const where: Prisma.FolderWhereInput = {
@@ -238,7 +238,18 @@ export class FolderService {
       // Build tree structure
       const buildTree = (parentId: string | null = null): FolderTreeNode[] => {
         return folders
-          .filter((f: (typeof folders)[0]) => f.parentId === parentId)
+          .filter((f: (typeof folders)[0]) => {
+            if (f.parentId !== parentId) {
+              return false;
+            }
+            // Hide internal folders (versions, Deleted files) for non-privileged users
+            if (!includeInternal) {
+              if (f.name === "versions" || f.name === "Deleted files") {
+                return false;
+              }
+            }
+            return true;
+          })
           .map((f: (typeof folders)[0]) => ({
             id: f.id,
             name: f.name,
@@ -258,12 +269,15 @@ export class FolderService {
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree",
-        error
+        error,
       );
     }
   }
 
-  async getTreeWithDocuments(departmentId?: string) {
+  async getTreeWithDocuments(
+    departmentId?: string,
+    includeInternal: boolean = false,
+  ) {
     try {
       // Build where clause
       const where: Prisma.FolderWhereInput = {
@@ -299,10 +313,21 @@ export class FolderService {
 
       // Build tree structure with documents
       const buildTree = (
-        parentId: string | null = null
+        parentId: string | null = null,
       ): FolderTreeNodeWithDocuments[] => {
         return folders
-          .filter((f: (typeof folders)[0]) => f.parentId === parentId)
+          .filter((f: (typeof folders)[0]) => {
+            if (f.parentId !== parentId) {
+              return false;
+            }
+            // Hide internal folders (versions, Deleted files) for non-privileged users
+            if (!includeInternal) {
+              if (f.name === "versions" || f.name === "Deleted files") {
+                return false;
+              }
+            }
+            return true;
+          })
           .map((f: (typeof folders)[0]) => ({
             id: f.id,
             name: f.name,
@@ -330,7 +355,7 @@ export class FolderService {
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree with documents",
-        error
+        error,
       );
     }
   }
@@ -343,26 +368,37 @@ export class FolderService {
 
   /**
    * Ensure department folder structure exists (create if not exists, use if exists)
-   * Structure: {dept.code}/KPI/current, {dept.code}/KPI/version,
-   *            {dept.code}/Documents/current, {dept.code}/Documents/version,
-   *            {dept.code}/Maintenance/current, {dept.code}/Maintenance/version,
-   *            {dept.code}/Deleted files
-   * 
+   *
+   * New canonical layout per department:
+   *   {dept.code}/KPI/
+   *     - Current files live directly under this folder
+   *     - versions/{documentId}/vNNN_... for historical versions
+   *   {dept.code}/Documents/
+   *     - Same pattern as KPI
+   *   {dept.code}/Maintenance/
+   *     - Same pattern as KPI
+   *   {dept.code}/Deleted files/
+   *     - Admin-only area for soft-deleted documents
+   *
+   * This replaces the older "{Section}/current" + "{Section}/version" layout.
+   *
    * @param departmentId Department ID
-   * @returns Object with folder IDs for each type
+   * @returns Object with folder IDs for section roots and versions roots
    */
   async ensureDepartmentFolderStructure(departmentId: string): Promise<{
     departmentRoot: string;
-    kpiCurrent: string;
-    kpiVersion: string;
-    documentsCurrent: string;
-    documentsVersion: string;
-    maintenanceCurrent: string;
-    maintenanceVersion: string;
+    kpiSectionRoot: string;
+    kpiVersionsRoot: string;
+    documentsSectionRoot: string;
+    documentsVersionsRoot: string;
+    maintenanceSectionRoot: string;
+    maintenanceVersionsRoot: string;
     deletedFiles: string;
   }> {
     // Get department info
-    const department = await (this.prisma as PrismaClientLike).department.findUnique({
+    const department = await (
+      this.prisma as PrismaClientLike
+    ).department.findUnique({
       where: { id: departmentId },
       select: { id: true, code: true, nameVi: true },
     });
@@ -370,14 +406,16 @@ export class FolderService {
     if (!department) {
       throw CustomException.notFound(
         ErrorCodes.DEPARTMENT.NOT_FOUND,
-        "Department not found"
+        "Department not found",
       );
     }
 
     const folderPath = department.code;
 
     // Step 1: Find or create department root folder
-    let departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+    let departmentRoot = await (
+      this.prisma as PrismaClientLike
+    ).folder.findUnique({
       where: { path: folderPath },
     });
 
@@ -403,7 +441,9 @@ export class FolderService {
           error.code === "P2002";
 
         if (isUniqueConstraintError) {
-          departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+          departmentRoot = await (
+            this.prisma as PrismaClientLike
+          ).folder.findUnique({
             where: { path: folderPath },
           });
         } else {
@@ -420,7 +460,9 @@ export class FolderService {
             deletedAt: null,
           },
         });
-        departmentRoot = await (this.prisma as PrismaClientLike).folder.findUnique({
+        departmentRoot = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
           where: { path: folderPath },
         });
       }
@@ -429,19 +471,21 @@ export class FolderService {
     if (!departmentRoot) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        `Failed to find or create department folder: ${folderPath}`
+        `Failed to find or create department folder: ${folderPath}`,
       );
     }
 
-    // Step 2: Find or create subfolders (KPI, Documents, Maintenance, Deleted files)
+    // Step 2: Find or create section subfolders (KPI, Documents, Maintenance, Deleted files)
     const subfolders = ["KPI", "Documents", "Maintenance", "Deleted files"];
     const subfolderMap = new Map<string, string>();
 
     for (const sub of subfolders) {
       const subfolderPath = `${folderPath}/${sub}`;
-      let subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-        where: { path: subfolderPath },
-      });
+      let subfolder = await (this.prisma as PrismaClientLike).folder.findUnique(
+        {
+          where: { path: subfolderPath },
+        },
+      );
 
       if (!subfolder) {
         // Create physical folder on SMB
@@ -454,6 +498,11 @@ export class FolderService {
               path: subfolderPath,
               parentId: departmentRoot.id,
               departmentId: department.id,
+              // Deleted files is an internal/admin-only folder
+              ...(sub === "Deleted files" && {
+                isInternal: true,
+                internalType: "DELETE_FILES",
+              }),
             },
           });
         } catch (error: unknown) {
@@ -464,7 +513,9 @@ export class FolderService {
             error.code === "P2002";
 
           if (isUniqueConstraintError) {
-            subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+            subfolder = await (
+              this.prisma as PrismaClientLike
+            ).folder.findUnique({
               where: { path: subfolderPath },
             });
           } else {
@@ -473,18 +524,28 @@ export class FolderService {
         }
       } else {
         // Update if needed
-        if (subfolder.deletedAt || subfolder.parentId !== departmentRoot.id) {
+        if (
+          subfolder.deletedAt ||
+          subfolder.parentId !== departmentRoot.id
+          // isInternal will be enforced below via update data; we don't need to read it here
+        ) {
           await (this.prisma as PrismaClientLike).folder.update({
             where: { id: subfolder.id },
             data: {
               deletedAt: null,
               parentId: departmentRoot.id,
               departmentId: department.id,
+              ...(sub === "Deleted files" && {
+                isInternal: true,
+                internalType: "DELETE_FILES",
+              }),
             },
           });
-          subfolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-            where: { path: subfolderPath },
-          });
+          subfolder = await (this.prisma as PrismaClientLike).folder.findUnique(
+            {
+              where: { path: subfolderPath },
+            },
+          );
         }
       }
 
@@ -493,10 +554,25 @@ export class FolderService {
       }
     }
 
-    // Step 3: For KPI, Documents, Maintenance: find or create current/ and version/ subfolders
-    const folderTypes = ["KPI", "Documents", "Maintenance"];
-    const result: any = {
+    // Step 3: For KPI, Documents, Maintenance: find or create versions/ subfolders
+    const folderTypes = ["KPI", "Documents", "Maintenance"] as const;
+    const result: {
+      departmentRoot: string;
+      kpiSectionRoot: string;
+      kpiVersionsRoot: string;
+      documentsSectionRoot: string;
+      documentsVersionsRoot: string;
+      maintenanceSectionRoot: string;
+      maintenanceVersionsRoot: string;
+      deletedFiles: string;
+    } = {
       departmentRoot: departmentRoot.id,
+      kpiSectionRoot: "",
+      kpiVersionsRoot: "",
+      documentsSectionRoot: "",
+      documentsVersionsRoot: "",
+      maintenanceSectionRoot: "",
+      maintenanceVersionsRoot: "",
       deletedFiles: subfolderMap.get("Deleted files") || "",
     };
 
@@ -504,58 +580,48 @@ export class FolderService {
       const typeFolderId = subfolderMap.get(type);
       if (!typeFolderId) continue;
 
-      const typeFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+      let typeFolder = await (
+        this.prisma as PrismaClientLike
+      ).folder.findUnique({
         where: { id: typeFolderId },
       });
       if (!typeFolder) continue;
 
-      // Create current/ subfolder
-      const currentPath = `${typeFolder.path}/current`;
-      let currentFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-        where: { path: currentPath },
-      });
-
-      if (!currentFolder) {
-        await this.smbService.createDirectory(currentPath);
-        try {
-          currentFolder = await (this.prisma as PrismaClientLike).folder.create({
-            data: {
-              name: "current",
-              path: currentPath,
-              parentId: typeFolder.id,
-              departmentId: department.id,
-            },
-          });
-        } catch (error: unknown) {
-          const isUniqueConstraintError =
-            error &&
-            typeof error === "object" &&
-            "code" in error &&
-            error.code === "P2002";
-
-          if (isUniqueConstraintError) {
-            currentFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-              where: { path: currentPath },
-            });
-          } else {
-            throw error;
-          }
+      // Ensure section root is active and correctly linked to department
+      if (typeFolder.deletedAt || typeFolder.parentId !== departmentRoot.id) {
+        await (this.prisma as PrismaClientLike).folder.update({
+          where: { id: typeFolder.id },
+          data: {
+            deletedAt: null,
+            parentId: departmentRoot.id,
+            departmentId: department.id,
+          },
+        });
+        typeFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+          where: { id: typeFolderId },
+        });
+        if (!typeFolder) {
+          continue;
         }
       }
 
-      // Create version/ subfolder
-      const versionPath = `${typeFolder.path}/version`;
-      let versionFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-        where: { path: versionPath },
+      // Create versions/ subfolder under section root
+      const versionsPath = `${typeFolder.path}/versions`;
+      let versionsFolder = await (
+        this.prisma as PrismaClientLike
+      ).folder.findUnique({
+        where: { path: versionsPath },
       });
 
-      if (!versionFolder) {
-        await this.smbService.createDirectory(versionPath);
+      if (!versionsFolder) {
+        await this.smbService.createDirectory(versionsPath);
         try {
-          versionFolder = await (this.prisma as PrismaClientLike).folder.create({
+          versionsFolder = await (
+            this.prisma as PrismaClientLike
+          ).folder.create({
             data: {
-              name: "version",
-              path: versionPath,
+              name: "versions",
+              path: versionsPath,
               parentId: typeFolder.id,
               departmentId: department.id,
             },
@@ -568,25 +634,45 @@ export class FolderService {
             error.code === "P2002";
 
           if (isUniqueConstraintError) {
-            versionFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-              where: { path: versionPath },
+            versionsFolder = await (
+              this.prisma as PrismaClientLike
+            ).folder.findUnique({
+              where: { path: versionsPath },
             });
           } else {
             throw error;
           }
         }
+      } else if (
+        versionsFolder.deletedAt ||
+        versionsFolder.parentId !== typeFolder.id
+      ) {
+        // Restore / re-parent existing versions folder if needed
+        await (this.prisma as PrismaClientLike).folder.update({
+          where: { id: versionsFolder.id },
+          data: {
+            deletedAt: null,
+            parentId: typeFolder.id,
+            departmentId: department.id,
+          },
+        });
+        versionsFolder = await (
+          this.prisma as PrismaClientLike
+        ).folder.findUnique({
+          where: { path: versionsPath },
+        });
       }
 
       // Set result based on type
       if (type === "KPI") {
-        result.kpiCurrent = currentFolder?.id || "";
-        result.kpiVersion = versionFolder?.id || "";
+        result.kpiSectionRoot = typeFolder.id;
+        result.kpiVersionsRoot = versionsFolder?.id || "";
       } else if (type === "Documents") {
-        result.documentsCurrent = currentFolder?.id || "";
-        result.documentsVersion = versionFolder?.id || "";
+        result.documentsSectionRoot = typeFolder.id;
+        result.documentsVersionsRoot = versionsFolder?.id || "";
       } else if (type === "Maintenance") {
-        result.maintenanceCurrent = currentFolder?.id || "";
-        result.maintenanceVersion = versionFolder?.id || "";
+        result.maintenanceSectionRoot = typeFolder.id;
+        result.maintenanceVersionsRoot = versionsFolder?.id || "";
       }
     }
 

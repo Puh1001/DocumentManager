@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
@@ -24,6 +25,7 @@ import {
 } from "../services/local-edit.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
+import { AuthenticatedRequest } from "@/common/types/request.types";
 
 @ApiTags("Folders")
 @ApiBearerAuth()
@@ -34,14 +36,14 @@ export class FolderController {
     private readonly folderService: FolderService,
     private readonly folderSyncService: FolderSyncService,
     private readonly folderSyncGateway: FolderSyncGateway,
-    private readonly localEditService: LocalEditService
+    private readonly localEditService: LocalEditService,
   ) {}
 
   @Get()
   @ApiOperation({ summary: "List folders" })
   async findAll(
     @Query("parentId") parentId?: string,
-    @Query("departmentId") departmentId?: string
+    @Query("departmentId") departmentId?: string,
   ) {
     return this.folderService.findAll(parentId, departmentId);
   }
@@ -49,17 +51,26 @@ export class FolderController {
   @Get("tree")
   @ApiOperation({ summary: "Get folder tree structure" })
   async getTree(
-    @Query("departmentId") departmentId?: string
+    @Query("departmentId") departmentId?: string,
+    @Request() req?: AuthenticatedRequest,
   ): Promise<FolderTreeNode[]> {
-    return this.folderService.getTree(departmentId);
+    const roles = req?.user?.roles || [];
+    const includeInternal = roles.includes("admin") || roles.includes("dcc");
+    return this.folderService.getTree(departmentId, includeInternal);
   }
 
   @Get("tree/with-documents")
   @ApiOperation({ summary: "Get folder tree structure with documents" })
   async getTreeWithDocuments(
-    @Query("departmentId") departmentId?: string
+    @Query("departmentId") departmentId?: string,
+    @Request() req?: AuthenticatedRequest,
   ): Promise<FolderTreeNodeWithDocuments[]> {
-    return this.folderService.getTreeWithDocuments(departmentId);
+    const roles = req?.user?.roles || [];
+    const includeInternal = roles.includes("admin") || roles.includes("dcc");
+    return this.folderService.getTreeWithDocuments(
+      departmentId,
+      includeInternal,
+    );
   }
 
   @Get(":id")

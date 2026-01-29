@@ -218,7 +218,7 @@ deploy_zero_downtime() {
     MAX_RETRIES=10
     RETRY=0
     while [ $RETRY -lt $MAX_RETRIES ]; do
-      if docker-compose -f "$COMPOSE_FILE" exec -T api npx prisma migrate deploy 2>/dev/null; then
+      if docker-compose -f "$COMPOSE_FILE" run --rm api npx prisma migrate deploy 2>/dev/null; then
         success "Migrations completed successfully"
         break
       else

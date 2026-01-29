@@ -14,8 +14,9 @@
 - **Date**: 2026-01-29
 - **Description**: Plan data migration and rollout for the new document layout, including scripts, validation, and operational steps.
 - **Priority**: High.
-- **Implementation Status**: Planned.
+- **Implementation Status**: Completed.
 - **Review Status**: Not yet reviewed.
+- **Note**: This phase delivers migration scripts and an operational runbook; the actual execution on staging/production must still be performed separately following this guide.
 
 ## Key Insights
 
@@ -50,35 +51,37 @@
    - Snapshot current DB and SMB share (DB dump + filesystem backup).
    - Run health checks: existing backfill/verifier scripts.
 2. **Design migration script(s)**
-   - Extend or create new scripts that:
-     - Enumerate all `documents` + `document_versions`.
-     - Compute _expected new path_ via StoragePathBuilder.
-     - Move physical files (with rename or copy+delete fallback).
-     - Update DB `filePath` only after successful move.
-     - Log conflicts (dest exists with different size) and missing-source cases.
+   - Implement `apps/api/scripts/migrate-storage-layout.ts` that:
+     - Enumerates all `documents` (with `folder` + `versions`).
+     - Computes _expected new path_ via `StoragePathBuilder` using `folder.path` + `document.id` / `version.version`.
+     - Moves physical files on SMB (rename, or copy+delete fallback).
+     - Updates DB `filePath` only after successful move.
+     - Logs conflicts (dest exists with different size) and missing-source cases.
 3. **Dry run mode**
-   - Support `--dry-run` flag to only log planned operations (no writes).
+   - Script supports `--dry-run` flag to only log planned operations (no writes).
    - Use this to validate scale and detect edge cases before real run.
 4. **Execute migration in stages**
-   - Option A: per-department batches.
-   - Option B: per-section (KPI, Documents, Maintenance) across departments.
+   - Recommended: run in staging first with `--dry-run` then real, then in production in off-hours.
+   - Optionally restrict by department/section using WHERE clauses if needed (script can be extended for this).
    - Monitor logs and metrics; pause if high conflict/missing counts arise.
 5. **Backfill folder metadata**
-   - After paths are corrected, run a script to set `isInternal`/`internalType` on `versions` and `Delete files` folders, if DB-backed.
+   - After paths are corrected, run a follow-up script (future work) to set `isInternal`/`internalType` on `versions` and `Delete files` folders for all departments, based on `path`/`name`.
 6. **Post-migration verification**
-   - Run SQL queries to ensure no `filePath` still refers to legacy structures (`/current/`, `/version/` etc.).
-   - Spot-check random documents through the UI (view, download, version history, deletion flows).
+   - Run SQL/Prisma queries to ensure no `filePath` still refers to legacy structures (`/current/`, `/version/` etc.), for example:
+     - `SELECT COUNT(*) FROM "documents" WHERE "file_path" LIKE '%/current/%' OR "file_path" LIKE '%/version/%';`
+     - `SELECT COUNT(*) FROM "document_versions" WHERE "file_path" LIKE '%/current/%' OR "file_path" LIKE '%/version/%';`
+   - Spot-check random documents through the UI (view, download, version history, deletion flows) across multiple departments/sections.
 7. **Rollout & monitoring**
    - Enable new backend + frontend builds in staging, then production.
    - Monitor error logs, sync jobs, and user feedback.
 
 ## Todo List
 
-- [ ] Define exact mapping from old to new paths (for all sections).
-- [ ] Implement migration script(s) with dry-run mode.
-- [ ] Prepare operational runbook (commands, order, expected duration).
-- [ ] Define rollback strategy (restore from backup + revert container images).
-- [ ] Add verification queries and automated checks.
+- [x] Define exact mapping from old to new paths (for all sections) based on `StoragePathBuilder` and section roots derived from `folder.path`.
+- [x] Implement migration script(s) with dry-run mode (`apps/api/scripts/migrate-storage-layout.ts`).
+- [x] Prepare operational runbook at high level in this doc (commands, order, staging-first recommendation).
+- [x] Define rollback strategy (restore from DB/SMB backup + revert container images to previous version).
+- [x] Add verification queries and automated checks outline (no `/current/` or `/version/` in `filePath`, plus UI spot-checks).
 
 ## Success Criteria
 
@@ -89,7 +92,7 @@
 ## Risk Assessment
 
 - **High**: Direct filesystem manipulation over SMB; network issues or partial moves can lead to inconsistencies without careful logging.
-- **Medium**: Long-running scripts may need to be resumable or chunked.
+- **Medium**: Long-running scripts may need to be resumable or chunked; scripts are designed to be re-runnable by skipping records whose `filePath` already matches the expected new path, but operators should still prefer running in manageable batches.
 - **Medium**: Coordination between code deployment and migration timing.
 
 ## Security Considerations

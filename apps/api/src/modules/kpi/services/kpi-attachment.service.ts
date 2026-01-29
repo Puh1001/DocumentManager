@@ -81,23 +81,23 @@ export class KpiAttachmentService {
       );
     }
 
-    // Always resolve canonical KPI/current folder for this department.
+    // Always resolve canonical KPI section root for this department.
     // We intentionally ignore any non-canonical folderId to prevent legacy "/current/current" writes
-    // and to enforce that KPI attachments always live under "{dept}/KPI/current".
+    // and to enforce that KPI attachments always live under "{dept}/KPI".
     const folderStructure =
       await this.folderService.ensureDepartmentFolderStructure(
         record.departmentId,
       );
-    const canonicalKpiCurrentId = folderStructure.kpiCurrent;
-    if (!canonicalKpiCurrentId) {
+    const canonicalKpiSectionRootId = folderStructure.kpiSectionRoot;
+    if (!canonicalKpiSectionRootId) {
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Failed to resolve KPI/current folder for department",
+        "Failed to resolve KPI section root folder for department",
       );
     }
 
-    const targetFolderId = canonicalKpiCurrentId;
-    if (folderId && folderId !== canonicalKpiCurrentId) {
+    const targetFolderId = canonicalKpiSectionRootId;
+    if (folderId && folderId !== canonicalKpiSectionRootId) {
       // Extra context for investigation: log provided folder path vs canonical folder path.
       try {
         const providedFolder = await (
@@ -109,7 +109,7 @@ export class KpiAttachmentService {
         const canonicalFolder = await (
           this.prisma as PrismaClientLike
         ).folder.findUnique({
-          where: { id: canonicalKpiCurrentId },
+          where: { id: canonicalKpiSectionRootId },
           select: { id: true, path: true },
         });
 
@@ -120,7 +120,7 @@ export class KpiAttachmentService {
             kpiRecordId: record.id,
             provided: providedFolder ?? { id: folderId, path: null },
             canonical: canonicalFolder ?? {
-              id: canonicalKpiCurrentId,
+              id: canonicalKpiSectionRootId,
               path: null,
             },
           },
@@ -132,7 +132,7 @@ export class KpiAttachmentService {
             departmentId: record.departmentId,
             kpiRecordId: record.id,
             folderId,
-            canonicalKpiCurrentId,
+            canonicalKpiSectionRootId,
             error,
           },
         );

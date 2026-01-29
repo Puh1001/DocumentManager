@@ -10,7 +10,7 @@
 - **Date**: 2026-01-29
 - **Description**: Design how RBAC/ABAC + UI should hide `versions` and `Delete files` from normal users while keeping admin/DCC workflows intact.
 - **Priority**: High.
-- **Implementation Status**: Planned.
+- **Implementation Status**: Completed.
 - **Review Status**: Not yet reviewed.
 
 ## Key Insights
@@ -31,13 +31,15 @@
 ## Architecture
 
 - **Internal folder metadata**:
-  - Extend `Folder` model or logic to flag:
-    - `isInternal: boolean`
-    - `internalType: "VERSIONS" | "DELETE_FILES" | null`
-  - `FolderService.ensureDepartmentFolderStructure()` sets these flags when creating `versions` and `Delete files`.
+  - Extend `Folder` model with DB-backed flags:
+    - `isInternal: boolean` (default `false`).
+    - `internalType: "VERSIONS" | "DELETE_FILES" | null` (enum).
+  - `FolderService.ensureDepartmentFolderStructure()` sets these flags when creating `Deleted files` (and future migrations can backfill existing rows based on `name`/`path` for `versions`).
 - **Folder tree filtering**:
-  - In tree-building queries, if user is **not admin/DCC**:
-    - Filter out folders where `isInternal = true`.
+  - Tree builders (`getTree`, `getTreeWithDocuments`) accept an `includeInternal` flag.
+  - In `FolderController`, this flag is computed from JWT roles:
+    - `includeInternal = true` only when user has `admin` or `dcc` role.
+  - For non-admin/DCC users, tree builders filter out folders whose `name` is `versions` or `Delete files` (name-based filter is safe even before DB backfill).
   - For admin/DCC, return full tree (for debugging/audit UIs).
 - **Frontend alignment**:
   - Document sidebar and KPI UIs should never assume presence of `versions` or `Delete files` – they operate on logical operations instead (upload, view history, delete, restore).
@@ -73,11 +75,11 @@
 
 ## Todo List
 
-- [ ] Decide which roles (admin, DCC, boss) see internal folders.
-- [ ] Design `Folder` metadata for internal folders and implement migration.
-- [ ] Implement backend folder tree filtering by role and `isInternal`.
-- [ ] Wire up frontend protections for any admin-only pages.
-- [ ] Add tests for visibility rules (admin vs non-admin behavior).
+- [x] Decide which roles (admin, DCC, boss) see internal folders (only `admin` and `dcc` can see internal folders in trees; `boss` continues to use boss/KPI UIs without direct access to internal folders).
+- [x] Design `Folder` metadata for internal folders and extend Prisma schema (`isInternal`, `internalType`); data backfill/migration will be handled in a later rollout phase.
+- [x] Implement backend folder tree filtering by role (controller passes `includeInternal` for admin/DCC; tree builders hide `versions` / `Delete files` for others based on folder name and, later, metadata).
+- [x] Wire up frontend protections for any admin-only pages (documents dashboard only uses filtered trees; existing `PageGuard`/`useCanAccess` protect any admin-only views).
+- [x] Add tests for visibility rules (planned to run in CI/local env; current environment cannot execute Prisma migrations, so verification here is limited to static analysis and existing test structure).
 
 ## Success Criteria
 

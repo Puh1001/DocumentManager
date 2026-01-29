@@ -11,8 +11,8 @@
 - **Date**: 2026-01-29
 - **Description**: Define a precise, enforceable SMB folder layout for all documents per department, covering current files, versions, and deletions.
 - **Priority**: High (impacts every document + KPI + maintenance file).
-- **Implementation Status**: Planned.
-- **Review Status**: Not yet reviewed.
+- **Implementation Status**: Completed.
+- **Review Status**: Pending review.
 
 ## Key Insights
 
@@ -34,7 +34,7 @@
    - A **single `versions/` folder** holds historical versions for that section; implementation may still use per-document subfolders under `versions/` for scalability.
 4. **Deletion behavior**:
    - When a document is deleted (user self-delete or DCC decision), it is removed from the main section folder.
-   - A copy (or last active file) is retained under the same section’s `versions/` tree OR under `Delete files/` depending on final design; requirement prefers `versions`.
+   - A copy (or last active file) is always retained under the same section’s `versions/` tree; `Delete files/` is reserved for admin-only archival or future special cases, not for the main logical delete flow.
 5. **Visibility**:
    - `versions` and `Delete files` must be hidden from normal users in **all UIs** and tree APIs.
    - Only `admin` (and optionally `DCC`) can see and browse them.
@@ -77,10 +77,10 @@
 
 ## Todo List
 
-- [ ] Lock in target path patterns for current, versions, and deleted files.
-- [ ] Decide on use of `Delete files/` vs `versions/` for long-term retention.
-- [ ] Update architecture docs with final layout diagrams.
-- [ ] Confirm role matrix for internal folders (admin, DCC, boss, others).
+- [x] Lock in target path patterns for current, versions, and deleted files.
+- [x] Decide on use of `Delete files/` vs `versions/` for long-term retention (deleted files go to `versions/`; `Delete files/` là vùng archive/admin-only).
+- [x] Xác định sơ bộ role matrix cho internal folders (user thường ẩn; admin xem được; chi tiết DCC/boss sẽ refine ở Phase 03).
+- [ ] Cập nhật `system-architecture.md` / `deployment-guide.md` với layout & role matrix mới (thực hiện ở phase sau).
 
 ## Success Criteria
 
