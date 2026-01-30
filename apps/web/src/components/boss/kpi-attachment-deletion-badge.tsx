@@ -291,15 +291,20 @@ export function KpiAttachmentDeletionBadge({
   // 1. Backend says requiresDCCApproval OR isExpired
   // 2. OR frontend countdown is expired (matches Documents list behavior)
   // Don't show if there's an active request or rejected request (rejection check comes first)
-  // Don't show in bossUI (variant === 'cyber')
   if (!status.hasActiveRequest && (
-    status.requiresDCCApproval || 
-    status.isExpired || 
+    status.requiresDCCApproval ||
+    status.isExpired ||
     countdown.isExpired
   )) {
-    // Hide "Expired - Contact DCC" badge in bossUI
+    // In bossUI (cyber): show "No Permission" so boss always sees they cannot delete (expired = no permission for boss)
     if (variant === 'cyber') {
-      return null;
+      const badgeClass = 'bg-red-500/10 border-red-500/30 text-red-300';
+      return (
+        <Badge variant="destructive" className={`gap-1 ${badgeClass}`}>
+          <XCircle className="h-3 w-3" />
+          <span className="text-xs">No Permission</span>
+        </Badge>
+      );
     }
 
     return (
