@@ -9,6 +9,7 @@
 ## Goal
 
 Fix identified root causes:
+
 1. Backend pagination/deduplication logic
 2. Frontend state management
 3. Performance optimizations
@@ -35,9 +36,11 @@ Fix identified root causes:
 **Solution Options:**
 
 #### Option A: Move Deduplication to Database Level (Preferred)
+
 Use Prisma `distinct` or GROUP BY to deduplicate at query level.
 
 **TODO:**
+
 - [ ] Research Prisma deduplication options:
   - [ ] Can we use `distinct` on `folderId` + `fileName`?
   - [ ] Or use raw SQL with `DISTINCT ON` (PostgreSQL)?
@@ -52,11 +55,13 @@ Use Prisma `distinct` or GROUP BY to deduplicate at query level.
 ---
 
 #### Option B: Deduplicate Before Pagination (Fallback)
+
 Fetch all matching documents, deduplicate, then paginate in memory.
 
 **⚠️ Warning:** This defeats pagination purpose if dataset is large. Only use if Option A impossible.
 
 **TODO:**
+
 - [ ] Fetch all matching documents (without pagination)
 - [ ] Apply deduplication
 - [ ] Calculate `total` from deduplicated array
@@ -64,6 +69,7 @@ Fetch all matching documents, deduplicate, then paginate in memory.
 - [ ] Return paginated result
 
 **Trade-offs:**
+
 - ✅ Consistent pagination
 - ❌ Loads all documents into memory (performance issue with large datasets)
 - ❌ Not scalable
@@ -71,9 +77,11 @@ Fetch all matching documents, deduplicate, then paginate in memory.
 ---
 
 #### Option C: Fix Deduplication to Preserve Pagination (Recommended)
+
 Keep pagination at DB level, but fix `total` count to exclude duplicates.
 
 **TODO:**
+
 - [ ] Keep Prisma query with `skip`/`take` (pagination at DB level)
 - [ ] Apply deduplication to fetched page only
 - [ ] Fix `total` count: query unique `(folderId, fileName)` combinations
@@ -91,6 +99,7 @@ Keep pagination at DB level, but fix `total` count to exclude duplicates.
 **File:** `apps/api/src/modules/storage/services/document.service.ts`
 
 **Expected Changes:**
+
 ```typescript
 // Around line 145-180
 const [documents, uniqueTotal] = await Promise.all([
@@ -115,6 +124,7 @@ const deduped = /* ... existing deduplication logic ... */;
 **Problem:** UI shows wrong page number after load completes.
 
 **TODO:**
+
 - [ ] Review `loadAllDocuments` function (line 126-184)
 - [ ] Verify `currentPage` is NOT updated inside `loadAllDocuments` (comment says "Don't update currentPage here")
 - [ ] Check if response `page` field matches request:
@@ -128,7 +138,10 @@ const deduped = /* ... existing deduplication logic ... */;
   setTotalPages(response.totalPages);
   // Verify currentPage matches response.page
   if (currentPage !== response.page) {
-    console.warn('Page mismatch:', { currentPage, responsePage: response.page });
+    console.warn("Page mismatch:", {
+      currentPage,
+      responsePage: response.page,
+    });
     // Optionally: setCurrentPage(response.page) if backend is source of truth
   }
   ```
@@ -140,6 +153,7 @@ const deduped = /* ... existing deduplication logic ... */;
 **File:** `apps/web/src/app/[locale]/dashboard/documents/page.tsx`
 
 **Key Areas:**
+
 - Lines 126-184: `loadAllDocuments` function
 - Lines 192-200: Filter change effect (resets to page 1)
 - Lines 198-200: Page change effect
@@ -150,11 +164,12 @@ const deduped = /* ... existing deduplication logic ... */;
 ### Step 3: Performance Optimizations
 
 **TODO:**
+
 - [ ] Verify database indexes exist:
   ```sql
   -- Check indexes on Document table
-  SELECT indexname, indexdef 
-  FROM pg_indexes 
+  SELECT indexname, indexdef
+  FROM pg_indexes
   WHERE tablename = 'Document';
   ```
 - [ ] Add missing indexes if needed:
@@ -175,6 +190,7 @@ const deduped = /* ... existing deduplication logic ... */;
   - [ ] Target: < 2 seconds with 80+ documents
 
 **Files:**
+
 - `apps/api/src/modules/storage/services/document.service.ts`
 - Database migration (if indexes added)
 
@@ -183,6 +199,7 @@ const deduped = /* ... existing deduplication logic ... */;
 ### Step 4: Update Tests
 
 **TODO:**
+
 - [ ] Update `document.service.spec.ts`:
   - [ ] Test pagination with duplicate documents
   - [ ] Verify deduplication doesn't break pagination
@@ -199,6 +216,7 @@ const deduped = /* ... existing deduplication logic ... */;
   - [ ] Verify `totalPages` calculation is correct
 
 **Files:**
+
 - `apps/api/src/modules/storage/services/document.service.spec.ts`
 - `apps/api/src/modules/storage/controllers/document.controller.spec.ts`
 
@@ -207,21 +225,22 @@ const deduped = /* ... existing deduplication logic ... */;
 ### Step 5: Frontend Testing & Validation
 
 **TODO:**
+
 - [ ] Manual testing:
   - [ ] Navigate to page 1, verify correct data
   - [ ] Click to page 2, verify:
-     - [ ] Loading indicator shows
-     - [ ] Page loads within 2 seconds
-     - [ ] UI shows "Page 2" after load
-     - [ ] Correct documents displayed (items 21-40)
-     - [ ] Pagination controls work correctly
+    - [ ] Loading indicator shows
+    - [ ] Page loads within 2 seconds
+    - [ ] UI shows "Page 2" after load
+    - [ ] Correct documents displayed (items 21-40)
+    - [ ] Pagination controls work correctly
   - [ ] Test with filters (status, department, level):
-     - [ ] Apply filter, verify pagination resets to page 1
-     - [ ] Navigate to page 2 with filter, verify correct data
+    - [ ] Apply filter, verify pagination resets to page 1
+    - [ ] Navigate to page 2 with filter, verify correct data
   - [ ] Test edge cases:
-     - [ ] Last page (might have fewer items)
-     - [ ] Empty result set
-     - [ ] Single page (no pagination needed)
+    - [ ] Last page (might have fewer items)
+    - [ ] Empty result set
+    - [ ] Single page (no pagination needed)
 - [ ] Browser DevTools verification:
   - [ ] Network tab: verify API calls use correct `page` param
   - [ ] Network tab: verify response time < 2s
@@ -235,11 +254,13 @@ const deduped = /* ... existing deduplication logic ... */;
 ### Backend Deduplication Strategy
 
 **Current Logic (lines 193-206):**
+
 - Deduplicates by `(folderId, fileName)` key
 - Keeps document with latest `updatedAt`
 - Sorts by `name` after deduplication
 
 **Issue:** This happens AFTER pagination, so:
+
 - Page 1 might have 20 items before dedup, 18 after
 - Page 2 might have 20 items before dedup, 15 after
 - `total` count (line 180) includes duplicates, so pagination math is wrong
@@ -251,6 +272,7 @@ const deduped = /* ... existing deduplication logic ... */;
 ### Frontend State Management
 
 **Current Flow:**
+
 1. User clicks page 2 → `setCurrentPage(2)`
 2. `useEffect` detects `currentPage` change → calls `loadAllDocuments(2)`
 3. `loadAllDocuments` sends API request with `page=2`
@@ -258,6 +280,7 @@ const deduped = /* ... existing deduplication logic ... */;
 5. Comment says "Don't update currentPage here" (line 166)
 
 **Potential Issue:**
+
 - If `loadAllDocuments` is called with page 2, but response has wrong `page` field, UI might show wrong page
 - Or if another effect resets `currentPage` to 1 after load completes
 

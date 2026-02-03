@@ -9,6 +9,7 @@
 ## Goal
 
 Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
+
 1. Slow page 2 loading
 2. UI showing page 1 after page 2 loads
 3. Potential backend over-fetching
@@ -29,6 +30,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 ### Step 1: Reproduce Issue Locally
 
 **TODO:**
+
 - [ ] Navigate to `/dashboard/documents` (page 1)
 - [ ] Verify page 1 loads correctly
 - [ ] Click pagination to go to page 2
@@ -37,6 +39,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 - [ ] Take screenshots/video if possible
 
 **Expected Issues:**
+
 - Page 2 takes > 5 seconds to load
 - UI shows "Page 1" even though page 2 data is displayed
 - Or UI shows "Page 2" but displays page 1 data
@@ -46,6 +49,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 ### Step 2: Capture API Requests/Responses
 
 **TODO:**
+
 - [ ] Open browser DevTools → Network tab
 - [ ] Clear network log
 - [ ] Navigate to page 1, capture request:
@@ -65,6 +69,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
   - Verify `totalPages` calculation is correct
 
 **Key Checks:**
+
 - [ ] Does backend return `page: 2` in response when requesting page 2?
 - [ ] Does `data` array contain correct items for page 2?
 - [ ] Is response time significantly slower for page 2?
@@ -75,19 +80,20 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 ### Step 3: Analyze Backend Query Execution
 
 **TODO:**
+
 - [ ] Add temporary logging to `DocumentService.findAll()`:
   ```typescript
-  console.log('[DEBUG] findAll called with:', { page, limit, skip, filters });
-  console.log('[DEBUG] Prisma query where:', JSON.stringify(where, null, 2));
+  console.log("[DEBUG] findAll called with:", { page, limit, skip, filters });
+  console.log("[DEBUG] Prisma query where:", JSON.stringify(where, null, 2));
   ```
 - [ ] Add logging after Prisma query:
   ```typescript
-  console.log('[DEBUG] Prisma returned:', documents.length, 'documents');
-  console.log('[DEBUG] Total count:', total);
+  console.log("[DEBUG] Prisma returned:", documents.length, "documents");
+  console.log("[DEBUG] Total count:", total);
   ```
 - [ ] Add logging after deduplication:
   ```typescript
-  console.log('[DEBUG] After deduplication:', deduped.length, 'documents');
+  console.log("[DEBUG] After deduplication:", deduped.length, "documents");
   ```
 - [ ] Trigger page 1 and page 2 requests
 - [ ] Review backend logs:
@@ -97,6 +103,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
   - [ ] Measure time between query start and response
 
 **Key Checks:**
+
 - [ ] Is Prisma query using `skip`/`take` correctly?
 - [ ] How many documents does Prisma return before deduplication?
 - [ ] How many documents remain after deduplication?
@@ -107,26 +114,27 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 ### Step 4: Check Frontend State Management
 
 **TODO:**
+
 - [ ] Add temporary logging to `loadAllDocuments()`:
   ```typescript
-  console.log('[DEBUG] loadAllDocuments called with page:', page);
-  console.log('[DEBUG] Response received:', { 
-    page: response.page, 
+  console.log("[DEBUG] loadAllDocuments called with page:", page);
+  console.log("[DEBUG] Response received:", {
+    page: response.page,
     total: response.total,
-    dataLength: response.data?.length 
+    dataLength: response.data?.length,
   });
   ```
 - [ ] Add logging to `useEffect` that handles page changes:
   ```typescript
-  console.log('[DEBUG] useEffect triggered, currentPage:', currentPage);
+  console.log("[DEBUG] useEffect triggered, currentPage:", currentPage);
   ```
 - [ ] Add logging after state updates:
   ```typescript
-  console.log('[DEBUG] State updated:', { 
-    currentPage, 
-    total, 
+  console.log("[DEBUG] State updated:", {
+    currentPage,
+    total,
     totalPages,
-    documentsLength: documents.length 
+    documentsLength: documents.length,
   });
   ```
 - [ ] Navigate to page 2 and observe console logs
@@ -138,6 +146,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
   - [ ] `currentPage` remains 2 (not reset to 1)
 
 **Key Checks:**
+
 - [ ] Is `currentPage` being reset unexpectedly?
 - [ ] Is there a race condition between state updates?
 - [ ] Does `loadAllDocuments` dependency array cause re-renders?
@@ -147,6 +156,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 ### Step 5: Performance Analysis
 
 **TODO:**
+
 - [ ] Use browser Performance tab to profile page 2 load:
   - [ ] Record performance timeline
   - [ ] Identify long tasks (> 50ms)
@@ -161,6 +171,7 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
   - [ ] Check if response includes all relations (folder, department, etc.)
 
 **Key Checks:**
+
 - [ ] Is the slowness in database query, network transfer, or frontend rendering?
 - [ ] Are database indexes optimal?
 - [ ] Is response payload too large?
@@ -172,28 +183,35 @@ Reproduce the pagination bug, capture evidence, and identify root cause(s) for:
 Based on code review, likely causes:
 
 ### Hypothesis 1: Deduplication After Pagination
+
 **Issue:** Backend deduplicates AFTER fetching paginated results, causing:
+
 - Page 2 might have fewer items than `limit` (e.g., 15 instead of 20)
 - `total` count includes duplicates, making pagination inconsistent
 - Frontend might show wrong page number if deduplication reduces items
 
 **Evidence Needed:**
+
 - Compare `documents.length` before/after deduplication
 - Check if page 2 response has fewer than 20 items
 - Verify if `total` count matches actual unique documents
 
 ### Hypothesis 2: Frontend State Race Condition
+
 **Issue:** `currentPage` state might be reset by filter changes or other effects
 
 **Evidence Needed:**
+
 - Check if `debouncedLoadDocuments` resets page to 1 unexpectedly
 - Verify `useEffect` dependencies don't cause unwanted re-renders
 - Check if WebSocket sync events reset pagination
 
 ### Hypothesis 3: Backend Over-fetching
+
 **Issue:** Backend might be fetching all documents then filtering (though code shows proper pagination)
 
 **Evidence Needed:**
+
 - Verify Prisma query actually uses `skip`/`take`
 - Check database query logs for actual SQL executed
 - Measure query execution time vs. total documents

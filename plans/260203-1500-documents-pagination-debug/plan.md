@@ -9,6 +9,7 @@
 ## Problem Summary
 
 User reports slow loading and incorrect pagination state on `/dashboard/documents` page 2:
+
 - Page 2 loads very slowly
 - After loading completes, UI still shows page 1
 - Suspected backend over-fetching (loading all documents then filtering in memory)
@@ -19,12 +20,14 @@ User reports slow loading and incorrect pagination state on `/dashboard/document
 ## Root Cause Analysis (Initial)
 
 **Backend Issue:**
+
 - `DocumentService.findAll()` applies pagination correctly (`skip`/`take`)
 - BUT deduplication happens AFTER pagination (lines 193-206)
 - Deduplication can reduce items per page, causing inconsistent pagination
 - `total` count calculated before deduplication, may be inaccurate
 
 **Frontend Issue:**
+
 - `currentPage` state managed correctly
 - Comment says "Don't update currentPage here" (line 166) - may indicate state sync issue
 - Need to verify API response handling and state updates
@@ -43,12 +46,14 @@ User reports slow loading and incorrect pagination state on `/dashboard/document
 ## Implementation Phases
 
 ### Phase 1: Debug & Root Cause
+
 - Reproduce issue locally
 - Capture API requests/responses
 - Analyze backend query execution
 - Identify exact cause of slow loading & state mismatch
 
 ### Phase 2: Backend & Frontend Fix
+
 - Fix backend deduplication/pagination logic
 - Fix frontend state management
 - Add performance optimizations if needed
@@ -70,15 +75,18 @@ User reports slow loading and incorrect pagination state on `/dashboard/document
 ## Files to Investigate/Modify
 
 **Backend:**
+
 - `apps/api/src/modules/storage/services/document.service.ts` (findAll method)
 - `apps/api/src/modules/storage/controllers/document.controller.ts`
 - `apps/api/src/modules/storage/dto/query-documents.dto.ts`
 
 **Frontend:**
+
 - `apps/web/src/app/[locale]/dashboard/documents/page.tsx`
 - `apps/web/src/components/documents/document-list.tsx`
 
 **Tests:**
+
 - `apps/api/src/modules/storage/services/document.service.spec.ts`
 - `apps/api/src/modules/storage/controllers/document.controller.spec.ts`
 

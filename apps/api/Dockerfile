@@ -33,15 +33,10 @@ FROM node:20 AS runner
 
 WORKDIR /app
 
-# Copy package files và cài production deps
-COPY package*.json ./
-COPY apps/api/package*.json ./apps/api/
-RUN npm ci --only=production
-
-# Copy built files
+# Copy runtime dependencies và built files từ builder
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 WORKDIR /app/apps/api
 
