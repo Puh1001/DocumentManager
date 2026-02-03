@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService, Prisma } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
@@ -32,6 +32,8 @@ export interface FolderTreeNodeWithDocuments extends FolderTreeNode {
 
 @Injectable()
 export class FolderService {
+  private readonly logger = new Logger(FolderService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly smbService: SmbService,
@@ -71,7 +73,16 @@ export class FolderService {
     });
   }
 
-  async findById(id: string) {
+  async findById(id: string, documentStatus?: string) {
+    const docStatus: Prisma.EnumDocumentStatusFilter["equals"] | undefined =
+      documentStatus === "ARCHIVED" ||
+      documentStatus === "DELETED" ||
+      documentStatus === "ACTIVE"
+        ? (documentStatus as Prisma.EnumDocumentStatusFilter["equals"])
+        : undefined;
+    const documentsWhere: Prisma.DocumentWhereInput =
+      docStatus !== undefined ? { status: docStatus } : {};
+
     const folder = await (this.prisma as PrismaClientLike).folder.findUnique({
       where: { id },
       include: {
@@ -88,8 +99,11 @@ export class FolderService {
           orderBy: { name: "asc" },
         },
         documents: {
-          where: { status: "ACTIVE" },
+          where: documentsWhere,
           orderBy: { name: "asc" },
+          include: {
+            _count: { select: { versions: true } },
+          },
         },
         permissions: {
           include: { permission: true },
@@ -252,6 +266,19 @@ export class FolderService {
 
   async getTree(departmentId?: string, includeInternal: boolean = false) {
     try {
+      // Ensure department folder structure exists when loading tree for a department (Option A)
+      if (departmentId) {
+        try {
+          await this.ensureDepartmentFolderStructure(departmentId);
+        } catch (ensureError) {
+          this.logger.warn(
+            "Failed to ensure department folder structure",
+            ensureError instanceof Error ? ensureError.stack : ensureError,
+          );
+          // Continue to build tree from existing DB state so UI does not break
+        }
+      }
+
       // Build where clause
       const where: Prisma.FolderWhereInput = {
         deletedAt: null, // Only active folders
@@ -299,10 +326,10 @@ export class FolderService {
 
       return buildTree();
     } catch (error) {
-      // Log error for debugging
-      console.error("Error in getTree():", error);
-
-      // Re-throw as CustomException for proper error handling
+      this.logger.error(
+        "Error in getTree()",
+        error instanceof Error ? error.stack : error,
+      );
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree",
@@ -316,6 +343,17 @@ export class FolderService {
     includeInternal: boolean = false,
   ) {
     try {
+      if (departmentId) {
+        try {
+          await this.ensureDepartmentFolderStructure(departmentId);
+        } catch (ensureError) {
+          this.logger.warn(
+            "Failed to ensure department folder structure",
+            ensureError instanceof Error ? ensureError.stack : ensureError,
+          );
+        }
+      }
+
       // Build where clause
       const where: Prisma.FolderWhereInput = {
         deletedAt: null, // Only active folders
@@ -385,10 +423,10 @@ export class FolderService {
 
       return buildTree();
     } catch (error) {
-      // Log error for debugging
-      console.error("Error in getTreeWithDocuments():", error);
-
-      // Re-throw as CustomException for proper error handling
+      this.logger.error(
+        "Error in getTreeWithDocuments()",
+        error instanceof Error ? error.stack : error,
+      );
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree with documents",
@@ -512,8 +550,8 @@ export class FolderService {
       );
     }
 
-    // Step 2: Find or create section subfolders (KPI, Documents, Maintenance, Deleted files)
-    const subfolders = ["KPI", "Documents", "Maintenance", "Deleted files"];
+    // Step 2: Find or create section subfolders (KPI, ISO_documents, Maintenance, Delete_files)
+    const subfolders = ["KPI", "ISO_documents", "Maintenance", "Delete_files"];
     const subfolderMap = new Map<string, string>();
 
     for (const sub of subfolders) {
@@ -535,8 +573,8 @@ export class FolderService {
               path: subfolderPath,
               parentId: departmentRoot.id,
               departmentId: department.id,
-              // Deleted files is an internal/admin-only folder
-              ...(sub === "Deleted files" && {
+              // Delete_files is an internal/admin-only folder
+              ...(sub === "Delete_files" && {
                 isInternal: true,
                 internalType: "DELETE_FILES",
               }),
@@ -572,7 +610,7 @@ export class FolderService {
               deletedAt: null,
               parentId: departmentRoot.id,
               departmentId: department.id,
-              ...(sub === "Deleted files" && {
+              ...(sub === "Delete_files" && {
                 isInternal: true,
                 internalType: "DELETE_FILES",
               }),
@@ -591,8 +629,8 @@ export class FolderService {
       }
     }
 
-    // Step 3: For KPI, Documents, Maintenance: find or create versions/ subfolders
-    const folderTypes = ["KPI", "Documents", "Maintenance"] as const;
+    // Step 3: For KPI, ISO_documents, Maintenance: find or create versions/ subfolders
+    const folderTypes = ["KPI", "ISO_documents", "Maintenance"] as const;
     const result: {
       departmentRoot: string;
       kpiSectionRoot: string;
@@ -610,7 +648,7 @@ export class FolderService {
       documentsVersionsRoot: "",
       maintenanceSectionRoot: "",
       maintenanceVersionsRoot: "",
-      deletedFiles: subfolderMap.get("Deleted files") || "",
+      deletedFiles: subfolderMap.get("Delete_files") || "",
     };
 
     for (const type of folderTypes) {
@@ -704,7 +742,7 @@ export class FolderService {
       if (type === "KPI") {
         result.kpiSectionRoot = typeFolder.id;
         result.kpiVersionsRoot = versionsFolder?.id || "";
-      } else if (type === "Documents") {
+      } else if (type === "ISO_documents") {
         result.documentsSectionRoot = typeFolder.id;
         result.documentsVersionsRoot = versionsFolder?.id || "";
       } else if (type === "Maintenance") {

@@ -2,6 +2,8 @@
   "title": "KPI",
   "subtitle": "按部门和月份管理KPI",
   "year": "年",
+  "month": "月份",
+  "allMonths": "全部月份",
   "kpiTitle": "KPI标题",
   "target": "目标",
   "efficiency": "效率 (%)",

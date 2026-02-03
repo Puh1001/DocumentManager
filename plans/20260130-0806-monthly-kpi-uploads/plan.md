@@ -12,9 +12,9 @@ Current KPI flow is year-only: one year dropdown, attachments per KPI record (pe
 
 | Phase | Name | Status | Link |
 |-------|------|--------|------|
-| 1 | Database & API (schema, DTO, list/upload by month) | Pending | [phase-01-database-and-api.md](./phase-01-database-and-api.md) |
-| 2 | Frontend (month selector, attachment list/upload by month) | Pending | [phase-02-frontend-month-selector-and-uploads.md](./phase-02-frontend-month-selector-and-uploads.md) |
-| 3 | Testing & docs | Pending | [phase-03-testing-and-docs.md](./phase-03-testing-and-docs.md) |
+| 1 | Database & API (schema, DTO, list/upload by month) | Done | [phase-01-database-and-api.md](./phase-01-database-and-api.md) |
+| 2 | Frontend (month selector, attachment list/upload by month) | Done | [phase-02-frontend-month-selector-and-uploads.md](./phase-02-frontend-month-selector-and-uploads.md) |
+| 3 | Testing & docs | Done | [phase-03-testing-and-docs.md](./phase-03-testing-and-docs.md) |
 
 ## Dependencies
 
@@ -32,6 +32,9 @@ Current KPI flow is year-only: one year dropdown, attachments per KPI record (pe
 - List attachments: optional `?month=` on `GET /kpi/records/:id/attachments`.
 - Upload: require or default `month` in create attachment payload.
 - UI: Month dropdown next to Year on KPI page; attachments list and upload use selected month.
+- **1. Default month:** Chọn sẵn tháng hiện tại (frontend default `selectedMonth = current month`).
+- **2. Multiple files per month:** Cho phép upload nhiều file trong cùng một tháng (no unique on `(kpiRecordId, month)`).
+- **3. Legacy data:** Dữ liệu cũ (`month` NULL) hiển thị ở **mọi tháng cùng năm** — khi list `?month=M` trả về attachments có `month = M` **hoặc** `month IS NULL` (trong cùng record/năm).
 
 ## Out of Scope
 

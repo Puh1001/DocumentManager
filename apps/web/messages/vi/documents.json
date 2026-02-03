@@ -1,5 +1,5 @@
 {
-  "title": "Quản lý tài liệu",
+  "title": "Tài liệu ISO",
   "description": "Duyệt và quản lý tài liệu ISO",
   "folder": "Thư mục",
   "selectFolder": "Chọn một thư mục để xem tài liệu",
@@ -9,10 +9,18 @@
     "refresh": "Làm mới",
     "openFolder": "Mở thư mục",
     "upload": "Upload",
+    "uploadToDepartment": "Upload vào phòng ban",
     "assignDepartment": "Gắn phòng ban",
     "location": "Vị trí",
     "pathCopied": "Đường dẫn đã được sao chép:\n{path}\n\nDán vào Windows Explorer (Win+E) để mở thư mục.",
-    "pathCopiedTitle": "Đường dẫn đã được sao chép"
+    "pathCopiedTitle": "Đường dẫn đã được sao chép",
+    "uploadSuccess": "Thành công",
+    "uploadSuccessDescription": "Tài liệu đã được upload thành công",
+    "uploadError": "Lỗi Upload"
+  },
+  "errors": {
+    "loadFailed": "Lỗi",
+    "loadFailedDescription": "Không thể tải tài liệu. Vui lòng thử lại."
   },
   "assignDepartment": {
     "title": "Gắn phòng ban cho {folder}",
@@ -21,20 +29,82 @@
     "selectDepartment": "Chọn phòng ban",
     "none": "Không (Bỏ gắn)"
   },
+  "filters": {
+    "status": "Trạng thái",
+    "level": "Cấp độ",
+    "department": "Phòng ban",
+    "all": "Tất cả",
+    "statusActive": "Đang dùng",
+    "statusArchived": "Lưu trữ",
+    "statusDeleted": "Đã xóa",
+    "levelAll": "Tất cả cấp độ",
+    "loadingLevels": "Đang tải cấp độ..."
+  },
+  "upload": {
+    "selectFolder": "Chọn thư mục",
+    "selectFolderDescription": "Chọn thư mục để upload tài liệu",
+    "noFolders": "Không có thư mục nào",
+    "noDepartment": "Không có phòng ban để upload. Vui lòng liên hệ admin.",
+    "documentsFolder": "Tài liệu",
+    "selectDepartment": "Chọn phòng ban",
+    "level": "Cấp độ",
+    "selectLevel": "Chọn cấp độ",
+    "loadingLevels": "Đang tải cấp độ..."
+  },
+  "pagination": {
+    "showing": "Hiển thị {from} đến {to} trong tổng số {total} tài liệu"
+  },
   "list": {
-    "empty": "Không có tài liệu trong thư mục này",
+    "empty": "Không tìm thấy tài liệu",
     "columns": {
+      "no": "STT",
       "name": "Tên tài liệu",
+      "title": "Tiêu đề",
       "type": "Loại",
       "size": "Kích thước",
       "updated": "Cập nhật",
+      "version": "Phiên bản",
+      "level": "Cấp độ",
+      "responsibleDepartment": "Phòng ban phụ trách",
+      "preparer": "Người soạn",
+      "reviewer": "Người rà soát",
+      "approver": "Người phê duyệt",
+      "approvalDate": "Ngày phê duyệt",
+      "receiptDate": "Ngày nhận",
+      "storageLocation": "Vị trí lưu trữ",
+      "status": "Trạng thái",
+      "uploadPDF": "uploadPDF",
       "actions": "Thao tác"
     },
     "actions": {
       "view": "Xem",
       "download": "Tải xuống",
       "openToEdit": "Mở để chỉnh sửa",
-      "versionHistory": "Lịch sử phiên bản"
+      "versionHistory": "Lịch sử phiên bản",
+      "editMetadata": "Chỉnh sửa metadata",
+      "rename": "Đổi tên"
     }
+  },
+  "editMetadata": {
+    "title": "Chỉnh sửa metadata ISO",
+    "loadingUsers": "Đang tải...",
+    "noMatches": "Không có kết quả",
+    "description": "Chỉnh sửa cấp độ, người soạn, người rà soát, người phê duyệt và ngày cho \"{name}\".",
+    "nameLabel": "Tên tài liệu",
+    "namePlaceholder": "Nhập tên tài liệu",
+    "nameRequired": "Tên tài liệu không được để trống.",
+    "fileNameHint": "Tên file sẽ được tự động đặt là: {fileName}",
+    "preparer": "Người soạn",
+    "reviewer": "Người rà soát",
+    "approver": "Người phê duyệt",
+    "approvalDate": "Ngày phê duyệt",
+    "receiptDate": "Ngày nhận",
+    "none": "Không",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "saving": "Đang lưu...",
+    "successTitle": "Đã lưu",
+    "successDescription": "Đã cập nhật tên và metadata tài liệu thành công.",
+    "errorTitle": "Lỗi"
   }
 }

@@ -4,15 +4,15 @@ import { Logger } from "@nestjs/common";
  * Storage sections used for per-department layout.
  *
  * - KPI:        Department KPI attachments and related docs
- * - Documents:  General ISO documents
+ * - ISO_documents: General ISO documents
  * - Maintenance: Maintenance notices / docs
  * - Delete files: Admin-only archive area
  */
 export type StorageSection =
   | "KPI"
-  | "Documents"
+  | "ISO_documents"
   | "Maintenance"
-  | "Delete files";
+  | "Delete_files";
 
 /**
  * Canonical path builder for SMB storage.
@@ -39,8 +39,8 @@ export class StoragePathBuilder {
    *   under `versions/{documentId}/...`.
    *
    * Examples:
-   * - "DH/Documents"                 -> "DH/Documents"
-   * - "DH/Documents/current"         -> "DH/Documents"
+   * - "DH/ISO_documents"             -> "DH/ISO_documents"
+   * - "DH/ISO_documents/current"     -> "DH/ISO_documents"
    * - "DH/KPI/current"               -> "DH/KPI"
    * - "DH/KPI/current/current"       -> "DH/KPI"
    */

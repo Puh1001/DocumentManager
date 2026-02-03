@@ -5,7 +5,7 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "documents": "Tài liệu",
+    "documents": "Tài liệu ISO",
     "kpi": "KPI",
     "departments": "Phòng ban",
     "users": "Người dùng",
@@ -22,7 +22,9 @@
     "create": "Tạo",
     "update": "Cập nhật",
     "save": "Lưu",
+    "saving": "Đang lưu...",
     "cancel": "Hủy",
+    "select": "Chọn",
     "submit": "Gửi",
     "close": "Đóng",
     "search": "Tìm kiếm",
@@ -35,7 +37,7 @@
     "success": "Thành công",
     "noData": "Không có dữ liệu"
   },
-  "searchPlaceholder": "Tìm kiếm tài liệu...",
+  "searchPlaceholder": "Tìm kiếm tài liệu ISO...",
   "admin": "Quản trị viên",
   "passwordChangeDescription": "Đổi mật khẩu tài khoản của bạn.",
   "cancel": "Hủy",

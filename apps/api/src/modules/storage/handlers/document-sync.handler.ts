@@ -12,12 +12,29 @@ import * as path from "path";
 @Injectable()
 export class DocumentSyncHandler {
   private readonly logger = new Logger(DocumentSyncHandler.name);
+  /** Cached default level id (LEVEL1) for sync-created documents; avoids one query per document. */
+  private defaultLevelId: string | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly smbService: SmbService,
     private readonly versionService: VersionService
   ) {}
+
+  /**
+   * Resolve default level id (LEVEL1) for sync-created documents; cached per handler instance.
+   */
+  private async getDefaultLevelId(): Promise<string | null> {
+    if (this.defaultLevelId) return this.defaultLevelId;
+    const level = await (
+      this.prisma as PrismaClientLike
+    ).documentLevel.findFirst({
+      where: { code: "LEVEL1", isActive: true },
+      select: { id: true },
+    });
+    if (level) this.defaultLevelId = level.id;
+    return this.defaultLevelId;
+  }
 
   /**
    * Sync a single document from file system to database
@@ -27,6 +44,13 @@ export class DocumentSyncHandler {
     folderId: string | null
   ): Promise<void> {
     try {
+      // Skip version files completely: these are managed via DocumentVersion
+      const normalizedPath = file.path.replace(/\\/g, "/");
+      if (normalizedPath.includes("/versions/")) {
+        this.logger.debug(`Skipping version file during sync: ${file.path}`);
+        return;
+      }
+
       // Check if file exists before processing
       const fileExists = await this.smbService.exists(file.path);
       if (!fileExists) {
@@ -37,8 +61,9 @@ export class DocumentSyncHandler {
       // Find folder by path if folderId not provided
       let targetFolderId = folderId;
       if (!targetFolderId) {
-        // Extract folder path from file path
-        const folderPath = path.dirname(file.path);
+        // Extract folder path and normalize to forward slashes so we always hit the same folder (avoids duplicate docs from path mismatch)
+        const rawFolderPath = path.dirname(file.path);
+        const folderPath = rawFolderPath.replace(/\\/g, "/");
         const folder = await (
           this.prisma as PrismaClientLike
         ).folder.findUnique({
@@ -54,7 +79,7 @@ export class DocumentSyncHandler {
       // Fix encoding in case file system has corrupted names
       // fixFileNameEncoding() already normalizes to NFC
       const fixedFileName = fixFileNameEncoding(file.name);
-      
+
       // Check if document already exists by file path
       // Note: fixedFileName is already normalized to NFC by fixFileNameEncoding()
       // Existing documents in DB may not be normalized, but comparison should still work
@@ -110,6 +135,53 @@ export class DocumentSyncHandler {
         return;
       }
 
+      // File on disk may be current file stored as {documentId}.ext; match by id to avoid duplicate document
+      const basenameNoExt = path.basename(
+        fixedFileName,
+        path.extname(fixedFileName)
+      );
+      const uuidLike =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidLike.test(basenameNoExt)) {
+        const docById = await (
+          this.prisma as PrismaClientLike
+        ).document.findFirst({
+          where: {
+            id: basenameNoExt,
+            folderId: targetFolderId,
+            status: "ACTIVE",
+          },
+        });
+        if (docById) {
+          try {
+            const currentChecksum = await ChecksumUtil.calculateChecksum(
+              this.smbService,
+              file.path
+            );
+            const stats = await this.smbService.getFileStats(file.path);
+            await (this.prisma as PrismaClientLike).document.update({
+              where: { id: docById.id },
+              data: {
+                filePath: file.path,
+                checksum: currentChecksum,
+                fileSize: stats.size ?? file.size ?? docById.fileSize,
+                fileModifiedAt:
+                  stats.mtime ?? file.modifiedAt ?? docById.fileModifiedAt,
+              },
+            });
+            this.logger.debug(
+              `Synced current file for existing document: ${docById.id} (${file.path})`
+            );
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Unknown error";
+            this.logger.warn(
+              `Failed to update document ${docById.id} from file ${file.path}: ${msg}`
+            );
+          }
+          return;
+        }
+      }
+
       // Document doesn't exist - create it
       // Calculate checksum using stream (không load toàn bộ file vào memory)
       let checksum: string;
@@ -133,7 +205,9 @@ export class DocumentSyncHandler {
       // Use fixedFileName already defined at the top
       const fileType = path.extname(fixedFileName).slice(1).toLowerCase();
       // fixFileNameEncoding() already normalizes to NFC
-      const documentName = fixFileNameEncoding(path.basename(fixedFileName, path.extname(fixedFileName)));
+      const documentName = fixFileNameEncoding(
+        path.basename(fixedFileName, path.extname(fixedFileName))
+      );
 
       // Get file size from stats (không cần đọc file)
       let fileSize: number;
@@ -170,6 +244,15 @@ export class DocumentSyncHandler {
         }
       }
 
+      // Default level for sync-created documents (LEVEL1); cached per handler instance
+      const defaultLevelId = await this.getDefaultLevelId();
+      if (!defaultLevelId) {
+        this.logger.warn(
+          "No active LEVEL1 document level found; skipping document create"
+        );
+        return;
+      }
+
       // Create document record
       // NOTE: Không tạo version file khi sync existing files
       // Chỉ lưu path đến file gốc, version sẽ được tạo khi file thay đổi hoặc upload qua UI
@@ -186,6 +269,7 @@ export class DocumentSyncHandler {
           fileCreatedAt,
           fileModifiedAt,
           folderId: targetFolderId,
+          levelId: defaultLevelId,
         },
       });
 

@@ -26,6 +26,7 @@ import { Response } from "express";
 import { Express } from "express";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { DocumentService } from "../services/document.service";
+import { QueryDocumentsDto } from "../dto/query-documents.dto";
 import { VersionService } from "../services/version.service";
 import {
   LocalEditService,
@@ -34,10 +35,15 @@ import {
 import { DocumentDeletionService } from "../services/document-deletion.service";
 import { SubmitDeletionRequestDto } from "../dto/submit-deletion-request.dto";
 import { RenameDocumentDto } from "../dto/rename-document.dto";
+import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 import { AuthenticatedRequest } from "@/common/types/request.types";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { PrismaClientLike } from "@/common/types/prisma.types";
 import { PoliciesGuard } from "@/modules/authorization/guards/policies.guard";
+import { CheckPolicies } from "@/modules/authorization/decorators/check-policies.decorator";
+import { UsersService } from "@/modules/users/users.service";
 
 @ApiTags("Documents")
 @ApiBearerAuth()
@@ -49,8 +55,42 @@ export class DocumentController {
     private readonly versionService: VersionService,
     private readonly localEditService: LocalEditService,
     private readonly deletionService: DocumentDeletionService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService
   ) {}
+
+  @Get()
+  @ApiOperation({ summary: "List all documents with filters and pagination" })
+  @CheckPolicies({ action: "view", subject: "Document" })
+  async findAll(
+    @Query() query: QueryDocumentsDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const roles = req.user?.roles ?? [];
+    const canSeeAll = roles.some((r) => ["admin", "dcc", "boss"].includes(r));
+    let departmentIdsForFilter: string[] | undefined;
+    if (!canSeeAll && req.user?.id) {
+      try {
+        const depts = await this.usersService.getUserDepartments(req.user.id);
+        departmentIdsForFilter = depts.map((d) => d.id);
+      } catch {
+        departmentIdsForFilter = [];
+      }
+    }
+    return this.documentService.findAll({
+      status:
+        query.status === "ACTIVE" ||
+        query.status === "ARCHIVED" ||
+        query.status === "DELETED"
+          ? query.status
+          : undefined,
+      departmentId: query.departmentId,
+      departmentIdsForFilter,
+      level: query.level,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
 
   @Get("search")
   @ApiOperation({ summary: "Search documents" })
@@ -65,6 +105,7 @@ export class DocumentController {
   @ApiOperation({ summary: "Get document by ID" })
   async findOne(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
     const document = await this.documentService.findById(id);
+    await this.ensureDocumentDepartmentAccess(document, req);
 
     // Create audit log for document view
     if (req.user?.id) {
@@ -100,6 +141,7 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     const document = await this.documentService.findById(id);
+    await this.ensureDocumentDepartmentAccess(document, req);
     const stream = await this.documentService.getStream(id);
 
     // Create audit log for document view (stream)
@@ -133,7 +175,13 @@ export class DocumentController {
 
   @Get(":id/download")
   @ApiOperation({ summary: "Download document" })
-  async download(@Param("id") id: string, @Res() res: Response) {
+  async download(
+    @Param("id") id: string,
+    @Res() res: Response,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const document = await this.documentService.findById(id);
+    await this.ensureDocumentDepartmentAccess(document, req);
     const { buffer, fileName, mimeType } =
       await this.documentService.download(id);
 
@@ -155,8 +203,16 @@ export class DocumentController {
       properties: {
         file: { type: "string", format: "binary" },
         folderId: { type: "string" },
+        levelId: {
+          type: "string",
+          description: "Document level ID (from GET /storage/document-levels)",
+        },
         name: { type: "string" },
-        fileName: { type: "string", description: "Original filename (UTF-8, sent as text field to avoid encoding issues)" },
+        fileName: {
+          type: "string",
+          description:
+            "Original filename (UTF-8, sent as text field to avoid encoding issues)",
+        },
       },
     },
   })
@@ -166,9 +222,46 @@ export class DocumentController {
     @Body("folderId") folderId: string,
     @Body("name") name: string,
     @Request() req: AuthenticatedRequest,
-    @Body("fileName") fileName?: string
+    @Body("fileName") fileName?: string,
+    @Body("levelId") levelId?: string
   ) {
-    return this.documentService.upload(folderId, file, req.user.id, name, fileName);
+    if (!folderId?.trim()) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.FOLDER_REQUIRED,
+        "folderId is required"
+      );
+    }
+    if (!levelId?.trim()) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.LEVEL_REQUIRED,
+        "levelId is required"
+      );
+    }
+    const roles = req.user?.roles ?? [];
+    const canUploadToAnyFolder = roles.some((r) =>
+      ["admin", "dcc", "boss"].includes(r)
+    );
+    let userDepartmentIds: string[] | undefined;
+    if (!canUploadToAnyFolder && req.user?.id) {
+      try {
+        const depts = await this.usersService.getUserDepartments(req.user.id);
+        userDepartmentIds = depts.map((d) => d.id);
+      } catch {
+        userDepartmentIds = [];
+      }
+    }
+    return this.documentService.upload(
+      folderId,
+      file,
+      req.user.id,
+      name,
+      fileName,
+      levelId,
+      {
+        userDepartmentIds,
+        userCanUploadToAnyFolder: canUploadToAnyFolder,
+      }
+    );
   }
 
   @Post(":id/upload-version")
@@ -197,12 +290,23 @@ export class DocumentController {
     @Body() dto: RenameDocumentDto,
     @Request() req: AuthenticatedRequest
   ) {
-    return this.documentService.rename(
-      id,
-      dto.name,
-      dto.fileName,
-      req.user.id
-    );
+    return this.documentService.rename(id, dto.name, dto.fileName, req.user.id);
+  }
+
+  @Patch(":id/iso-metadata")
+  @ApiOperation({
+    summary:
+      "Update document ISO metadata (level, preparer, reviewer, approver, dates)",
+  })
+  @CheckPolicies({ action: "edit", subject: "Document" })
+  async updateIsoMetadata(
+    @Param("id") id: string,
+    @Body() dto: UpdateIsoMetadataDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const document = await this.documentService.findById(id);
+    await this.ensureDocumentDepartmentAccess(document, req);
+    return this.documentService.updateIsoMetadata(id, dto, req.user.id);
   }
 
   // NEW: Deletion workflow endpoints
@@ -240,7 +344,9 @@ export class DocumentController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Delete document (within 72-hour window or with DCC permission)" })
+  @ApiOperation({
+    summary: "Delete document (within 72-hour window or with DCC permission)",
+  })
   async remove(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
     return this.deletionService.selfDelete(id, req.user.id);
   }
@@ -292,6 +398,34 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     return this.versionService.restoreVersion(id, version, req.user.id);
+  }
+
+  /**
+   * Ensures the document's folder belongs to one of the user's departments.
+   * Admin, dcc, boss bypass. Throws 403 if not allowed.
+   */
+  private async ensureDocumentDepartmentAccess(
+    document: { folder?: { departmentId: string | null } | null },
+    req: AuthenticatedRequest
+  ): Promise<void> {
+    const roles = req.user?.roles ?? [];
+    const canSeeAll = roles.some((r) => ["admin", "dcc", "boss"].includes(r));
+    if (canSeeAll) return;
+    const departmentId = document.folder?.departmentId;
+    if (!departmentId) return;
+    let userDepartmentIds: string[];
+    try {
+      const depts = await this.usersService.getUserDepartments(req.user!.id);
+      userDepartmentIds = depts.map((d) => d.id);
+    } catch {
+      userDepartmentIds = [];
+    }
+    if (!userDepartmentIds.includes(departmentId)) {
+      throw CustomException.forbidden(
+        ErrorCodes.DOCUMENT.ACCESS_DENIED,
+        "Document not in your department"
+      );
+    }
   }
 
   private getMimeType(fileType: string): string {

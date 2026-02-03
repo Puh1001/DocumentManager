@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
@@ -6,6 +7,7 @@ import {
   Patch,
   Delete,
   Body,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -16,6 +18,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
@@ -48,6 +51,7 @@ export class KpiAttachmentController {
       type: "object",
       properties: {
         folderId: { type: "string", format: "uuid" },
+        month: { type: "integer", minimum: 1, maximum: 12, description: "Month 1-12; omit = current month" },
         description: { type: "string" },
         fileName: { type: "string", description: "Original filename (UTF-8, sent as text field)" },
         file: {
@@ -55,7 +59,7 @@ export class KpiAttachmentController {
           format: "binary",
         },
       },
-      required: ["file"], // folderId is optional, will auto-create if not provided
+      required: ["file"],
     },
   })
   @UseInterceptors(FileInterceptor("file"), Utf8FileFixInterceptor)
@@ -65,18 +69,22 @@ export class KpiAttachmentController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: CreateKpiAttachmentDto & { fileName?: string }
   ) {
+    const month =
+      body.month != null ? Number(body.month) : undefined;
     const attachment = await this.attachmentService.uploadAttachment(
       kpiRecordId,
       file,
       body.folderId,
       body.description,
       user,
-      body.fileName
+      body.fileName,
+      month
     );
 
     return {
       id: attachment.id,
       documentId: attachment.documentId,
+      month: (attachment as { month?: number }).month,
       description: attachment.description,
       createdAt: attachment.createdAt,
     };
@@ -85,11 +93,38 @@ export class KpiAttachmentController {
   @Get("records/:id/attachments")
   @CheckPolicies({ action: "view", subject: "Kpi" })
   @ApiOperation({ summary: "List KPI PDF attachments for a KPI record" })
+  @ApiQuery({
+    name: "month",
+    required: false,
+    type: Number,
+    description: "Filter by month 1-12; returns attachments for that month and legacy (NULL month)",
+  })
   async listAttachments(
     @CurrentUserWithDepartment() user: UserWithDepartments,
-    @Param("id") kpiRecordId: string
+    @Param("id") kpiRecordId: string,
+    @Query("month") month?: string
   ) {
-    return this.attachmentService.listAttachments(kpiRecordId, user);
+    const monthNum =
+      month !== undefined && month !== ""
+        ? parseInt(month, 10)
+        : undefined;
+    if (
+      monthNum !== undefined &&
+      (Number.isNaN(monthNum) || monthNum < 1 || monthNum > 12)
+    ) {
+      throw new BadRequestException(
+        "month must be between 1 and 12 when provided",
+      );
+    }
+    const monthFilter =
+      monthNum !== undefined && monthNum >= 1 && monthNum <= 12
+        ? monthNum
+        : undefined;
+    return this.attachmentService.listAttachments(
+      kpiRecordId,
+      user,
+      monthFilter
+    );
   }
 
   @Get("attachments/:id/deletion-status")

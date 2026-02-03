@@ -11,7 +11,7 @@
   "searchPermissions": "Tìm kiếm quyền...",
   "usedBy": "Được sử dụng bởi",
   "folderDocumentPermissions": "Quyền Thư mục & Tài liệu",
-  "folderDocumentPermissionsDescription": "Quản lý quyền thư mục và tài liệu có thể được truy cập từ trang Tài liệu. Chọn một thư mục hoặc tài liệu và sử dụng nút quyền để quản lý quyền truy cập.",
+  "folderDocumentPermissionsDescription": "Quản lý quyền thư mục và tài liệu có thể được truy cập từ trang Tài liệu ISO. Chọn một thư mục hoặc tài liệu và sử dụng nút quyền để quản lý quyền truy cập.",
   "form": {
     "createRoleTitle": "Thêm vai trò mới",
     "updateRoleTitle": "Cập nhật vai trò",

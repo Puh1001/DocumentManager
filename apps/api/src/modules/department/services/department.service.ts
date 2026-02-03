@@ -1,5 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@/common/prisma/prisma.service";
+import { FolderService } from "@/modules/storage/services/folder.service";
 import { CreateDepartmentDto } from "../dto/create-department.dto";
 import { UpdateDepartmentDto } from "../dto/update-department.dto";
 import { CustomException } from "@/common/errors/custom-exception";
@@ -7,7 +8,12 @@ import { ErrorCodes } from "@/common/errors/error-codes";
 
 @Injectable()
 export class DepartmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(DepartmentService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly folderService: FolderService,
+  ) {}
 
   findAll() {
     try {
@@ -59,7 +65,7 @@ export class DepartmentService {
     // Use nameVi if provided, otherwise fallback to name, otherwise use code
     const nameVi = dto.nameVi || dto.name || dto.code;
 
-    return this.prisma.department.create({
+    const department = await this.prisma.department.create({
       data: {
         name: nameVi, // Backward compatibility: default to Vietnamese
         nameEn: dto.nameEn,
@@ -69,6 +75,23 @@ export class DepartmentService {
         isActive: dto.isActive ?? true,
       },
     });
+
+    // Auto-create folder structure for new department
+    try {
+      await this.folderService.ensureDepartmentFolderStructure(department.id);
+      this.logger.log(
+        `Auto-created folder structure for department: ${department.code}`,
+      );
+    } catch (error) {
+      // Log error but don't fail department creation
+      // Folder structure can be created later via sync or manual trigger
+      this.logger.error(
+        `Failed to auto-create folder structure for department ${department.code}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+
+    return department;
   }
 
   async update(id: string, dto: UpdateDepartmentDto) {

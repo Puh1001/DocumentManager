@@ -1,11 +1,11 @@
 {
   "title": "BPVN Management Board",
-  "description": "View all departments, KPIs, maintenance, and documents",
+  "description": "View all departments, KPIs, maintenance, and ISO documents",
   "comingSoon": "BPVN board UI is being implemented...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Maintenance",
-    "documents": "Documents",
+    "documents": "ISO Document",
     "departments": "Department List",
     "kpiStatus": "KPI Status"
   },
@@ -17,7 +17,7 @@
   "viewDescriptions": {
     "kpi": "View KPI records",
     "maintenance": "View maintenance notices",
-    "documents": "View documents"
+    "documents": "View ISO documents"
   },
   "months": {
     "jan": "Jan",
@@ -39,7 +39,7 @@
   "notFound": {
     "kpi": "KPI record not found",
     "maintenance": "Maintenance notice not found",
-    "document": "Document not found"
+    "document": "ISO document not found"
   },
   "kpi": {
     "untitled": "Untitled KPI",
@@ -52,6 +52,12 @@
       "noAttachments": "No attachments",
       "moreFiles": "+{count} more",
       "upload": "Upload PDF",
+      "uploading": "Uploading...",
+      "toastError": "Error",
+      "toastSuccess": "Success",
+      "pdfOnly": "Only PDF files are accepted",
+      "uploadSuccess": "PDF file uploaded successfully",
+      "uploadFailed": "Unable to upload file",
       "delete": "Delete file",
       "deleteConfirm": "Are you sure you want to delete this file?",
       "viewer": {
@@ -76,8 +82,8 @@
     "noKpiDescription": "There are no KPI records for this department.",
     "noMaintenance": "No maintenance notices found",
     "noMaintenanceDescription": "There are no maintenance notices for this department.",
-    "noDocuments": "No documents found",
-    "noDocumentsDescription": "There are no documents in this department folder.",
+    "noDocuments": "No ISO documents found",
+    "noDocumentsDescription": "There are no ISO documents in this department folder.",
     "noFolder": "Department folder not found",
     "noFolderDescription": "Folder for department {department} not found in the system."
   },
@@ -85,7 +91,7 @@
     "loadFailed": "Failed to load departments",
     "loadKpiFailed": "Failed to load KPI records",
     "loadMaintenanceFailed": "Failed to load maintenance notices",
-    "loadDocumentsFailed": "Failed to load documents",
+    "loadDocumentsFailed": "Failed to load ISO documents",
     "loadKpiStatusFailed": "Failed to load KPI status"
   },
   "kpiStatus": {

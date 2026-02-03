@@ -2,6 +2,8 @@
   "title": "KPI",
   "subtitle": "Manage KPI by department and month",
   "year": "Year",
+  "month": "Month",
+  "allMonths": "All months",
   "kpiTitle": "KPI Title",
   "target": "Target",
   "efficiency": "Efficiency (%)",

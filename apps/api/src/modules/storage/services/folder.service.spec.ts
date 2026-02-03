@@ -75,7 +75,6 @@ describe("FolderService", () => {
       expect(result).toEqual(mockFolders);
       expect(prismaService.folder.findMany).toHaveBeenCalledWith({
         where: {
-          parentId: null,
           deletedAt: null,
         },
         include: {
@@ -83,6 +82,13 @@ describe("FolderService", () => {
             select: {
               children: true,
               documents: true,
+            },
+          },
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
             },
           },
         },
@@ -109,6 +115,13 @@ describe("FolderService", () => {
               documents: true,
             },
           },
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
         },
         orderBy: { name: "asc" },
       });
@@ -116,7 +129,7 @@ describe("FolderService", () => {
   });
 
   describe("findById", () => {
-    it("should return folder by id", async () => {
+    it("should return folder by id with all documents when no status provided", async () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
 
       const result = await service.findById("folder-1");
@@ -126,6 +139,48 @@ describe("FolderService", () => {
         where: { id: "folder-1" },
         include: {
           parent: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          children: {
+            where: { deletedAt: null },
+            orderBy: { name: "asc" },
+          },
+          documents: {
+            where: {},
+            orderBy: { name: "asc" },
+            include: {
+              _count: { select: { versions: true } },
+            },
+          },
+          permissions: {
+            include: { permission: true },
+          },
+        },
+      });
+    });
+
+    it("should return folder by id with ACTIVE documents when status=ACTIVE", async () => {
+      prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await service.findById("folder-1", "ACTIVE");
+
+      expect(result).toEqual(mockFolder);
+      expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
+        where: { id: "folder-1" },
+        include: {
+          parent: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
           children: {
             where: { deletedAt: null },
             orderBy: { name: "asc" },
@@ -133,6 +188,114 @@ describe("FolderService", () => {
           documents: {
             where: { status: "ACTIVE" },
             orderBy: { name: "asc" },
+            include: {
+              _count: { select: { versions: true } },
+            },
+          },
+          permissions: {
+            include: { permission: true },
+          },
+        },
+      });
+    });
+
+    it("should return folder by id with ARCHIVED documents when status=ARCHIVED", async () => {
+      prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await service.findById("folder-1", "ARCHIVED");
+
+      expect(result).toEqual(mockFolder);
+      expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
+        where: { id: "folder-1" },
+        include: {
+          parent: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          children: {
+            where: { deletedAt: null },
+            orderBy: { name: "asc" },
+          },
+          documents: {
+            where: { status: "ARCHIVED" },
+            orderBy: { name: "asc" },
+            include: {
+              _count: { select: { versions: true } },
+            },
+          },
+          permissions: {
+            include: { permission: true },
+          },
+        },
+      });
+    });
+
+    it("should return folder by id with DELETED documents when status=DELETED", async () => {
+      prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await service.findById("folder-1", "DELETED");
+
+      expect(result).toEqual(mockFolder);
+      expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
+        where: { id: "folder-1" },
+        include: {
+          parent: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          children: {
+            where: { deletedAt: null },
+            orderBy: { name: "asc" },
+          },
+          documents: {
+            where: { status: "DELETED" },
+            orderBy: { name: "asc" },
+            include: {
+              _count: { select: { versions: true } },
+            },
+          },
+          permissions: {
+            include: { permission: true },
+          },
+        },
+      });
+    });
+
+    it("should return all documents when invalid status provided", async () => {
+      prismaService.folder.findUnique = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await service.findById("folder-1", "INVALID_STATUS");
+
+      expect(result).toEqual(mockFolder);
+      expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
+        where: { id: "folder-1" },
+        include: {
+          parent: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          children: {
+            where: { deletedAt: null },
+            orderBy: { name: "asc" },
+          },
+          documents: {
+            where: {},
+            orderBy: { name: "asc" },
+            include: {
+              _count: { select: { versions: true } },
+            },
           },
           permissions: {
             include: { permission: true },
@@ -145,7 +308,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.findById("invalid-id")).rejects.toThrow(
-        CustomException,
+        CustomException
       );
     });
 
@@ -156,7 +319,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.findById("folder-1")).rejects.toThrow(
-        CustomException,
+        CustomException
       );
     });
   });
@@ -220,7 +383,7 @@ describe("FolderService", () => {
         where: { id: "parent-1" },
       });
       expect(smbService.createDirectory).toHaveBeenCalledWith(
-        "parent-folder/Child Folder",
+        "parent-folder/Child Folder"
       );
       expect(result.path).toBe("parent-folder/Child Folder");
     });
@@ -276,7 +439,7 @@ describe("FolderService", () => {
 
       expect(smbService.rename).toHaveBeenCalledWith(
         "test-folder",
-        "Renamed Folder",
+        "Renamed Folder"
       );
       expect(prismaService.folder.update).toHaveBeenCalledWith({
         where: { id: "folder-1" },
@@ -317,7 +480,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.update("invalid-id", dto)).rejects.toThrow(
-        CustomException,
+        CustomException
       );
     });
 
@@ -330,7 +493,7 @@ describe("FolderService", () => {
         .mockResolvedValue(deletedFolder);
 
       await expect(service.update("folder-1", dto)).rejects.toThrow(
-        CustomException,
+        CustomException
       );
     });
   });
@@ -354,7 +517,7 @@ describe("FolderService", () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(service.delete("invalid-id")).rejects.toThrow(
-        CustomException,
+        CustomException
       );
     });
 
@@ -369,7 +532,7 @@ describe("FolderService", () => {
         .mockResolvedValue(folderWithChildren);
 
       await expect(service.delete("folder-1")).rejects.toThrow(
-        "Cannot delete non-empty folder",
+        "Cannot delete non-empty folder"
       );
     });
 
@@ -384,7 +547,7 @@ describe("FolderService", () => {
         .mockResolvedValue(folderWithDocuments);
 
       await expect(service.delete("folder-1")).rejects.toThrow(
-        "Cannot delete non-empty folder",
+        "Cannot delete non-empty folder"
       );
     });
   });
@@ -472,6 +635,133 @@ describe("FolderService", () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("root-1");
       expect(result[0].children).toHaveLength(0);
+    });
+
+    it("should call ensureDepartmentFolderStructure when departmentId is provided", async () => {
+      const ensureSpy = jest
+        .spyOn(service, "ensureDepartmentFolderStructure")
+        .mockResolvedValue({
+          departmentRoot: "dept-root-id",
+          kpiSectionRoot: "",
+          kpiVersionsRoot: "",
+          documentsSectionRoot: "",
+          documentsVersionsRoot: "",
+          maintenanceSectionRoot: "",
+          maintenanceVersionsRoot: "",
+          deletedFiles: "",
+        });
+      const folders = [
+        {
+          ...mockFolder,
+          id: "dept-root-id",
+          name: "Dept",
+          path: "DEPT",
+          parentId: null,
+          _count: { documents: 0 },
+        },
+      ];
+      prismaService.folder.findMany = jest.fn().mockResolvedValue(folders);
+
+      const result = await service.getTree("dept-1");
+
+      expect(ensureSpy).toHaveBeenCalledWith("dept-1");
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("dept-root-id");
+      ensureSpy.mockRestore();
+    });
+
+    it("should not call ensureDepartmentFolderStructure when departmentId is not provided", async () => {
+      const ensureSpy = jest.spyOn(service, "ensureDepartmentFolderStructure");
+      prismaService.folder.findMany = jest.fn().mockResolvedValue([]);
+
+      await service.getTree();
+
+      expect(ensureSpy).not.toHaveBeenCalled();
+      ensureSpy.mockRestore();
+    });
+
+    it("should return tree from existing DB when ensure fails", async () => {
+      const ensureSpy = jest
+        .spyOn(service, "ensureDepartmentFolderStructure")
+        .mockRejectedValue(new Error("SMB unavailable"));
+      const folders = [
+        {
+          ...mockFolder,
+          id: "existing-1",
+          name: "Existing",
+          path: "DEPT",
+          parentId: null,
+          _count: { documents: 0 },
+        },
+      ];
+      prismaService.folder.findMany = jest.fn().mockResolvedValue(folders);
+
+      const result = await service.getTree("dept-1");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("existing-1");
+      ensureSpy.mockRestore();
+    });
+  });
+
+  describe("getTreeWithDocuments", () => {
+    it("should call ensureDepartmentFolderStructure when departmentId is provided", async () => {
+      const ensureSpy = jest
+        .spyOn(service, "ensureDepartmentFolderStructure")
+        .mockResolvedValue(undefined as never);
+      const folders = [
+        {
+          ...mockFolder,
+          id: "dept-root-id",
+          name: "Dept",
+          path: "DEPT",
+          parentId: null,
+          _count: { documents: 0 },
+          documents: [],
+        },
+      ];
+      prismaService.folder.findMany = jest.fn().mockResolvedValue(folders);
+
+      const result = await service.getTreeWithDocuments("dept-1");
+
+      expect(ensureSpy).toHaveBeenCalledWith("dept-1");
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("dept-root-id");
+      ensureSpy.mockRestore();
+    });
+
+    it("should not call ensureDepartmentFolderStructure when departmentId is not provided", async () => {
+      const ensureSpy = jest.spyOn(service, "ensureDepartmentFolderStructure");
+      prismaService.folder.findMany = jest.fn().mockResolvedValue([]);
+
+      await service.getTreeWithDocuments();
+
+      expect(ensureSpy).not.toHaveBeenCalled();
+      ensureSpy.mockRestore();
+    });
+
+    it("should return tree from existing DB when ensure fails", async () => {
+      const ensureSpy = jest
+        .spyOn(service, "ensureDepartmentFolderStructure")
+        .mockRejectedValue(new Error("SMB unavailable"));
+      const folders = [
+        {
+          ...mockFolder,
+          id: "existing-1",
+          name: "Existing",
+          path: "DEPT",
+          parentId: null,
+          _count: { documents: 0 },
+          documents: [],
+        },
+      ];
+      prismaService.folder.findMany = jest.fn().mockResolvedValue(folders);
+
+      const result = await service.getTreeWithDocuments("dept-1");
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("existing-1");
+      ensureSpy.mockRestore();
     });
   });
 

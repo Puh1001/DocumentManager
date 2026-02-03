@@ -19,12 +19,28 @@ import {
 import { Express } from "express";
 import * as path from "path";
 
+/** Used until Prisma client is regenerated (schema has month); safe at runtime after migration. */
+type KpiAttachmentCreateWithMonth = {
+  kpiRecordId: string;
+  documentId: string;
+  month?: number;
+  description?: string | null;
+  createdById: string;
+};
+
+/** Where filter for month: current month OR legacy NULL. */
+type KpiAttachmentWhereMonth = {
+  kpiRecordId: string;
+  OR?: Array<{ month: number } | { month: null }>;
+};
+
 export interface KpiAttachmentListItem {
   id: string;
   documentId: string;
   fileName: string;
   uploadedBy: string;
   createdAt: Date;
+  month?: number | null;
   description?: string | null;
   deletionExpiresAt?: Date | null;
 }
@@ -49,6 +65,7 @@ export class KpiAttachmentService {
     description: string | undefined,
     user: UserWithDepartments,
     fileName?: string,
+    month?: number,
   ) {
     const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
       {
@@ -149,6 +166,12 @@ export class KpiAttachmentService {
       fileName,
     );
 
+    // Month: default to current month when omitted; validate 1-12 when provided
+    const resolvedMonth =
+      month !== undefined && month !== null
+        ? (month >= 1 && month <= 12 ? month : new Date().getMonth() + 1)
+        : new Date().getMonth() + 1;
+
     // Use transaction for atomic operations: attachment creation + audit log + status update
     const attachment = await (this.prisma as PrismaClientLike).$transaction(
       async (tx) => {
@@ -156,9 +179,10 @@ export class KpiAttachmentService {
           data: {
             kpiRecordId: record.id,
             documentId: document.id,
+            month: resolvedMonth,
             description,
             createdById: user.userId,
-          },
+          } as KpiAttachmentCreateWithMonth & Record<string, unknown>,
           include: {
             createdBy: true,
           },
@@ -199,6 +223,7 @@ export class KpiAttachmentService {
   async listAttachments(
     kpiRecordId: string,
     user: UserWithDepartments,
+    month?: number,
   ): Promise<KpiAttachmentListItem[]> {
     const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
       {
@@ -216,10 +241,25 @@ export class KpiAttachmentService {
 
     this.checkDepartmentAccess(record.departmentId, user);
 
+    // Filter by month 1-12: return attachments for that month OR legacy (month IS NULL)
+    const monthFilter =
+      month !== undefined &&
+      !Number.isNaN(month) &&
+      month >= 1 &&
+      month <= 12
+        ? { OR: [{ month }, { month: null }] }
+        : undefined;
+
+    const whereClause: KpiAttachmentWhereMonth = {
+      kpiRecordId,
+      ...(monthFilter ? monthFilter : {}),
+    };
+
     const attachments = await (
       this.prisma as PrismaClientLike
     ).kpiAttachment.findMany({
-      where: { kpiRecordId },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- month filter; Prisma client regenerated after migration includes month
+      where: whereClause as any,
       include: {
         document: true,
         createdBy: true,
@@ -231,11 +271,12 @@ export class KpiAttachmentService {
       (a): KpiAttachmentListItem => ({
         id: a.id,
         documentId: a.documentId,
-        fileName: fixFileNameEncoding(a.document.fileName), // Apply encoding fix (already normalizes to NFC)
-        uploadedBy: a.createdBy.fullName,
+        fileName: fixFileNameEncoding((a as { document: { fileName: string } }).document.fileName),
+        uploadedBy: (a as { createdBy: { fullName: string } }).createdBy.fullName,
         createdAt: a.createdAt,
+        month: (a as { month?: number | null }).month ?? null,
         description: a.description ?? undefined,
-        deletionExpiresAt: a.document.deletionExpiresAt ?? null,
+        deletionExpiresAt: (a as { document: { deletionExpiresAt: Date | null } }).document.deletionExpiresAt ?? null,
       }),
     );
   }

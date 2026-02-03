@@ -2,6 +2,9 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { KpiAttachmentService } from "./kpi-attachment.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { DocumentService } from "@/modules/storage/services/document.service";
+import { FolderService } from "@/modules/storage/services/folder.service";
+import { SmbService } from "@/modules/storage/services/smb.service";
+import { DocumentDeletionService } from "@/modules/storage/services/document-deletion.service";
 import { UserDepartmentResolver } from "./user-department.resolver";
 import { CustomException } from "@/common/errors/custom-exception";
 import { UserWithDepartments } from "./user-department.resolver";
@@ -63,15 +66,21 @@ describe("KpiAttachmentService", () => {
     fileSize: 1024,
   };
 
+  const mockDocumentWithDeletion = {
+    ...mockDocument,
+    deletionExpiresAt: null as Date | null,
+  };
+
   const mockAttachment = {
     id: "attachment-1",
     kpiRecordId: "kpi-record-1",
     documentId: "doc-1",
+    month: null as number | null,
     description: "Test attachment",
     createdById: "user-1",
     createdAt: new Date(),
     updatedAt: new Date(),
-    document: mockDocument,
+    document: mockDocumentWithDeletion,
     createdBy: {
       id: "user-1",
       fullName: "Test User",
@@ -98,9 +107,15 @@ describe("KpiAttachmentService", () => {
   };
 
   beforeEach(async () => {
-    const mockPrismaService = {
+    const mockPrismaService: {
+      kpiRecord: { findUnique: jest.Mock; update: jest.Mock };
+      kpiAttachment: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock };
+      auditLog: { create: jest.Mock };
+      $transaction: jest.Mock;
+    } = {
       kpiRecord: {
         findUnique: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
       },
       kpiAttachment: {
         create: jest.fn(),
@@ -110,7 +125,16 @@ describe("KpiAttachmentService", () => {
       auditLog: {
         create: jest.fn(),
       },
+      $transaction: jest.fn(),
     };
+    mockPrismaService.$transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        kpiAttachment: mockPrismaService.kpiAttachment,
+        auditLog: mockPrismaService.auditLog,
+        kpiRecord: { update: mockPrismaService.kpiRecord.update },
+      };
+      return cb(tx);
+    });
 
     const mockDocumentService = {
       upload: jest.fn(),
@@ -122,15 +146,24 @@ describe("KpiAttachmentService", () => {
       getUserWithDepartment: jest.fn(),
     };
 
+    const mockFolderService = {
+      ensureDepartmentFolderStructure: jest
+        .fn()
+        .mockResolvedValue({ kpiSectionRoot: "folder-1" }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KpiAttachmentService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: DocumentService, useValue: mockDocumentService },
+        { provide: FolderService, useValue: mockFolderService },
+        { provide: SmbService, useValue: {} },
         {
           provide: UserDepartmentResolver,
           useValue: mockUserDepartmentResolver,
         },
+        { provide: DocumentDeletionService, useValue: {} },
       ],
     }).compile();
 
@@ -169,7 +202,8 @@ describe("KpiAttachmentService", () => {
         "folder-1",
         mockPdfFile,
         mockAdminUser.userId,
-        mockKpiRecord.title
+        mockKpiRecord.title,
+        undefined
       );
       expect(prismaService.kpiAttachment.create).toHaveBeenCalled();
       expect(prismaService.auditLog.create).toHaveBeenCalledWith({
@@ -314,6 +348,45 @@ describe("KpiAttachmentService", () => {
         )
       ).rejects.toThrow(CustomException);
     });
+
+    it("should store month when provided (1-12)", async () => {
+      const attachmentWithMonth = { ...mockAttachment, month: 3 };
+      prismaService.kpiRecord.findUnique = jest
+        .fn()
+        .mockResolvedValue(mockKpiRecord);
+      documentService.upload = jest.fn().mockResolvedValue(mockDocument);
+      prismaService.kpiAttachment.create = jest
+        .fn()
+        .mockImplementation((args: { data: { month?: number } }) =>
+          Promise.resolve({
+            ...mockAttachment,
+            month: args?.data?.month ?? null,
+          })
+        );
+      prismaService.auditLog.create = jest.fn().mockResolvedValue({});
+
+      const result = await service.uploadAttachment(
+        "kpi-record-1",
+        mockPdfFile,
+        "folder-1",
+        "Test",
+        mockAdminUser,
+        undefined,
+        3
+      );
+
+      expect(result).toMatchObject({ month: 3 });
+      expect(prismaService.kpiAttachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            kpiRecordId: "kpi-record-1",
+            documentId: mockDocument.id,
+            month: 3,
+            createdById: mockAdminUser.userId,
+          }),
+        })
+      );
+    });
   });
 
   describe("listAttachments", () => {
@@ -367,6 +440,29 @@ describe("KpiAttachmentService", () => {
       await expect(
         service.listAttachments("non-existent", mockAdminUser)
       ).rejects.toThrow(CustomException);
+    });
+
+    it("should filter by month when month provided (1-12)", async () => {
+      prismaService.kpiRecord.findUnique = jest
+        .fn()
+        .mockResolvedValue(mockKpiRecord);
+      prismaService.kpiAttachment.findMany = jest
+        .fn()
+        .mockResolvedValue([{ ...mockAttachment, month: 3 }]);
+
+      await service.listAttachments("kpi-record-1", mockAdminUser, 3);
+
+      expect(prismaService.kpiAttachment.findMany).toHaveBeenCalledWith({
+        where: {
+          kpiRecordId: "kpi-record-1",
+          OR: [{ month: 3 }, { month: null }],
+        },
+        include: {
+          document: true,
+          createdBy: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
     });
 
     it("should deny access if user not in department", async () => {

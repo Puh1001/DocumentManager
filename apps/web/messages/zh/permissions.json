@@ -11,7 +11,7 @@
   "searchPermissions": "搜索权限...",
   "usedBy": "被使用",
   "folderDocumentPermissions": "文件夹和文档权限",
-  "folderDocumentPermissionsDescription": "文件夹和文档权限管理可以从文档页面访问。选择一个文件夹或文档，然后使用权限按钮来管理访问权限。",
+  "folderDocumentPermissionsDescription": "文件夹和文档权限管理可以从ISO文档页面访问。选择一个文件夹或文档，然后使用权限按钮来管理访问权限。",
   "form": {
     "createRoleTitle": "添加新角色",
     "updateRoleTitle": "更新角色",

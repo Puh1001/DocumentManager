@@ -21,12 +21,6 @@ function getExtension(filename: string): string {
   return lastDot === -1 ? "" : filename.substring(lastDot).toLowerCase();
 }
 
-// Helper to get filename without extension
-function getBasename(filename: string, ext: string): string {
-  if (!ext) return filename;
-  return filename.substring(0, filename.length - ext.length);
-}
-
 interface RenameDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

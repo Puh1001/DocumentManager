@@ -2,14 +2,14 @@
   "title": "仪表板",
   "description": "ISO 文档管理系统概览",
   "stats": {
-    "totalDocuments": "总文档数",
+    "totalDocuments": "总ISO文档数",
     "folders": "文件夹",
     "users": "用户",
     "recentUploads": "最近上传"
   },
   "sections": {
-    "recentDocuments": "最近文档",
-    "recentDocumentsDescription": "最近更新的文档列表将显示在这里。",
+    "recentDocuments": "最近ISO文档",
+    "recentDocumentsDescription": "最近更新的ISO文档列表将显示在这里。",
     "activity": "活动",
     "activityDescription": "系统活动历史将显示在这里。",
     "maintenance": "维护计划",

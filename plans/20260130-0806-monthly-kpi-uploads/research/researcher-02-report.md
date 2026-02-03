@@ -55,7 +55,7 @@
 - "All months": show all attachments for the record (no month filter); upload may require selecting a month first or default to current.
 - Empty month: show "No attachments" for that month; upload CTA remains.
 
-## Unresolved
+## Resolved (product)
 
-- Default view: current month vs "all months"?
-- Allow upload when "all months" selected (e.g. default to current month for that upload)?
+- **Default view:** Chọn sẵn tháng hiện tại (`selectedMonth` default = current month).
+- **Upload when "all months":** Default tháng hiện tại cho lần upload đó.

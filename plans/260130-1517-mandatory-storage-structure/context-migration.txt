@@ -1,0 +1,829 @@
+V250813  devTest  ♥ 15:34  tree /f
+Folder PATH listing for volume New Volume
+Volume serial number is DCBF-83F2
+Z:.
+├───AC
+│   ├───delete files
+│   │       v001_2026-01-22T09-14-33-530Z_3dcd950e.pdf
+│   │       v001_2026-01-22T09-15-10-234Z_3dcd950e.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   └───versions
+│       └───fd0f74f4-414e-4312-9660-8d308a31269b
+├───BOC_SOI
+│   ├───current
+│   │       CV-0002.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-15T07-12-03-112Z_af07f84b.pdf
+│   │
+│   └───versions
+│       ├───45db7e5a-a298-49d8-86fb-42146e34f7dc
+│       ├───50a7f5ef-27a9-4f3e-b657-289a7f6ee4ae
+│       │       v001_2026-01-10T08-12-43-578Z_3dcd950e.pdf
+│       │
+│       ├───8cd23b68-8925-4480-8b6f-65bc5e4f94d6
+│       │       v001_2026-01-10T08-33-23-149Z_3dcd950e.pdf
+│       │
+│       ├───c7574699-2165-462e-8115-66732e9c8b47
+│       ├───ddca3fbf-836d-4e3d-9b26-f5425f977662
+│       │       v001_2026-01-15T07-13-42-891Z_af07f84b.pdf
+│       │
+│       ├───e6704f08-4600-443b-8f50-2162ac075f7b
+│       │       v001_2026-01-10T08-09-01-225Z_3dcd950e.pdf
+│       │
+│       └───eae4f40a-2d16-4736-a756-9f6fbcc9ca2c
+│               v001_2026-01-15T07-13-48-904Z_af07f84b.pdf
+│
+├───CONG_NGHE
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       æ¢­ç»è½¬æºæç Hiá»u quáº£ chuyá»n mÃ¡y dá»t thoi.pdf
+│           │       éç»è½¬æºæç Hiá»u quáº£ chuyá»n mÃ¡y dá»t kim.pdf
+│           │
+│           └───versions
+│               ├───01282833-2509-4801-b0c3-d73ae44e3b38
+│               │       v001_2026-01-14T09-19-20-878Z_44cf9d91.pdf
+│               │
+│               └───ef0b435e-6d32-4ee0-a863-864068174232
+│                       v001_2026-01-14T09-19-09-409Z_44cf9d91.pdf
+│
+├───CONG_TRINH
+│   ├───delete files
+│   │       v001_2026-01-15T08-50-08-727Z_e02ac92b.pdf
+│   │
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       Báº£o DÆ°á»¡ng kpi T12.2025.pdf
+│           │       Sá»­a chá»¯a KPI T12.2025.pdf
+│           │
+│           └───versions
+│               ├───1aab2d42-ffd8-4f64-b8e1-46016332817b
+│               ├───93edc060-e339-4b16-b566-108699064c44
+│               │       v001_2026-01-15T08-50-30-751Z_e02ac92b.pdf
+│               │
+│               └───b8e330b0-9c34-462a-a2c0-730104f66fcb
+│                       v001_2026-01-15T08-50-37-374Z_e02ac92b.pdf
+│
+├───DCC
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       1. BPVN-QEP-001 A1 æä»¶æ§å¶ç®¡çç¨åº LÆ°u trÃ¬nh quáº£n lÃ½ kiá»m soÃ¡t tÃ i liá»u.pdf
+│           │
+│           └───versions
+│               └───bc53ff0e-8f90-4cfe-b03e-346286fa9ccf
+│                       v001_2026-01-13T03-40-08-834Z_324f957c.pdf
+│
+├───DET_DAI
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       æ¢­ç»æèç Tá»· lá» hao há»¥t nguyÃªn liá»u dá»t thoi.pdf
+│           │       ç»æºçç¢æç Hiá»u quáº£ sáº£n xuáº¥t dá»t thoi.pdf
+│           │       éç»æèçTá»· lá» hao há»¥t nguyÃªn liá»u dá»t kim.pdf
+│           │       éç»çç¢æç Hiá»u quáº£ sáº£n xuáº¥t dá»t kim.pdf
+│           │
+│           └───versions
+│               ├───07ea254a-141b-41ef-94b0-eae28a35492a
+│               │       v001_2026-01-14T09-18-07-479Z_44cf9d91.pdf
+│               │
+│               ├───164d296a-4051-4b20-baba-2d22c99e56d7
+│               │       v001_2026-01-14T09-16-56-375Z_44cf9d91.pdf
+│               │
+│               ├───acfdab20-6411-49e2-bc1a-2f028dda72da
+│               │       v001_2026-01-14T09-17-27-797Z_44cf9d91.pdf
+│               │
+│               └───cd654bc1-0bc8-44e8-8ce5-384ffba3cab1
+│                       v001_2026-01-14T09-18-26-602Z_44cf9d91.pdf
+│
+├───DET_DOC
+│   ├───current
+│   │       0a8fbf7d-6420-40f7-b096-48d75dff5085.pdf
+│   │       19d868e9-fcfa-4364-bf47-1b46b80e5648.pdf
+│   │       58deda78-a2b4-4525-ae30-144a90a002c6.pdf
+│   │       c448923b-4478-4e22-9ebd-cde8710afb06.pdf
+│   │       ce1dd3a8-f757-48ee-9b3a-674a9a17765f.pdf
+│   │       WA KPI.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       WA KPI.pdf
+│   │       │
+│   │       └───versions
+│   │           └───b523d1d0-431b-4371-9fc4-c8e4232a0680
+│   │                   v001_2026-01-14T01-53-03-364Z_38c36e08.pdf
+│   │
+│   ├───version
+│   │   ├───0a8fbf7d-6420-40f7-b096-48d75dff5085
+│   │   │       v001_2026-01-27T07-12-09-636Z_38c36e08.pdf
+│   │   │
+│   │   ├───19d868e9-fcfa-4364-bf47-1b46b80e5648
+│   │   │       v001_2026-01-27T07-18-56-463Z_38c36e08.pdf
+│   │   │
+│   │   ├───58deda78-a2b4-4525-ae30-144a90a002c6
+│   │   │       v001_2026-01-27T07-21-17-427Z_38c36e08.pdf
+│   │   │
+│   │   ├───c448923b-4478-4e22-9ebd-cde8710afb06
+│   │   │       v001_2026-01-27T07-21-27-416Z_38c36e08.pdf
+│   │   │
+│   │   └───ce1dd3a8-f757-48ee-9b3a-674a9a17765f
+│   │           v001_2026-01-27T07-21-34-192Z_38c36e08.pdf
+│   │
+│   └───versions
+│       └───b0d17896-c46f-46ba-875d-671197d85421
+│               v001_2026-01-14T01-53-55-447Z_38c36e08.pdf
+│
+├───DET_NGANG
+│   ├───current
+│   │       19327956-6cb0-475d-9154-5ea3699e5a3f.pdf
+│   │       9bd22406-b1d7-4af6-a3aa-31d6215af4d6.pdf
+│   │       e1149e5d-add8-4bdf-9fb0-c27ce65b49fe.pdf
+│   │
+│   ├───KPI
+│   │   ├───current
+│   │   │   │   WK-BPVN-QA-PR-008 A1 2025å¹´è´¨éç®æ è¾¾ææåµè¡¨WK Báº£ng tÃ¬nh tráº¡ng Äáº¡t ÄÆ°á»£c má»¥c tiÃªu cháº¥t lÆ°á»£ng nÄm 2025.pdf
+│   │   │   │
+│   │   │   ├───current
+│   │   │   │       WK-BPVN-QA-PR-008 A1 2025å¹´è´¨éç®æ è¾¾ææåµè¡¨WK Báº£ng tÃ¬nh tráº¡ng Äáº¡t ÄÆ°á»£c má»¥c tiÃªu cháº¥t lÆ°á»£ng nÄm 2025.pdf
+│   │   │   │
+│   │   │   └───versions
+│   │   │       └───7573d11c-b291-4e06-9b9b-1d486d775c4c
+│   │   │               v001_2026-01-13T07-24-31-498Z_c26928aa.pdf
+│   │   │
+│   │   └───versions
+│   │       └───b15d3a53-e0eb-4235-b991-5c20e18d81aa
+│   │               v001_2026-01-13T07-24-59-608Z_c26928aa.pdf
+│   │
+│   └───version
+│       ├───19327956-6cb0-475d-9154-5ea3699e5a3f
+│       │       v001_2026-01-27T07-11-08-376Z_c26928aa.pdf
+│       │
+│       ├───9bd22406-b1d7-4af6-a3aa-31d6215af4d6
+│       │       v001_2026-01-27T06-44-00-341Z_c26928aa.pdf
+│       │
+│       └───e1149e5d-add8-4bdf-9fb0-c27ce65b49fe
+│               v001_2026-01-27T07-10-59-064Z_c26928aa.pdf
+│
+├───DH
+│   ├───current
+│   │       1 Tá» lá» lá»i cá»§a bá» pháº­n nhuá»m váº£i.pdf
+│   │       2 Tá»· lá» hÃ ng sá»­a cá»§a bá» pháº­n nhuá»m váº£i.pdf
+│   │       3 Tá»· lá» xá»­ lÃ½ khiáº¿u náº¡i ná»i bá».pdf
+│   │       4 Sá» láº§n Äá» xuáº¥t cáº£i tiáº¿n.pdf
+│   │       5 Tá»· lá» phÃ¡t váº£i nhuá»m láº¡i tá»« Äáº§u.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-14T10-04-32-148Z_c1c54852.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       kpi-dh.pdf
+│   │       │
+│   │       └───versions
+│   │           └───07bd64f4-dc78-4b87-9833-ac88ac62cfe7
+│   └───versions
+│       ├───42c34367-de5c-4202-af1b-7c1a7a6fd9f5
+│       │       v001_2026-01-15T07-43-54-541Z_c1c54852.pdf
+│       │
+│       ├───5f665fca-12f8-4813-a169-d6a758fa883f
+│       │       v001_2026-01-15T07-42-39-688Z_c1c54852.pdf
+│       │
+│       ├───61fffee9-3c2f-4d6c-ae09-ebade37cfcdd
+│       │       v001_2026-01-15T07-46-10-759Z_c1c54852.pdf
+│       │
+│       ├───73d00154-a163-4d4b-a957-d10999758161
+│       │       v001_2026-01-15T07-45-05-267Z_c1c54852.pdf
+│       │
+│       └───c0845af3-4979-46a5-8ca5-e1b9b7f7f435
+│               v001_2026-01-15T07-37-49-981Z_c1c54852.pdf
+│
+├───GIAI_DOAN_SAU_NHUOM_SOI
+│   ├───current
+│   │       BPVN-QA-PR-008 YDF-æçº±é¨2025å¹´è´¨éç®æ è¾¾ææåµè¡¨WK Báº£ng tÃ¬nh tráº¡ng Äáº¡t ÄÆ°á»£c má»¥c tiÃªu cháº¥t lÆ°á»£ng nÄm 2025(1).xlsx
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       BEST PACIFIC(1).pdf
+│   │       │       BEST PACIFIC(2).pdf
+│   │       │       BEST PACIFIC(3).pdf
+│   │       │       BEST PACIFIC.pdf
+│   │       │
+│   │       └───versions
+│   │           ├───6f95926d-573f-4942-b719-2be09b64a7a0
+│   │           │       v001_2026-01-15T01-53-42-676Z_f67af2cb.pdf
+│   │           │
+│   │           ├───85457522-801c-4c3b-8c22-6cd893a3c88f
+│   │           │       v001_2026-01-15T01-53-56-088Z_f67af2cb.pdf
+│   │           │
+│   │           ├───8eb375c6-fd53-49e6-b28b-c6a15334ea8a
+│   │           │       v001_2026-01-15T01-54-20-329Z_f67af2cb.pdf
+│   │           │
+│   │           └───cb789f40-adaf-4806-8d82-bb693d1c4f4e
+│   │                   v001_2026-01-15T01-54-26-060Z_f67af2cb.pdf
+│   │
+│   └───versions
+│       ├───0639ac68-acc5-48a5-b054-1df52382c9f0
+│       │       v001_2026-01-16T06-39-27-365Z_f67af2cb.xlsx
+│       │
+│       └───57fbc69a-4345-4e24-9863-143507bff46d
+│               v001_2026-01-16T06-37-42-548Z_f67af2cb.xlsx
+│
+├───GIAI_DOAN_TRUOC_NHUOM_SOI
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       Hiá»u suáº¥t hao phÃ­ nguyÃªn liá»u 12.2025.pdf
+│           │       KPI-T12 (1).pdf
+│           │
+│           └───versions
+│               ├───771b2626-5e0a-4db9-88b4-5780b978c037
+│               │       v001_2026-01-14T08-55-30-554Z_651cc624.pdf
+│               │
+│               └───ef9f2464-32fc-488c-a860-5c40bab513fc
+│                       v001_2026-01-14T08-58-01-523Z_651cc624.pdf
+│
+├───HCNS
+│   ├───current
+│   │       TAI Náº N Há»A HOáº N.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-19T06-16-32-969Z_20dc17b9.pdf
+│   │       v001_2026-01-22T06-48-29-186Z_20dc17b9.pdf
+│   │       v001_2026-01-22T06-54-09-857Z_20dc17b9.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       Tá»¶ Lá» CHáº¤M CÃNG CHÃNH XÃC.pdf
+│   │       │       Tá»¶ Lá» LUÃN CHUYá»N NHÃN VIÃN.pdf
+│   │       │       Tá»¶ Lá» Äáº T Má»¤C TIÃU TUYá»N Dá»¤NG.pdf
+│   │       │       Tá»¶ Lá» ÄÃO Táº O NHÃN VIÃN.pdf
+│   │       │
+│   │       └───versions
+│   │           ├───61faa75b-be05-4790-bb02-2a3d8195a0fb
+│   │           │       v001_2026-01-19T06-16-46-848Z_20dc17b9.pdf
+│   │           │
+│   │           ├───6cb8bcbb-26da-477e-ac71-8bcf0aab279c
+│   │           │       v001_2026-01-19T06-17-06-783Z_20dc17b9.pdf
+│   │           │
+│   │           ├───713cc5f6-ea88-4c0c-b9a7-d1ddb2baa7e3
+│   │           │       v001_2026-01-19T06-16-58-570Z_20dc17b9.pdf
+│   │           │
+│   │           ├───895bb447-c257-495a-97e5-4133f4dae723
+│   │           └───ee6f6166-f745-41af-9703-61d628530d63
+│   │                   v001_2026-01-19T06-17-19-234Z_20dc17b9.pdf
+│   │
+│   └───versions
+│       ├───a7c3b828-6c4a-45ca-a4d2-e1a4f7cb3c84
+│       ├───e3316943-e210-45d3-a5ae-44a00e2c2d65
+│       ├───e9744486-8748-4c77-b58a-7e250c333d20
+│       │       v001_2026-01-22T08-27-25-447Z_20dc17b9.pdf
+│       │
+│       └───fb5f323d-fe95-483e-9217-9fe9f2777ac3
+│               v001_2026-01-22T06-57-05-077Z_20dc17b9.pdf
+│
+├───IN_HOA
+│   ├───current
+│   │       5912f80f-86e0-4b32-8221-2ad93970ea64.pdf
+│   │       93f88097-5207-4489-981c-fdfe28f43b5d.pdf
+│   │       9c87a1b7-40b5-4fca-9216-07c8acd51837.pdf
+│   │       be48a3a1-b8ff-4a40-a170-9bcb1d9e9e55.pdf
+│   │       pt.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-14T08-19-44-272Z_303293df.pdf
+│   │       v001_2026-01-14T08-32-58-112Z_303293df.pdf
+│   │       v001_2026-01-14T08-33-39-103Z_303293df.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       pt.pdf
+│   │       │
+│   │       └───versions
+│   │           └───122fdd7e-0dfe-46ea-bc2a-ca6fa9812554
+│   ├───version
+│   │   ├───5912f80f-86e0-4b32-8221-2ad93970ea64
+│   │   │       v001_2026-01-29T06-41-39-608Z_303293df.pdf
+│   │   │
+│   │   ├───93f88097-5207-4489-981c-fdfe28f43b5d
+│   │   │       v001_2026-01-29T06-48-17-682Z_303293df.pdf
+│   │   │
+│   │   ├───9c87a1b7-40b5-4fca-9216-07c8acd51837
+│   │   │       v001_2026-01-29T06-48-30-419Z_303293df.pdf
+│   │   │
+│   │   └───be48a3a1-b8ff-4a40-a170-9bcb1d9e9e55
+│   │           v001_2026-01-29T06-12-47-084Z_303293df.pdf
+│   │
+│   └───versions
+│       ├───146e71fa-62da-4074-99e8-7f2970d8900a
+│       │       v001_2026-01-14T08-35-48-028Z_303293df.pdf
+│       │
+│       ├───7cd5aacc-bab5-4c96-8cf5-74a3672a8283
+│       └───f5d855b4-5c52-40b3-8fc1-f1050a0cfa70
+├───IT
+│   │   2025.11 BẢNG CHẤM CÔNG - MG - Copy.xlsx
+│   │   backblue.gif
+│   │
+│   ├───current
+│   │       2025.11 BẢNG CHẤM CÔNG - MG - Copy.xlsx
+│   │       backblue.gif
+│   │       BAO GIA KENH FTTH (5).pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-12T20-00-30-158Z_38a6f230.pdf
+│   │
+│   └───versions
+│       ├───5f8966fc-6993-48b7-90bb-246a1ef0c16d
+│       │       v001_2025-12-19T03-55-07-672Z_d626453c.xlsx
+│       │
+│       ├───b8b7833d-e8fd-4234-bdbb-d210f08e00fe
+│       │       v001_2025-12-19T03-55-14-753Z_d626453c.gif
+│       │
+│       └───bf13bafe-6836-493b-8120-43591853bd76
+├───KEO_SOI
+│   ├───delete files
+│   │       v001_2026-01-19T09-30-44-753Z_5fca1b2a.pdf
+│   │
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       WD.pdf
+│           │
+│           └───versions
+│               ├───4277f8de-820b-4a2d-96a4-df07349ce027
+│               │       v001_2026-01-19T09-30-52-628Z_5fca1b2a.pdf
+│               │
+│               └───f1f4499b-abf3-4b14-94eb-92e7975225bc
+├───KHO
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │   │   KPI.pdf
+│   │       │   │
+│   │       │   ├───current
+│   │       │   │       KPI.pdf
+│   │       │   │
+│   │       │   └───versions
+│   │       │       └───93d6fdb4-d224-4c75-9c64-b9acd7dbc25b
+│   │       │               v001_2026-01-16T06-38-30-615Z_324f957c.pdf
+│   │       │               v001_2026-01-16T06-38-30-619Z_324f957c.pdf
+│   │       │
+│   │       └───versions
+│   │           ├───37d84908-5e1e-43d1-b6fe-67c88697e375
+│   │           │       v001_2026-01-16T02-03-23-583Z_5101cd4b.pdf
+│   │           │
+│   │           └───e1d91707-526a-4fa2-bf65-a6afd41b9d9d
+│   │                   v001_2026-01-16T04-45-08-590Z_5101cd4b.pdf
+│   │
+│   └───versions
+│       └───749bc6c1-771c-4a4e-b797-0030e19aa84e
+│               v001_2026-01-16T04-53-28-492Z_5101cd4b.pdf
+│
+├───KINH_DOANH
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       å®¢æ·æ»¡æçï¼å¤§è´§äº¤ä»ç¶åµï¼Tá»· lá» hÃ i lÃ²ng cá»§a khÃ¡ch hÃ ng (tÃ¬nh tráº¡ng giao hÃ ng hÃ ng Äáº¡i trÃ ).pdf
+│           │       å®¢æ·æ»¡æçï¼å¤§è´§è´¨éæåï¼Tá»· lá» hÃ i lÃ²ng cá»§a khÃ¡ch hÃ ng (Äiá»m cháº¥t lÆ°á»£ng hÃ ng Äáº¡i trÃ ).pdf
+│           │
+│           └───versions
+│               ├───44fc2e82-b71a-4513-a05d-8e628f4d5122
+│               │       v001_2026-01-15T03-51-12-341Z_a778e46f.pdf
+│               │
+│               └───b4def84a-dae4-44e7-80be-ef8d79ff9357
+│                       v001_2026-01-15T03-51-00-486Z_a778e46f.pdf
+│
+├───LTB
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       FLTB.pdf
+│           │
+│           └───versions
+│               ├───6790a7e9-e29e-4826-aaa5-384d91c5d647
+│               │       v001_2026-01-19T08-51-37-652Z_85d5f8c4.pdf
+│               │
+│               ├───7609a736-02cc-4238-b769-333912345218
+│               │       v001_2026-01-19T08-51-28-059Z_85d5f8c4.pdf
+│               │
+│               └───94559d44-b714-47da-8a1b-93c8490fc950
+│                       v001_2026-01-19T08-51-16-108Z_85d5f8c4.pdf
+│
+├───NHUOM_DAI
+│   ├───current
+│   │       kpi.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-16T06-41-26-966Z_1534e117.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       1. Tá»· lá» OK láº§n 1 báº£n máº«u.pdf
+│   │       │       2. Tá»· lá» OK láº§n 1 báº£n mÃ u.pdf
+│   │       │       3. Tá»· lá» hao há»¥t nguyÃªn liá»u.pdf
+│   │       │
+│   │       └───versions
+│   │           ├───3183c8e4-412c-4a70-b4b3-b9496be0d34e
+│   │           ├───32aef3bb-3a3a-49f0-8e8a-fd84b9f6d74a
+│   │           │       v001_2026-01-16T06-40-53-276Z_1534e117.pdf
+│   │           │
+│   │           ├───3d0ec3ff-4232-47ee-9d1b-38b2d3cccec7
+│   │           │       v001_2026-01-16T06-44-27-140Z_1534e117.pdf
+│   │           │
+│   │           └───8cba2390-a0f4-467f-aa5c-57a406e308d6
+│   │                   v001_2026-01-16T06-41-56-997Z_1534e117.pdf
+│   │
+│   └───versions
+│       └───99700560-a84f-4163-b9f9-5311f44311bc
+│               v001_2026-01-20T02-11-34-155Z_1534e117.pdf
+│
+├───PD
+├───PHONG_KIEM_NGHIEM
+│   ├───delete files
+│   │       v001_2026-01-13T07-10-23-322Z_97f233d3.pdf
+│   │       v001_2026-01-13T07-10-29-972Z_97f233d3.pdf
+│   │
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       KPI-12.1.pdf
+│           │       KPI-12.pdf
+│           │
+│           └───versions
+│               ├───51c0f067-0f87-4ca1-9626-23459a96b10a
+│               │       v001_2026-01-13T07-10-59-765Z_97f233d3.pdf
+│               │
+│               ├───8c6378b9-d26a-4108-8750-80d0d265958c
+│               ├───a125e352-a215-4bdd-96cf-de2c00e17fb6
+│               └───d68c694b-5f1e-41f1-834d-c0712481ac21
+│                       v001_2026-01-13T07-11-17-183Z_97f233d3.pdf
+│
+├───PHONG_THI_NGHIEM
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       LAB.pdf
+│           │
+│           └───versions
+│               ├───5397c3f6-5fdd-4c39-bd60-31acc8d5d7ea
+│               │       v001_2026-01-19T08-58-42-253Z_b7ff8a2d.pdf
+│               │
+│               └───c052458d-ea2e-494c-9aa9-5a89a08ae5f0
+│                       v001_2026-01-19T08-58-15-408Z_b7ff8a2d.pdf
+│
+├───PMC
+│   ├───delete files
+│   │       v001_2026-01-15T01-54-33-017Z_a69b1cf2.pdf
+│   │       v001_2026-01-15T01-55-18-784Z_a69b1cf2.pdf
+│   │
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       åæ»çTá»· lá» hÃ ng tá»n kho lÃ¢u thÃ¡ng 12.pdf
+│           │       å¤´ç¼¸åæ¶ç Tá»· lá» máº» Äáº§u tiÃªn ÄÃºng tiáº¿n Äá» thÃ¡ng 12.pdf
+│           │       è´§æè¾¾æçTá»· lá» giao hÃ ng ÄÃºng háº¡n thÃ¡ng 12.pdf
+│           │
+│           └───versions
+│               ├───3c85c4bd-b07d-44ea-9a1b-360f13c422bf
+│               │       v001_2026-01-15T01-56-01-219Z_a69b1cf2.pdf
+│               │
+│               ├───79d7da55-4b2d-4293-ae84-ebf9cdf5f4f3
+│               ├───9ba4d07c-0601-4eb5-8143-40c08a067a49
+│               │       v001_2026-01-15T01-55-47-904Z_a69b1cf2.pdf
+│               │
+│               ├───b1037bf7-4d21-4529-b7f8-e4b000accaf4
+│               └───d35d5b85-60c1-46a7-b5fe-76e896c8d839
+│                       v001_2026-01-15T01-55-28-768Z_a69b1cf2.pdf
+│
+├───PR
+│   │   PHƯƠNG ÁN XÂY DỰNG HỆ THỐNG QUẢN LÝ TÀI LIỆU ISO.docx
+│   │   Đổi Mật Khẩu máy tính(2).docx
+│   │
+│   ├───current
+│   │       PHƯƠNG ÁN XÂY DỰNG HỆ THỐNG QUẢN LÝ TÀI LIỆU ISO.docx
+│   │       Đổi Mật Khẩu máy tính(2).docx
+│   │
+│   └───versions
+│       ├───1f8231e1-d56b-4d7f-8b19-333baf36cd3e
+│       │       v001_2025-12-19T03-55-34-294Z_d626453c.docx
+│       │
+│       └───b6da7a1d-045f-4b1f-97fa-46d3aa770acc
+│               v001_2025-12-19T03-55-29-395Z_d626453c.docx
+│
+├───QA
+│   ├───current
+│   │       KPI 9-12æ.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       KPI 9-12æ.pdf
+│   │       │
+│   │       └───versions
+│   │           └───e307e470-3012-484b-99a7-965d1e21142c
+│   │                   v001_2026-01-13T07-19-20-668Z_3b266393.pdf
+│   │
+│   └───versions
+│       ├───67baece0-7b9b-4d6c-8f47-9c412007723a
+│       │       v001_2026-01-13T07-23-46-778Z_3b266393.pdf
+│       │
+│       └───740a2aed-7f48-4526-accc-b0f1f092dd51
+│               v001_2026-01-13T07-23-38-362Z_3b266393.pdf
+│
+├───QC
+├───QC_DAI
+│   ├───current
+│   │       Hiá»u suáº¥t hao phÃ­ nguyÃªn liá»u 12.2025.pdf
+│   │       Hiá»u suáº¥t hao phÃ­ nguyÃªn liá»u 12.2026.pdf
+│   │       HIá»u suáº¥t sáº£n lÆ°á»£ng 12.2025.pdf
+│   │       Hiá»u suáº¥t sáº£n lÆ°á»£ng Qc Äai 12.2025.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-14T08-17-01-478Z_fe79c93a.pdf
+│   │       v001_2026-01-14T08-17-29-094Z_fe79c93a.pdf
+│   │       v001_2026-01-14T08-25-04-871Z_fe79c93a.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       Hiá»u suáº¥t hao phÃ­ nguyÃªn liá»u 12.2026.pdf
+│   │       │
+│   │       └───versions
+│   │           └───5688ca0d-5095-4684-8317-5e81606a226d
+│   └───versions
+│       ├───42888409-3955-4dc8-8d63-ecafcb7af8a2
+│       │       v001_2026-01-14T09-56-30-957Z_fe79c93a.pdf
+│       │
+│       ├───89900a35-b6a5-4e7c-b8b1-f47fe48d0e64
+│       ├───aba0ab77-4079-4389-8e68-47aa08d6ad94
+│       └───d9e96741-80af-4e56-b572-09f373b1bc23
+│               v001_2026-01-14T08-24-56-642Z_fe79c93a.pdf
+│
+├───QC_VAI
+│   ├───current
+│   │       QC VAI KPI 09-12.2025.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-13T07-31-21-713Z_9a615df6.pdf
+│   │       v001_2026-01-13T07-32-00-817Z_9a615df6.pdf
+│   │       v001_2026-01-13T07-40-40-741Z_2c05797d.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       QC VAI KPI 09-12.2025.pdf
+│   │       │
+│   │       └───versions
+│   │           ├───12a3da4c-4605-44ad-9ff8-a1ec6f9d2997
+│   │           ├───65375cc1-65e8-4113-87f6-3c9cce0e2d9e
+│   │           │       v001_2026-01-13T07-33-13-113Z_9a615df6.pdf
+│   │           │
+│   │           └───c0e89aed-efaa-4277-9d51-7dffc32f62d4
+│   └───versions
+│       └───3bcb0517-f190-44b8-add4-cf283355edd5
+├───RD
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       RD Váº¢I.pdf
+│           │
+│           └───versions
+│               ├───0d600187-06e6-48e2-bb51-a91573a24b7c
+│               │       v001_2026-01-14T02-26-40-997Z_401d78b0.pdf
+│               │
+│               ├───8f658584-e1cd-44a4-8281-bded99db7408
+│               │       v001_2026-01-14T02-26-53-627Z_401d78b0.pdf
+│               │
+│               └───e0b5acb1-4b6f-424a-911e-57206f4c65e6
+│                       v001_2026-01-14T02-27-01-045Z_401d78b0.pdf
+│
+├───SD
+├───SS
+│   ├───current
+│   │       1. å®åé¨ä¸è¯åç Tá»· lá» lá»i cá»§a bá» pháº­n Äá»nh hÃ¬nh.pdf
+│   │       2.å®åé¨è¿ä¿®ç Tá»· lá» váº£i sá»­a cá»§a bá» pháº­n Äá»nh hÃ¬nh.pdf
+│   │       3.åé¨æè¯å¤çç Tá»· lá» xá»­ lÃ½ khiáº¿u náº¡i ná»i bá».pdf
+│   │       4.ææ¡æ¹åæ¬¡æ°  Sá» láº§n Äá» xuáº¥t cáº£i tiáº¿n.pdf
+│   │
+│   ├───delete files
+│   │       v001_2026-01-14T10-03-19-158Z_9986b322.pdf
+│   │       v001_2026-01-16T06-40-18-505Z_9986b322.pdf
+│   │
+│   ├───KPI
+│   │   └───current
+│   │       ├───current
+│   │       │       12-BPVN-QA-PR-008 SS-å®åé¨2025å¹´è´¨éç®æ è¾¾ææåµè¡¨SS Báº£ng tÃ¬nh tráº¡ng Äáº¡t ÄÆ°á»£c má»¥c tiÃªu cháº¥t lÆ°á»£ng nÄm 2025.pdf
+│   │       │
+│   │       └───versions
+│   │           └───481c8e7c-8bd5-4b63-9e74-559885e9889d
+│   └───versions
+│       ├───57a7cd44-5e69-4d4b-9289-5afa129c37fc
+│       │       v001_2026-01-16T06-41-14-439Z_9986b322.pdf
+│       │
+│       ├───8c525a0a-da32-4f93-9fe1-7208f0c97e35
+│       │       v001_2026-01-16T06-41-35-718Z_9986b322.pdf
+│       │
+│       ├───99c85cb4-4f8c-495d-a639-e76b9dfe9323
+│       │       v001_2026-01-16T06-41-24-754Z_9986b322.pdf
+│       │
+│       ├───c0c87dff-6ae1-464d-97a8-d2db31ba780d
+│       │       v001_2026-01-16T06-40-59-433Z_9986b322.pdf
+│       │
+│       └───d9528f92-f47d-46ae-b645-609dd1465e4a
+├───THU_MUA
+│   └───KPI
+│       └───current
+│           ├───current
+│           │       1. ç©æäº¤æåç¡®çTá»· lá» giao hÃ ng ÄÃºng háº¡n.pdf
+│           │       2. éè´§ç Tá»· lá» tráº£ hÃ ng.pdf
+│           │       3. ä¾åºåè¯ä¼°çTá»· lá» ÄÃ¡nh giÃ¡ NCC.pdf
+│           │
+│           └───versions
+│               ├───127d2606-98d1-4add-b185-03c199d2c1e0
+│               │       v001_2026-01-15T01-54-10-335Z_51f1afd9.pdf
+│               │
+│               ├───4be923de-8e81-4b72-b90a-bc6a3ed21dbb
+│               │       v001_2026-01-15T01-54-20-207Z_51f1afd9.pdf
+│               │
+│               └───65ad2bb2-8d2b-4159-94be-2f1c9368d75f
+│                       v001_2026-01-15T01-53-54-798Z_51f1afd9.pdf
+│
+└───XNK
+    ├───delete files
+    │       v001_2026-01-19T06-15-47-954Z_b33ca95f.pdf
+    │       v001_2026-01-19T06-16-11-396Z_b33ca95f.pdf
+    │       v001_2026-01-19T06-22-35-994Z_b33ca95f.pdf
+    │       v001_2026-01-19T06-22-43-489Z_b33ca95f.pdf
+    │
+    └───KPI
+        └───current
+            ├───current
+            │       KPI SHD 12.2025.pdf
+            │       ä¸ï¹æ¥å³åç¡®åæ¶çTá»· lá» khai bÃ¡o háº£i quan chÃ­nh xÃ¡c, ká»p thá»i.pdf
+            │       äºï¹çªåäºä»¶é¢å¤è´¹ç¨PhÃ¡t sinh sá»± cá» chi phÃ­ ngoÃ i káº¿ hoáº¡ch.pdf
+            │       æ¥å³åç¡®åæ¶çTá»· lá» khai bÃ¡o háº£i quan chÃ­nh xÃ¡c, ká»p thá»i.pdf
+            │       çªåäºä»¶é¢å¤è´¹ç¨PhÃ¡t sinh sá»± cá» chi phÃ­ ngoÃ i káº¿ hoáº¡ch.pdf
+            │
+            └───versions
+                ├───241401d9-62b8-4895-8d6e-9ae4b38ff200
+                ├───4bebab15-30d0-4b29-8177-e36001317b00
+                │       v001_2026-01-19T06-23-18-224Z_b33ca95f.pdf
+                │
+                ├───921167d4-0bf4-48f6-89c0-157fbdac5ccc
+                ├───d34530df-7856-4299-89c9-c6b178958edc
+                │       v001_2026-01-19T06-23-10-015Z_b33ca95f.pdf
+                │
+                ├───f8b68406-6471-467b-a640-3593232bfbe4
+                └───fe087df1-eede-4946-b293-82955bf11a23
+context trong db 
+
+-- 1.1. Tổng quan folders theo department
+ EG                     | EG-Công trình                |            7 |                   0
+ HCNS                   | HCNS                         |            0 |                   0
+ HR                     | HR-HCNS (Hành chính Nhân sự) |           12 |                   0
+ IE                     | IE-Công trình dự án          |            0 |                   0
+ IT                     | IT-Thông tin                 |            6 |                   1
+ KINH_DOANH             | SD - Kinh doanh              |            0 |                   0
+ LAB                    | LAB-Thí nghiệm               |            6 |                   0
+ LTB(E)                 | LTB(E)-LTB đai               |            5 |                   0
+ LTB(F)                 | LTB(F)-LTB vải               |            6 |                   0
+ MG                     | MG                           |            0 |                   0
+ PD                     | PD                           |            5 |                   0
+ PHONG_MAU              | Phòng mẫu                    |            0 |                   0
+ PMC                    | PMC-Kế hoạch sản xuất        |            7 |                   0
+ PR                     | PR                           |            0 |                   0
+ PT                     | PT-In hoa                    |            7 |                   0
+ PTVL                   | Phát triển vật liệu          |            0 |                   0
+ PUR                    | PUR-Thu mua                  |            6 |                   0
+ PW                     | PW-GĐ Trước nhuộm sợi        |            6 |                   0
+ QA                     | QA-QA                        |            6 |                   3
+ QC                     | QC                           |            5 |                   0
+ QC(E)                  | QC(E)-QC đai                 |            7 |                   0
+ QC(F)                  | QC(F)-QC vải                 |            7 |                   0
+ RD                     | RD-Nghiên cứu và phát triển  |            8 |                   0
+ SAN_XUAT               | Sản xuất                     |            0 |                   0
+ SD                     | SD-Kinh doanh                |           11 |                   0
+ SHD                    | SHD-Xuất nhập khẩu           |            7 |                   0
+ SS                     | SS-Định hình                 |            9 |                   0
+ TL                     | TL-Kiểm nghiệm               |            7 |                   0
+ V-Tech                 | V-Tech-Công nghệ             |            6 |                   3
+ WA                     | WA-Dệt dọc                   |            6 |                   0
+ WD                     | WD-Kéo sợi                   |            7 |                   0
+ WH                     | WH-Kho                       |            6 |                   0
+ WK                     | WK-Dệt ngang                 |            6 |                   0
+ WV                     | WV-Dệt đai                   |            6 |                   0
+ YDF                    | YDF-Nhuộm sợi                |            6 |                   0
+(45 rows)
+
+-- 2.1. Tổng quan documents theo status
+documents=# -- 2.1. Tổng quan documents theo status
+SELECT
+    status,
+    COUNT(*) AS count,
+    SUM(file_size) AS total_size_bytes,
+    ROUND(SUM(file_size) / 1024.0 / 1024.0, 2) AS total_size_mb
+FROM documents
+GROUP BY status
+ORDER BY status;
+ status  | count | total_size_bytes | total_size_mb
+---------+-------+------------------+---------------
+ ACTIVE  |    32 |         19754245 |         18.84
+ DELETED |   752 |        832117685 |        793.57
+(2 rows)
+
+-- 4.1. Kiểm tra mỗi department có đủ 4 folders chính không
+  0
+ PW                     | PW-GĐ Trước nhuộm sợi        |       0 |             0 |               0 |                0 |                    0
+ QA                     | QA-QA                        |       1 |             0 |               0 |                0 |                    0
+ QC                     | QC                           |       0 |             0 |               0 |                0 |                    0
+ QC(E)                  | QC(E)-QC đai                 |       0 |             0 |               0 |                0 |                    0
+ QC(F)                  | QC(F)-QC vải                 |       0 |             0 |               0 |                0 |                    0
+ RD                     | RD-Nghiên cứu và phát triển  |       0 |             0 |               0 |                0 |                    0
+ SD                     | SD-Kinh doanh                |       0 |             0 |               0 |                0 |                    0
+ SHD                    | SHD-Xuất nhập khẩu           |       0 |             0 |               0 |                0 |                    0
+ SS                     | SS-Định hình                 |       0 |             0 |               0 |                0 |                    0
+ TL                     | TL-Kiểm nghiệm               |       0 |             0 |               0 |                0 |                    0
+ V-Tech                 | V-Tech-Công nghệ             |       1 |             0 |               0 |                0 |                    0
+ WA                     | WA-Dệt dọc                   |       0 |             0 |               0 |                0 |                    0
+ WD                     | WD-Kéo sợi                   |       0 |             0 |               0 |                0 |                    0
+ WH                     | WH-Kho                       |       0 |             0 |               0 |                0 |                    0
+ WK                     | WK-Dệt ngang                 |       0 |             0 |               0 |                0 |                    0
+ WV                     | WV-Dệt đai                   |       0 |             0 |               0 |                0 |                    0
+ YDF                    | YDF-Nhuộm sợi                |       0 |             0 |               0 |                0 |                    0
+(36 rows)
+-- 4.2. Chi tiết folder structure của một department cụ thể (thay 'DH' bằng department code)
+
+                  id                  |       name       |            path            |              parent_id               | is_internal | internal_type |       deleted_at        | document_count | child_folder_count
+--------------------------------------+------------------+----------------------------+--------------------------------------+-------------+---------------+-------------------------+----------------+--------------------
+ 7a9fb927-61a0-4548-8217-eda272a47592 | Nhuộm vải        | DH                         |                                      | f           |               |                         |              5 |                  4
+ d217c22f-e7eb-4f98-afae-fc8f8f21d676 | delete files     | DH/delete files            | 7a9fb927-61a0-4548-8217-eda272a47592 | f           |               | 2026-01-30 07:50:51.773 |              2 |                  0
+ e1d8f547-e300-48f9-9dfd-ce48e941ea40 | KPI              | DH/KPI                     | 7a9fb927-61a0-4548-8217-eda272a47592 | f           |               |                         |              0 |                  1
+ c2247b30-7716-4917-99c6-b98bef3d0308 | current          | DH/KPI/current             | e1d8f547-e300-48f9-9dfd-ce48e941ea40 | f           |               |                         |              0 |                  2
+ fdf291de-60be-4cdc-b81d-762395dbfc7d | Nhuộm vải        | NHUOM_VAI                  |                                      | f           |               | 2026-01-12 20:02:03.778 |              0 |                  4
+ b30915e0-afe1-417d-b92f-f485448a39c1 | Bảo trì thiết bị | NHUOM_VAI/Bảo trì thiết bị | fdf291de-60be-4cdc-b81d-762395dbfc7d | f           |               | 2026-01-12 20:02:03.805 |              0 |                  0
+ 789189d9-ce82-4b80-8cbd-946a9a09eb8a | Cải tiến         | NHUOM_VAI/Cải tiến         | fdf291de-60be-4cdc-b81d-762395dbfc7d | f           |               | 2026-01-12 20:02:03.814 |              0 |                  0
+ 025cbe88-3831-4dbe-b85c-190d77e3ac70 | KPI              | NHUOM_VAI/KPI              | fdf291de-60be-4cdc-b81d-762395dbfc7d | f           |               | 2026-01-12 20:02:03.796 |              0 |                  0
+ c05e1496-e5b0-47d0-bd3b-5095328ac5a6 | Tài liệu ISO     | NHUOM_VAI/Tài liệu ISO     | fdf291de-60be-4cdc-b81d-762395dbfc7d | f           |               | 2026-01-12 20:02:03.789 |              0 |                  0
+(9 rows)
+
+(END)
+-- 5.1. Phân tích pattern của file_path
+      path_pattern      | count
+------------------------+-------
+ HAS_CURRENT_SUBFOLDER  |    15
+ HAS_VERSIONS_SUBFOLDER |    14
+ HAS_DELETE_FOLDER      |     2
+ OTHER_PATTERN          |     1
+(4 rows)
+
+documents=#
+-- 5.2. Sample file paths để xem cấu trúc
+1-e1fdcd4075be/v001_2026-01-23T02-26-56-962Z_3dcd950e.pdf                                | DET_NGANG_S/KPI/versions/6d78a890-c277-445e-9071-e1fdcd4075be |                 | ACTIVE
+ 60d0cfcd-8e40-49af-a63f-ef7f22b7d03b | v001_2026-01-22T09-27-52-557Z_3dcd950e.pdf      | DF/KPI/versions/123c4165-430d-40d6-b123-183035d09300/v001_2026-01-22T09-27-52-557Z_3dcd950e.pdf                                         | DF/KPI/versions/123c4165-430d-40d6-b123-183035d09300          |                 | ACTIVE
+ ef72c1cf-87e2-44f9-be4b-a07b9a78a331 | v001_2026-01-23T00-12-56-618Z_3dcd950e.pdf      | DF/versions/1d05c529-64f9-47a8-8b1f-4e59c4bd1d45/v001_2026-01-23T00-12-56-618Z_3dcd950e.pdf                                             | DF/versions/1d05c529-64f9-47a8-8b1f-4e59c4bd1d45              |                 | ACTIVE
+ 92d7f0bd-6461-4d0a-9bfa-4ce2c79d80b3 | v001_2026-01-23T01-22-49-047Z_3dcd950e.pdf      | DF/versions/75b1fb34-2ec1-43f0-91d3-0309ae3857f7/v001_2026-01-23T01-22-49-047Z_3dcd950e.pdf                                             | DF/versions/75b1fb34-2ec1-43f0-91d3-0309ae3857f7              |                 | ACTIVE
+ e07f69d7-742c-43a8-9658-480a277a48cf | v001_2026-01-23T00-07-52-464Z_3dcd950e.pdf      | DF/versions/c6e9db58-bbc2-46c1-9c8b-fcf95c92178f/v001_2026-01-23T00-07-52-464Z_3dcd950e.pdf                                             | DF/versions/c6e9db58-bbc2-46c1-9c8b-fcf95c92178f              |                 | ACTIVE
+ 6a917329-6552-4b02-a737-bd9982d9c234 | Đơn đề nghị tạo mail. Cao Thị Ngọc, Y220501.pdf | DH/current/Đơn đề nghị tạo mail. Cao Thị Ngọc, Y220501.pdf                                                                              | DH/current                                                    |                 | ACTIVE
+ 8bb1e709-fc0f-4811-a92e-3c4bdebde25f | v001_2026-01-22T09-23-54-525Z_3dcd950e.pdf      | DH/KPI/current/versions/4834010a-96a6-4d3d-b53f-c6287f413b81/v001_2026-01-22T09-23-54-525Z_3dcd950e.pdf                                 | DH/KPI/current/versions/4834010a-96a6-4d3d-b53f-c6287f413b81  |                 | ACTIVE
+ 6bfd38c8-3859-4b05-88cf-861436acd405 | v001_2026-01-22T09-32-02-998Z_3dcd950e.pdf      | DH/versions/1421ebbd-901b-4ad6-899c-d3ef6532762a/v001_2026-01-22T09-32-02-998Z_3dcd950e.pdf                                             | DH/versions/1421ebbd-901b-4ad6-899c-d3ef6532762a              |                 | ACTIVE
+ b2827fa2-155e-4d77-a604-7324bec3d5d6 | v001_2026-01-22T23-48-53-640Z_3dcd950e.pdf      | DH/versions/24287355-a02b-46dd-8ac1-1ff346ff9108/v001_2026-01-22T23-48-53-640Z_3dcd950e.pdf                                             | DH/versions/24287355-a02b-46dd-8ac1-1ff346ff9108              |                 | ACTIVE
+ da91d6b6-ec76-45d4-a085-23be77618d1b | v001_2026-01-22T23-52-18-124Z_3dcd950e.pdf      | DH/versions/4b587140-466e-4889-a993-f773b5c6917d/v001_2026-01-22T23-52-18-124Z_3dcd950e.pdf                                             | DH/versions/4b587140-466e-4889-a993-f773b5c6917d              |                 | ACTIVE
+ 5d361bd1-c9c6-40f5-83d3-4c41c2d1523e | v001_2026-01-22T23-51-12-162Z_3dcd950e.pdf      | DH/versions/802979c3-cae4-4b44-b4cb-6183fba8c9d8/v001_2026-01-22T23-51-12-162Z_3dcd950e.pdf                                             | DH/versions/802979c3-cae4-4b44-b4cb-6183fba8c9d8              |                 | ACTIVE
+ ab295fd0-bcb8-4ea2-b3ff-cc94bcf39311 | 1d52515f-26e8-47d9-beb3-d98bc6ba3aed.pdf        | EG/KPI/current/1d52515f-26e8-47d9-beb3-d98bc6ba3aed.pdf                                                                                 | EG/KPI/current                                                |                 | ACTIVE
+(20 rows)
+
+-- 6.1. Documents có file_path không khớp với folder.path
+
+                  id                  |                                                    file_name                                                    |         file_path         |  folder_path  | department_code | status_check
+--------------------------------------+-----------------------------------------------------------------------------------------------------------------+---------------------------+---------------+-----------------+---------------
+ a1fb0b57-d864-4889-a314-a36cd61e2c3b | BPVN-QA-PR-008 R&D-b�2025t(��\x07�\x10uhB�ng t�nh tr�ng \x11�t \x11��c m�c ti�u ch�t l��ng n\x03m 2025.xlsx     |                           | NC_PT_VAI/KPI | RD              | PATH_MISMATCH
+ 4f996054-f9a6-46c1-970b-f8467c88a6f5 | 11-BPVN-QA-PR-008 SHD-9��2025t(��\x07�\x10uhB�ng t�nh tr�ng \x11�t \x11��c m�c ti�u ch�t l��ng n\x03m 2025.xlsx |                           | XNK/KPI       | SHD             | PATH_MISMATCH
+ 368f9fa1-cdc9-4d80-b2b4-fd9074e9055f | 3. BPVN Form. \x10\x03ng k� xe \x11i c�ng t�c.pdf                                                               |                           | KE_TOAN       | AC              | PATH_MISMATCH
+ 02da065a-2bc1-4e10-8d64-5ef425786b7c | 1. BPVN. Form xin ra ngoài .pdf                                                                                 |                           | KE_TOAN       | AC              | PATH_MISMATCH
+ 6235f30f-adb4-4e2c-9254-e0a265a1c9f7 | ve xe.pdf                                                                                                       |                           | IT            | IT              | PATH_MISMATCH
+ b128b428-18c8-403e-8d3b-d17d2b8811a8 | BPVN-QA-PR-008 R&D-b�2025t(��\x07�\x10uhB�ng t�nh tr�ng \x11�t \x11��c m�c ti�u ch�t l��ng n\x03m 2025.xlsx     |                           | NC_PT_VAI/KPI | RD              | PATH_MISMATCH
+ 9b0e12ce-d2ee-47ce-9d5d-546917ffdb32 | BPVN-QA-PR-008 R&D-b�2025t(��\x07�\x10uhB�ng t�nh tr�ng \x11�t \x11��c m�c ti�u ch�t l��ng n\x03m 2025.xlsx     |                           | NC_PT_VAI/KPI | RD              | PATH_MISMATCH
+ 8b3ad6c1-0399-41d7-9836-f1a0ef34fd81 | Thông báo tiếng Việt và 中文.pdf                                                                                | test/path/manual-test.pdf | IT/KPI        | IT              | PATH_MISMATCH
+(8 rows)
+
+(END)
+-- 7.1. Tổng hợp tình trạng migration
+    check_item                | count |                                          affected_departments                        
+------------------------------------------+-------+---------------------------------------------------------------------------------------------------------
+ Folders named "Documents"                |     0 |
+ Folders named "Deleted files" or similar |     1 |
+ Documents in /current/ subfolder         |   540 | DCC, DF, EG, HR, LAB, LTB(F), PMC, PUR, PW, QA, QC(F), RD, SD, SHD, TL, V-Tech, WA, WD, WH, WK, WV, YDF
+ Active documents total                   |    32 |
+ Deleted documents total                  |   752 |
+(5 rows)
+
+(END)

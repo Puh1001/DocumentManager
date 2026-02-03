@@ -12,8 +12,8 @@
 |-------|--------|
 | Date | 2026-01-30 |
 | Priority | Medium |
-| Implementation status | Pending |
-| Review status | Not started |
+| Implementation status | Done |
+| Review status | Done (see [reports/phase-03-code-review.md](./reports/phase-03-code-review.md)) |
 | Description | Tests for month-scoped attachments; update docs and API description. |
 
 ## Key Insights
@@ -26,7 +26,7 @@
 
 ### Functional
 
-- Backend: unit/integration tests for list with/without month; create with month; validation (month &lt; 1, &gt; 12).
+- Backend: unit/integration tests for list with/without month; create with month; validation (month &lt; 1, &gt; 12). **Legacy:** list with `?month=M` includes attachments where month = M or month IS NULL.
 - Frontend: manual or automated test that changing month updates attachment list; upload with month persists.
 - Docs: describe month parameter for GET/POST attachments; update KPI section to “monthly uploads”.
 
@@ -57,7 +57,7 @@
 ## Implementation Steps
 
 1. **Backend tests**
-   - In attachment service spec: create attachment with `month: 3`; assert stored. List by record with `month: 3` returns it; with `month: 2` does not. List without month returns all (including NULL month if any). Invalid month (0, 13) in create returns validation error.
+   - Create with `month: 3`; assert stored. List with `month: 3` returns it and any NULL-month (legacy) attachments. List with `month: 2` returns only month=2 and legacy (NULL). List without month returns all. Invalid month (0, 13) in create returns validation error. Multiple attachments same record+month allowed.
 
 2. **Swagger/API docs**
    - List: `@ApiQuery({ name: 'month', required: false, type: Number, description: 'Filter by month 1-12' })`.
@@ -74,11 +74,11 @@
 
 ## Todo List
 
-- [ ] Add attachment service/controller tests for month (list filter, create, validation).
-- [ ] Document month in Swagger/OpenAPI for list and upload.
-- [ ] Update README KPI/API section.
-- [ ] Update system-architecture.md API section.
-- [ ] Update codebase-summary.md KPI section.
+- [x] Add attachment service/controller tests for month (list filter, create, validation).
+- [x] Document month in Swagger/OpenAPI for list and upload (already in controller).
+- [x] Update README KPI/API section.
+- [x] Update system-architecture.md API section.
+- [x] Update codebase-summary.md KPI section.
 
 ## Success Criteria
 

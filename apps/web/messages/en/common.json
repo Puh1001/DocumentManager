@@ -5,7 +5,7 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "documents": "Documents",
+    "documents": "ISO Document",
     "kpi": "KPI",
     "departments": "Departments",
     "users": "Users",
@@ -22,7 +22,9 @@
     "create": "Create",
     "update": "Update",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
+    "select": "Select",
     "submit": "Submit",
     "close": "Close",
     "search": "Search",
@@ -35,7 +37,7 @@
     "success": "Success",
     "noData": "No data available"
   },
-  "searchPlaceholder": "Search documents...",
+  "searchPlaceholder": "Search ISO documents...",
   "admin": "Admin",
   "passwordChangeDescription": "Update your account password.",
   "cancel": "Cancel",

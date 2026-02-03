@@ -1,39 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { api } from "@/lib/api";
-import { FolderTree } from "@/components/documents/folder-tree";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
+import { getUserDepartments } from "@/lib/kpi-access-helpers";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DocumentList } from "@/components/documents/document-list";
 import { DocumentToolbar } from "@/components/documents/document-toolbar";
 import { UploadProgress } from "@/components/documents/upload-progress";
+import { FolderPickerDialog } from "@/components/documents/folder-picker-dialog";
 import { Card } from "@/components/ui/card";
 import { useFolderSync } from "@/hooks/use-folder-sync";
-
-interface Folder {
-  id: string;
-  name: string;
-  path: string;
-  physicalLocation: string | null;
-  departmentId?: string | null;
-  department?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-  children: Folder[];
-  documents?: Document[];
-}
-
-interface Document {
-  id: string;
-  name: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  updatedAt: string;
-  deletionExpiresAt?: string | null;
-}
+import { useDocumentLevels } from "@/hooks/use-document-levels";
+import type { Document } from "@/lib/types/document.types";
 
 interface UploadProgress {
   percentage: number;
@@ -41,13 +30,46 @@ interface UploadProgress {
   eta: number;
 }
 
+// Custom debounce hook
+function useDebounce<T extends (...args: unknown[]) => void>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  ) as T;
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return debouncedCallback;
+}
+
+function canSeeAllFolders(roles: string[]): boolean {
+  return roles.some((r) => r === "admin" || r === "dcc" || r === "boss");
+}
+
 export default function DocumentsPage() {
   const t = useTranslations("documents");
   const locale = useLocale();
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(
@@ -57,43 +79,125 @@ export default function DocumentsPage() {
   const [uploadAbortController, setUploadAbortController] = useState<{
     abort: () => void;
   } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [levelFilter, setLevelFilter] = useState<string>("");
+  const [departments, setDepartments] = useState<
+    { id: string; name: string; code: string }[]
+  >([]);
+  const { levels, loading: levelsLoading } = useDocumentLevels();
 
-  const loadFolderTree = useCallback(async () => {
-    try {
-      const tree = await api.get<Folder[]>("/storage/folders/tree");
-      setFolders(tree || []);
+  // Departments allowed for upload: everyone (including admin) must select one; upload goes to Documents folder of that department
+  const uploadDepartments = useMemo(() => {
+    if (!user || !departments.length) return [];
+    if (canSeeAllFolders(user.roles || [])) return departments;
+    const ids = getUserDepartments(user);
+    return departments.filter((d) => ids.includes(d.id));
+  }, [user, departments]);
 
-      // If no folders, try to sync with file system
-      if (!tree || tree.length === 0) {
-        console.warn("No folders found. Consider running sync.");
+  const [selectedDepartmentIdForUpload, setSelectedDepartmentIdForUpload] =
+    useState<string>("");
+
+  useEffect(() => {
+    if (uploadDepartments.length === 0) {
+      setSelectedDepartmentIdForUpload("");
+      return;
+    }
+    setSelectedDepartmentIdForUpload((prev) => {
+      const inList = uploadDepartments.some((d) => d.id === prev);
+      return inList ? prev : (uploadDepartments[0]?.id ?? "");
+    });
+  }, [uploadDepartments]);
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [deletedCount, setDeletedCount] = useState(0);
+
+  useEffect(() => {
+    api
+      .get<{ id: string; name: string; code: string }[]>("/departments")
+      .then(setDepartments)
+      .catch(() => setDepartments([]));
+  }, []);
+
+  const loadAllDocuments = useCallback(
+    async (page: number) => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        if (
+          statusFilter === "ACTIVE" ||
+          statusFilter === "ARCHIVED" ||
+          statusFilter === "DELETED"
+        ) {
+          params.append("status", statusFilter);
+        }
+        if (departmentFilter) {
+          params.append("departmentId", departmentFilter);
+        }
+        if (levelFilter) {
+          params.append("level", levelFilter);
+        }
+
+        const response = await api.get<{
+          data: Document[];
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        }>(`/storage/documents?${params.toString()}`);
+
+        // Dedupe by id so the same document never appears twice (defense in depth)
+        const list = response.data || [];
+        const seenIds = new Set<string>();
+        const deduped = list.filter((d) => {
+          if (seenIds.has(d.id)) return false;
+          seenIds.add(d.id);
+          return true;
+        });
+        setDocuments(deduped);
+        setTotal(response.total || 0);
+        setTotalPages(response.totalPages || 0);
+        // Don't update currentPage here - it's managed by the caller
+        // This prevents circular dependency in useEffect
+      } catch (error) {
+        console.error("Failed to load documents:", error);
+        toast({
+          title: t("errors.loadFailed") || "Error",
+          description:
+            t("errors.loadFailedDescription") ||
+            "Failed to load documents. Please try again.",
+          variant: "destructive",
+        });
+        setDocuments([]);
+        setTotal(0);
+        setTotalPages(0);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load folders:", error);
-      setFolders([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [statusFilter, departmentFilter, levelFilter, limit, toast, t]
+  );
 
-  const loadFolderContents = useCallback(async (folderId: string) => {
-    try {
-      const folder = await api.get<Folder>(`/storage/folders/${folderId}`);
-      setSelectedFolder(folder);
-      setDocuments(folder.documents || []);
-    } catch (error) {
-      console.error("Failed to load folder contents:", error);
-    }
-  }, []);
+  const debouncedLoadDocuments = useDebounce(() => {
+    // Reset to page 1 when filters change - this will trigger the page effect below
+    setCurrentPage(1);
+  }, 300);
 
   useEffect(() => {
-    loadFolderTree();
-  }, [loadFolderTree]);
+    debouncedLoadDocuments();
+  }, [statusFilter, departmentFilter, levelFilter, debouncedLoadDocuments]);
 
+  // Load documents when page changes (without debounce)
+  // Only depend on currentPage - loadAllDocuments is stable (doesn't change unless filters change)
   useEffect(() => {
-    if (selectedFolderId) {
-      loadFolderContents(selectedFolderId);
-    }
-  }, [selectedFolderId, loadFolderContents]);
+    loadAllDocuments(currentPage);
+  }, [currentPage, loadAllDocuments]);
 
   // Real-time sync with WebSocket
   const handleSyncEvent = useCallback(
@@ -110,83 +214,94 @@ export default function DocumentsPage() {
           | undefined;
         if (data?.success === false) {
           console.error("Sync failed:", data.error);
-          // Could show error notification here
         } else {
           console.log("Sync completed successfully");
         }
-        // Always refresh on sync_completed
-        loadFolderTree();
-        if (selectedFolderId) {
-          loadFolderContents(selectedFolderId);
-        }
+        // Refresh document list (reset to page 1)
+        setCurrentPage(1);
+        loadAllDocuments(1);
         return;
       }
 
-      // Refresh folder tree on any sync event
+      // Refresh document list on any sync event (keep current page)
       if (
         event.type === "folder_added" ||
         event.type === "folder_updated" ||
-        event.type === "folder_deleted"
+        event.type === "folder_deleted" ||
+        event.type === "document_added" ||
+        event.type === "document_updated" ||
+        event.type === "document_deleted"
       ) {
-        loadFolderTree();
-      }
-
-      // Refresh folder contents if event affects current folder
-      if (selectedFolderId) {
-        // If event has folderId, only refresh if it matches selected folder
-        // Otherwise, refresh for any document_* event (fallback for events without folderId)
-        if (
-          event.folderId === selectedFolderId ||
-          (!event.folderId &&
-            (event.type === "document_added" ||
-              event.type === "document_updated" ||
-              event.type === "document_deleted"))
-        ) {
-          console.log(
-            `Refreshing folder ${selectedFolderId} due to event:`,
-            event.type,
-            event.folderId ? `(folderId: ${event.folderId})` : "(no folderId)"
-          );
-          loadFolderContents(selectedFolderId);
-        }
+        loadAllDocuments(currentPage);
+        // Refresh deleted count
+        api
+          .get<{ total: number }>(
+            "/storage/documents?status=DELETED&limit=1&page=1"
+          )
+          .then((res) => setDeletedCount(res.total || 0))
+          .catch(() => setDeletedCount(0));
       }
     },
-    [selectedFolderId, loadFolderTree, loadFolderContents]
+    [loadAllDocuments, currentPage]
   );
 
   useFolderSync({
     onSyncEvent: handleSyncEvent,
-    folderId: selectedFolderId || undefined,
     enabled: true,
   });
-
-  const handleFolderSelect = (folderId: string) => {
-    setSelectedFolderId(folderId);
-  };
 
   const handleDocumentDeleted = useCallback(
     (documentId: string) => {
       // Remove deleted document from list
       setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
-      // Optionally refresh folder contents to ensure consistency
-      if (selectedFolderId) {
-        loadFolderContents(selectedFolderId);
-      }
+      // Refresh to ensure consistency (keep current page)
+      loadAllDocuments(currentPage);
     },
-    [selectedFolderId, loadFolderContents],
+    [loadAllDocuments, currentPage]
   );
 
-  const handleUpload = async (file: File) => {
-    if (!selectedFolderId) return;
+  const handleFolderSelected = (folderId: string, levelId: string) => {
+    if (!levelId?.trim()) return;
+    if (pendingUploadFile) {
+      performUpload(pendingUploadFile, folderId, levelId);
+      setPendingUploadFile(null);
+    }
+  };
 
+  const handleFileSelect = (file: File) => {
+    if (uploadDepartments.length === 0) {
+      toast({
+        title: t("errors.loadFailed") || "Error",
+        description:
+          t("upload.noDepartment") ||
+          "No department available for upload. Please contact admin.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!selectedDepartmentIdForUpload) {
+      setSelectedDepartmentIdForUpload(uploadDepartments[0]?.id ?? "");
+    }
+    setPendingUploadFile(file);
+    setFolderPickerOpen(true);
+  };
+
+  const performUpload = async (
+    file: File,
+    folderId: string,
+    levelId: string
+  ) => {
+    if (!levelId?.trim()) return;
     setUploading(true);
     setUploadFileName(file.name);
     setUploadProgress({ percentage: 0, speed: 0, eta: 0 });
 
+    const body: Record<string, string> = { folderId, levelId };
+
     const { promise, abort } = api.uploadWithProgress(
       "/storage/documents/upload",
       file,
-      { folderId: selectedFolderId },
+      body,
       (progress) => {
         setUploadProgress({
           percentage: progress.percentage,
@@ -203,14 +318,26 @@ export default function DocumentsPage() {
       setUploading(false);
       setUploadProgress(null);
       setUploadFileName("");
-      loadFolderContents(selectedFolderId);
+      // Refresh and reset to page 1 after upload
+      setCurrentPage(1);
+      loadAllDocuments(1);
+      toast({
+        title: t("toolbar.uploadSuccess") || "Success",
+        description:
+          t("toolbar.uploadSuccessDescription") ||
+          "Document uploaded successfully",
+      });
     } catch (error) {
       console.error("Upload failed:", error);
       setUploading(false);
       setUploadProgress(null);
       setUploadFileName("");
       if (error instanceof Error && error.message !== "Upload cancelled") {
-        alert(error.message);
+        toast({
+          title: t("toolbar.uploadError") || "Error",
+          description: error.message,
+          variant: "destructive",
+        });
       }
     }
   };
@@ -253,53 +380,127 @@ export default function DocumentsPage() {
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Folder Tree */}
-        <Card className="lg:col-span-1 p-4">
-          <h3 className="font-semibold mb-4">{t("folder")}</h3>
-          <FolderTree
-            folders={folders}
-            selectedId={selectedFolderId}
-            onSelect={handleFolderSelect}
-          />
-        </Card>
-
-        {/* Document List */}
-        <div className="lg:col-span-3 space-y-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <DocumentToolbar
-            folder={selectedFolder}
-            onUpload={handleUpload}
-            onRefresh={() =>
-              selectedFolderId && loadFolderContents(selectedFolderId)
-            }
+            statusFilter={statusFilter}
+            departmentFilter={departmentFilter}
+            levelFilter={levelFilter}
+            onStatusChange={setStatusFilter}
+            onDepartmentChange={setDepartmentFilter}
+            onLevelChange={setLevelFilter}
+            departments={departments}
+            levels={levels}
+            levelsLoading={levelsLoading}
+            locale={locale}
+            onUpload={handleFileSelect}
+            onRefresh={() => loadAllDocuments(currentPage)}
             onSync={handleSync}
+            uploadDepartments={uploadDepartments}
+            selectedDepartmentIdForUpload={selectedDepartmentIdForUpload}
+            onUploadDepartmentChange={setSelectedDepartmentIdForUpload}
+          />
+          {deletedCount > 0 && (
+            <Badge
+              variant="destructive"
+              className="cursor-pointer"
+              onClick={() => {
+                setStatusFilter("DELETED");
+                setCurrentPage(1);
+              }}
+            >
+              {t("filters.statusDeleted")}: {deletedCount}
+            </Badge>
+          )}
+        </div>
+
+        <Card className="p-4">
+          <DocumentList
+            documents={documents}
+            locale={locale}
+            onDocumentClick={(doc) => {
+              // Open document viewer with locale
+              window.open(
+                `/${locale}/dashboard/documents/${doc.id}/view`,
+                "_blank"
+              );
+            }}
+            onDocumentDeleted={handleDocumentDeleted}
+            onDocumentMetadataUpdated={() => {
+              // Refresh document list after ISO metadata edit
+              loadAllDocuments(currentPage);
+            }}
           />
 
-          <Card className="p-4">
-            {selectedFolderId ? (
-              <DocumentList
-                documents={documents}
-                folderId={selectedFolderId}
-                onDocumentClick={(doc) => {
-                  // Open document viewer with locale
-                  window.open(`/${locale}/dashboard/documents/${doc.id}/view`, "_blank");
-                }}
-                onDocumentDeleted={handleDocumentDeleted}
-                onDocumentRenamed={(documentId) => {
-                  // Refresh folder contents to update renamed document
-                  if (selectedFolderId) {
-                    loadFolderContents(selectedFolderId);
-                  }
-                }}
-              />
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                {t("selectFolder")}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                {t("pagination.showing", {
+                  from: (currentPage - 1) * limit + 1,
+                  to: Math.min(currentPage * limit, total),
+                  total,
+                })}
               </div>
-            )}
-          </Card>
-        </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                    )
+                    .map((page, index, array) => (
+                      <React.Fragment key={page}>
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <span className="px-2">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      </React.Fragment>
+                    ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
+
+      {/* Folder Picker Dialog */}
+      <FolderPickerDialog
+        open={folderPickerOpen}
+        onOpenChange={(open) => {
+          setFolderPickerOpen(open);
+          if (!open) {
+            setPendingUploadFile(null);
+          }
+        }}
+        onSelect={handleFolderSelected}
+        departmentId={selectedDepartmentIdForUpload || undefined}
+        documentsOnly
+      />
 
       {/* Upload Progress Dialog */}
       {uploading && uploadProgress && (

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CustomException } from "@/common/errors/custom-exception";
-import { DocumentService } from "./document.service";
+import { DocumentService, FindAllDocumentsFilters } from "./document.service";
+import { DocumentLevelService } from "./document-level.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { VersionService } from "./version.service";
@@ -8,16 +9,19 @@ import { Express } from "express";
 import { Readable } from "stream";
 import type * as fs from "fs";
 
+const mockLevel = { id: "level-1", code: "LEVEL1", isActive: true };
+
 describe("DocumentService", () => {
   let service: DocumentService;
   let prismaService: jest.Mocked<PrismaService>;
   let smbService: jest.Mocked<SmbService>;
   let versionService: jest.Mocked<VersionService>;
+  let mockDocumentLevelService: { findById: jest.Mock; findAll: jest.Mock };
 
   const mockFolder = {
     id: "folder-1",
     name: "Test Folder",
-    path: "test-folder",
+    path: "DEPT/ISO_documents", // Under Documents (ISO_documents) for upload validation
     parentId: null,
     physicalLocation: null,
     deletedAt: null,
@@ -69,6 +73,12 @@ describe("DocumentService", () => {
       folder: {
         findUnique: jest.fn(),
       },
+      user: {
+        findMany: jest.fn(),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({}),
+      },
     };
 
     const mockSmbService = {
@@ -81,12 +91,18 @@ describe("DocumentService", () => {
       createVersion: jest.fn(),
     };
 
+    mockDocumentLevelService = {
+      findById: jest.fn().mockResolvedValue(mockLevel),
+      findAll: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SmbService, useValue: mockSmbService },
         { provide: VersionService, useValue: mockVersionService },
+        { provide: DocumentLevelService, useValue: mockDocumentLevelService },
       ],
     }).compile();
 
@@ -113,6 +129,16 @@ describe("DocumentService", () => {
         where: { id: "doc-1" },
         include: {
           folder: true,
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
           permissions: {
             include: { permission: true },
           },
@@ -143,6 +169,508 @@ describe("DocumentService", () => {
         where: { folderId: "folder-1", status: "ACTIVE" },
         orderBy: { name: "asc" },
       });
+    });
+  });
+
+  describe("findAll", () => {
+    const mockDocumentWithRelations = {
+      ...mockDocument,
+      folder: {
+        ...mockFolder,
+        department: {
+          id: "dept-1",
+          name: "Test Department",
+          code: "TEST",
+        },
+      },
+      _count: {
+        versions: 2,
+      },
+    };
+
+    it("should return all documents when no filters provided", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+        skip: 0,
+        take: 20,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+      });
+    });
+
+    it("should filter by status when status provided", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
+
+      const result = await service.findAll({ status: "ARCHIVED" });
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ARCHIVED",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+        skip: 0,
+        take: 20,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ARCHIVED",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+      });
+    });
+
+    it("should filter by departmentId when departmentId provided", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
+
+      const result = await service.findAll({ departmentId: "dept-1" });
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+            departmentId: "dept-1",
+          },
+        },
+        skip: 0,
+        take: 20,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+            departmentId: "dept-1",
+          },
+        },
+      });
+    });
+
+    it("should filter by both status and departmentId when both provided", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
+
+      const result = await service.findAll({
+        status: "ACTIVE",
+        departmentId: "dept-1",
+      });
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+            departmentId: "dept-1",
+          },
+        },
+        skip: 0,
+        take: 20,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+            departmentId: "dept-1",
+          },
+        },
+      });
+    });
+
+    it("should ignore invalid status values", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
+
+      // Test invalid status - service should default to ACTIVE
+      const invalidFilters = {
+        status: "INVALID_STATUS",
+      } as unknown as FindAllDocumentsFilters;
+      const result = await service.findAll(invalidFilters);
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+        skip: 0,
+        take: 20,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+      });
+    });
+
+    it("should support pagination with page and limit", async () => {
+      const mockDocuments = [mockDocumentWithRelations];
+      prismaService.document.findMany = jest
+        .fn()
+        .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(50);
+
+      const result = await service.findAll({ page: 2, limit: 10 });
+
+      expect(result).toEqual({
+        data: mockDocuments,
+        total: 50,
+        page: 2,
+        limit: 10,
+        totalPages: 5,
+      });
+      expect(prismaService.document.findMany).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+        skip: 10, // (page - 1) * limit = (2 - 1) * 10 = 10
+        take: 10,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+      expect(prismaService.document.count).toHaveBeenCalledWith({
+        where: {
+          status: "ACTIVE",
+          folder: {
+            AND: [
+              { path: { not: { contains: "/versions/" } } },
+              { path: { not: { contains: "\\versions\\" } } },
+            ],
+          },
+        },
+      });
+    });
+  });
+
+  describe("updateIsoMetadata", () => {
+    it("should update ISO metadata and return document", async () => {
+      const docWithRelations = {
+        ...mockDocument,
+        level: mockLevel,
+        preparer: { id: "user-1", username: "u1", fullName: "User 1" },
+        reviewer: null,
+        approver: null,
+      };
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValueOnce(mockDocument)
+        .mockResolvedValueOnce(docWithRelations);
+      mockDocumentLevelService.findById = jest
+        .fn()
+        .mockResolvedValue(mockLevel);
+      prismaService.user.findMany = jest
+        .fn()
+        .mockResolvedValue([{ id: "user-1" }]);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+
+      const dto = {
+        levelId: "level-1",
+        preparerId: "user-1",
+        approvalDate: "2026-01-30T00:00:00.000Z",
+      };
+      const result = await service.updateIsoMetadata("doc-1", dto, "user-0");
+
+      expect(result).toEqual(docWithRelations);
+      expect(prismaService.document.update).toHaveBeenCalledWith({
+        where: { id: "doc-1" },
+        data: expect.objectContaining({
+          level: { connect: { id: "level-1" } },
+          preparer: { connect: { id: "user-1" } },
+          approvalDate: new Date("2026-01-30T00:00:00.000Z"),
+        }),
+      });
+    });
+
+    it("should throw when document not found", async () => {
+      prismaService.document.findUnique = jest.fn().mockResolvedValue(null);
+
+      await expect(
+        service.updateIsoMetadata("doc-missing", {}, "user-0")
+      ).rejects.toThrow(CustomException);
     });
   });
 
@@ -178,7 +706,14 @@ describe("DocumentService", () => {
         .mockResolvedValueOnce(mockDocument)
         .mockResolvedValueOnce(mockDocument);
 
-      const result = await service.upload("folder-1", mockFile, "user-1");
+      const result = await service.upload(
+        "folder-1",
+        mockFile,
+        "user-1",
+        undefined,
+        undefined,
+        "level-1"
+      );
 
       expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
         where: { id: "folder-1" },
@@ -220,7 +755,14 @@ describe("DocumentService", () => {
         .fn()
         .mockResolvedValue(mockDocument);
 
-      await service.upload("folder-1", mockFile, "user-1", "Custom Name");
+      await service.upload(
+        "folder-1",
+        mockFile,
+        "user-1",
+        "Custom Name",
+        undefined,
+        "level-1"
+      );
 
       expect(prismaService.document.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -229,11 +771,124 @@ describe("DocumentService", () => {
       });
     });
 
+    it("should throw when folder path is not under ISO_documents", async () => {
+      const folderOutsideDocuments = {
+        ...mockFolder,
+        path: "DEPT/KPI",
+      };
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValue(folderOutsideDocuments);
+
+      await expect(
+        service.upload(
+          "folder-1",
+          mockFile,
+          "user-1",
+          undefined,
+          undefined,
+          "level-1",
+          { userCanUploadToAnyFolder: true }
+        )
+      ).rejects.toThrow(CustomException);
+    });
+
+    it("should throw when folder is not in user department (restricted user)", async () => {
+      const folderOtherDept = {
+        ...mockFolder,
+        departmentId: "dept-other",
+      };
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValue(folderOtherDept);
+
+      await expect(
+        service.upload(
+          "folder-1",
+          mockFile,
+          "user-1",
+          undefined,
+          undefined,
+          "level-1",
+          {
+            userDepartmentIds: ["dept-1"],
+            userCanUploadToAnyFolder: false,
+          }
+        )
+      ).rejects.toThrow(CustomException);
+    });
+
+    it("should allow upload when folder is in user department", async () => {
+      const folderUserDept = {
+        ...mockFolder,
+        departmentId: "dept-1",
+      };
+      const mockVersion = {
+        id: "version-1",
+        filePath: "test-folder/current/doc-1.pdf",
+      };
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValue(folderUserDept);
+      prismaService.document.create = jest.fn().mockResolvedValue({
+        ...mockDocument,
+        filePath: "",
+      });
+      versionService.createVersion = jest.fn().mockResolvedValue(mockVersion);
+      smbService.getFileStats = jest.fn().mockResolvedValue({
+        birthtime: new Date(),
+        mtime: new Date(),
+      } as fs.Stats);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValue(mockDocument);
+
+      const result = await service.upload(
+        "folder-1",
+        mockFile,
+        "user-1",
+        undefined,
+        undefined,
+        "level-1",
+        {
+          userDepartmentIds: ["dept-1"],
+          userCanUploadToAnyFolder: false,
+        }
+      );
+
+      expect(result).toEqual(mockDocument);
+      expect(prismaService.document.create).toHaveBeenCalled();
+    });
+
+    it("should throw when levelId is missing", async () => {
+      await expect(
+        service.upload("folder-1", mockFile, "user-1", undefined, undefined, "")
+      ).rejects.toThrow(CustomException);
+      await expect(
+        service.upload(
+          "folder-1",
+          mockFile,
+          "user-1",
+          undefined,
+          undefined,
+          undefined
+        )
+      ).rejects.toThrow(CustomException);
+    });
+
     it("should throw NotFoundException when folder does not exist", async () => {
       prismaService.folder.findUnique = jest.fn().mockResolvedValue(null);
 
       await expect(
-        service.upload("invalid-folder", mockFile, "user-1")
+        service.upload(
+          "invalid-folder",
+          mockFile,
+          "user-1",
+          undefined,
+          undefined,
+          "level-1"
+        )
       ).rejects.toThrow(CustomException);
     });
 
@@ -257,12 +912,17 @@ describe("DocumentService", () => {
         .fn()
         .mockResolvedValue(mockDocument);
 
-      const result = await service.upload("folder-1", mockFile, "user-1");
+      const result = await service.upload(
+        "folder-1",
+        mockFile,
+        "user-1",
+        undefined,
+        undefined,
+        "level-1"
+      );
 
-      expect(prismaService.document.update).toHaveBeenCalledWith({
-        where: { id: expect.any(String) },
-        data: { filePath: mockVersion.filePath },
-      });
+      // When getFileStats fails we skip date update; we do not overwrite filePath (createVersion already set it)
+      expect(prismaService.document.update).not.toHaveBeenCalled();
       expect(result).toEqual(mockDocument);
     });
   });

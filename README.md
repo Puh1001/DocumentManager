@@ -16,7 +16,9 @@ Web application quản lý metadata và phân quyền, trong khi lưu trữ và 
 - 🏢 **Department Management**: Quản lý phòng ban với CRUD operations
 - 📈 **KPI Tracking**: Theo dõi KPI theo phòng ban với biểu đồ và export Excel
   - **Year Selector**: Chọn năm để xem/chỉnh sửa dữ liệu KPI (năm hiện tại ± 5 năm)
-  - **PDF Attachments**: Upload, xem và quản lý file PDF đính kèm cho KPI records
+  - **PDF Attachments**: Upload, xem và quản lý file PDF đính kèm cho KPI records (theo tháng)
+    - **Monthly filter**: List attachments có query `?month=1`…`12` để lọc theo tháng; bỏ qua = tất cả tháng
+    - **Upload theo tháng**: Upload chấp nhận `month` (1–12) để gắn file với tháng; mặc định = tháng hiện tại
     - **Auto-folder Creation**: Tự động tạo cấu trúc thư mục `Department/KPI/current` nếu chưa tồn tại
     - **Optional folderId**: `folderId` là tùy chọn, backend sẽ tự động tạo thư mục nếu không được cung cấp
     - **File Deletion**: Xóa file sẽ di chuyển vào thư mục "delete files" trong cùng thư mục bộ phận
@@ -171,8 +173,8 @@ docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 | POST   | /departments                    | Create department        |
 | GET    | /kpi/records                    | List KPI records         |
 | GET    | /kpi/records/:id/export         | Export KPI to Excel      |
-| POST   | /kpi/records/:id/attachments    | Upload KPI PDF attachment |
-| GET    | /kpi/records/:id/attachments    | List KPI attachments     |
+| POST   | /kpi/records/:id/attachments    | Upload KPI PDF (body: month 1–12 optional) |
+| GET    | /kpi/records/:id/attachments    | List KPI attachments (?month=1…12 optional) |
 | GET    | /kpi/attachments/:id/stream     | Stream PDF attachment    |
 | GET    | /kpi/attachments/:id/download   | Download PDF attachment  |
 | DELETE | /kpi/attachments/:id            | Delete KPI attachment   |

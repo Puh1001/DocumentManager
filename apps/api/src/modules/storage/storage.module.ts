@@ -17,8 +17,10 @@ import { FolderWatcherService } from "./services/folder-watcher.service";
 import { FolderSyncListener } from "./listeners/folder-sync.listener";
 import { FolderController } from "./controllers/folder.controller";
 import { DocumentController } from "./controllers/document.controller";
+import { DocumentLevelController } from "./controllers/document-level.controller";
 import { DeletionRequestController } from "./controllers/deletion-request.controller";
 import { StatsController } from "./controllers/stats.controller";
+import { DocumentLevelService } from "./services/document-level.service";
 import { UsersModule } from "@/modules/users/users.module";
 import { AuthModule } from "@/modules/auth/auth.module";
 import { AuthorizationModule } from "@/modules/authorization/authorization.module";
@@ -28,12 +30,14 @@ import { AuthorizationModule } from "@/modules/authorization/authorization.modul
   controllers: [
     FolderController,
     DocumentController,
+    DocumentLevelController,
     DeletionRequestController,
     StatsController,
   ],
   providers: [
     SmbService,
     FolderService,
+    DocumentLevelService,
     FolderSyncService,
     DocumentService,
     DocumentDeletionService,
@@ -52,6 +56,7 @@ import { AuthorizationModule } from "@/modules/authorization/authorization.modul
     SmbService,
     FolderService,
     DocumentService,
+    DocumentLevelService,
     DocumentDeletionService,
     VersionService,
     LocalEditService,

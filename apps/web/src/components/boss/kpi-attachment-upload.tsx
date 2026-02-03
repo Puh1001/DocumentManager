@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 interface KpiAttachmentUploadProps {
   kpiRecordId: string;
   folderId: string | undefined; // Optional - backend will auto-create if not provided
+  /** Month 1-12 for this upload. When null (All months), defaults to current month. */
+  selectedMonth?: number | null;
   onUploadSuccess: (attachment: KpiAttachment) => void;
   variant?: "default" | "cyber"; // Style variant: default for regular UI, cyber for boss UI
 }
@@ -18,6 +20,7 @@ interface KpiAttachmentUploadProps {
 export function KpiAttachmentUpload({
   kpiRecordId,
   folderId,
+  selectedMonth,
   onUploadSuccess,
   variant = "default",
 }: KpiAttachmentUploadProps) {
@@ -26,16 +29,6 @@ export function KpiAttachmentUpload({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canCreate = useCanAccess("create", "Kpi");
-
-  // Debug logging (temporary)
-  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-    console.log("[KpiAttachmentUpload] Debug:", {
-      kpiRecordId,
-      folderId,
-      canCreate,
-      hasFolderId: !!folderId,
-    });
-  }
 
   if (!canCreate) {
     return null;
@@ -51,8 +44,8 @@ export function KpiAttachmentUpload({
       !file.name.toLowerCase().endsWith(".pdf")
     ) {
       toast({
-        title: "Lỗi",
-        description: "Chỉ chấp nhận file PDF",
+        title: t("toastError"),
+        description: t("pdfOnly"),
         variant: "destructive",
       });
       if (fileInputRef.current) {
@@ -61,23 +54,30 @@ export function KpiAttachmentUpload({
       return;
     }
 
-    // folderId is optional - backend will auto-create folder if not provided
+    // When "All months" (null), use current month for upload
+    const month =
+      selectedMonth != null && selectedMonth >= 1 && selectedMonth <= 12
+        ? selectedMonth
+        : new Date().getMonth() + 1;
+
     setUploading(true);
     try {
       const result = await kpiAttachmentApi.uploadAttachment(
         kpiRecordId,
         file,
         folderId,
-        undefined
+        undefined,
+        month,
       );
 
-      // Convert result to KpiAttachment format
+      // API returns id, documentId, month, description, createdAt; fileName from file, uploadedBy not in response
       const attachment: KpiAttachment = {
         id: result.id,
         documentId: result.documentId,
         fileName: file.name,
-        uploadedBy: "", // Will be filled by backend
+        uploadedBy: "",
         createdAt: result.createdAt,
+        month: result.month ?? month,
         description: result.description,
       };
 
@@ -87,16 +87,16 @@ export function KpiAttachmentUpload({
       }
 
       toast({
-        title: "Thành công",
-        description: "Đã tải lên file PDF thành công",
+        title: t("toastSuccess"),
+        description: t("uploadSuccess"),
         variant: "default",
       });
     } catch (error: unknown) {
       console.error("Upload failed:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể tải lên file";
+        error instanceof Error ? error.message : t("uploadFailed");
       toast({
-        title: "Lỗi",
+        title: t("toastError"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -120,10 +120,10 @@ export function KpiAttachmentUpload({
         <label
           htmlFor={`kpi-upload-${kpiRecordId}`}
           className="cyber-button px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          title={t("upload") || "Tải lên PDF"}
+          title={t("upload")}
         >
           <Upload className="h-3 w-3" />
-          <span>{uploading ? "Đang tải..." : t("upload") || "Tải lên"}</span>
+          <span>{uploading ? t("uploading") : t("upload")}</span>
         </label>
       </div>
     );
@@ -144,10 +144,10 @@ export function KpiAttachmentUpload({
         <label
           htmlFor={`kpi-upload-${kpiRecordId}`}
           className="flex items-center gap-1.5 cursor-pointer"
-          title={t("upload") || "Tải lên PDF"}
+          title={t("upload")}
         >
           <Upload className="h-3.5 w-3.5" />
-          <span>{uploading ? "Đang tải..." : t("upload") || "Tải lên"}</span>
+          <span>{uploading ? t("uploading") : t("upload")}</span>
         </label>
       </Button>
     </div>

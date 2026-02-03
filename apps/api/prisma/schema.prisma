@@ -39,6 +39,11 @@ model User {
   deletionRequests  DeletionRequest[] @relation("DeletionRequests")
   deletionReviews   DeletionRequest[] @relation("DeletionReviews")
 
+  // ISO document workflow relations
+  preparedDocuments Document[] @relation("DocumentPreparer")
+  reviewedDocuments Document[] @relation("DocumentReviewer")
+  approvedDocuments Document[] @relation("DocumentApprover")
+
   @@index([username])
   @@index([email])
   @@index([department])
@@ -168,6 +173,28 @@ enum InternalFolderType {
   DELETE_FILES
 }
 
+// ISO document level lookup (stored in DB, not hardcoded)
+model DocumentLevel {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. LEVEL1, LEVEL2
+  name        String   // Default display name
+  nameEn      String?  @map("name_en")
+  nameVi      String?  @map("name_vi")
+  nameZh      String?  @map("name_zh")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  documents Document[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("document_levels")
+}
+
 model Document {
   id             String         @id @default(uuid())
   name           String // Display name
@@ -184,23 +211,43 @@ model Document {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  // NEW: Deletion tracking fields
+  // ISO document level (required)
+  levelId String @map("level_id")
+
+  // ISO metadata (auto-populated by system)
+  preparerId   String?    @map("preparer_id") // Auto-set to uploader
+  reviewerId   String?    @map("reviewer_id")
+  approverId   String?    @map("approver_id")
+  approvalDate DateTime?  @map("approval_date")
+  receiptDate  DateTime?  @map("receipt_date")
+
+  // Deletion tracking fields
   uploadedBy        String?   @map("uploaded_by") // Uploader user ID
   uploadedAt        DateTime? @default(now()) @map("uploaded_at") // Upload timestamp
   deletionExpiresAt DateTime? @map("deletion_expires_at") // uploadedAt + 72h
 
   // Relations
   folder         Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  level          DocumentLevel        @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  preparer       User?                @relation("DocumentPreparer", fields: [preparerId], references: [id], onDelete: SetNull)
+  reviewer       User?                @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  approver       User?                @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)
   versions       DocumentVersion[]
   permissions    DocumentPermission[]
   kpiAttachments KpiAttachment[]      @relation("DocumentKpiAttachments")
 
-  // NEW: Deletion tracking relations
+  // Deletion tracking relations
   uploadedByUser  User?             @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: SetNull)
   deletionRequest DeletionRequest?
   replacementFor  DeletionRequest[] @relation("ReplacementFiles")
 
   @@index([folderId])
+  @@index([levelId])
+  @@index([preparerId])
+  @@index([reviewerId])
+  @@index([approverId])
+  @@index([approvalDate])
+  @@index([receiptDate])
   @@index([status])
   @@index([fileType])
   @@index([uploadedBy])
@@ -455,6 +502,7 @@ model KpiAttachment {
   id          String   @id @default(uuid())
   kpiRecordId String   @map("kpi_record_id")
   documentId  String   @map("document_id")
+  month       Int?     @map("month") // 1-12; NULL = legacy, shown in every month
   description String?
   createdById String   @map("created_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -464,6 +512,7 @@ model KpiAttachment {
   createdBy User      @relation("UserKpiAttachments", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([kpiRecordId])
+  @@index([kpiRecordId, month])
   @@index([documentId])
   @@index([createdById])
   @@map("kpi_attachments")

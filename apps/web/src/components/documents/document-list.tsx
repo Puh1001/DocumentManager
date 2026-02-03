@@ -1,48 +1,73 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatFileSize, formatDate, getFileIcon } from "@/lib/utils";
+import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
+import { formatDateShort } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Eye, Download, History, ExternalLink, Pencil } from "lucide-react";
+import { Eye, Download, History, ExternalLink, FileEdit } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
 import { Document as DocumentType } from "@/lib/types/ability.types";
+import type {
+  Document,
+  DocumentLevel,
+  DocumentUser,
+} from "@/lib/types/document.types";
 import { DeletionStatusBadge } from "./deletion-status-badge";
 import { DeletionActions } from "./deletion-actions";
 import { DeletionErrorBoundary } from "./deletion-error-boundary";
-import { RenameDocumentDialog } from "./rename-document-dialog";
-import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
+import { IsoMetadataEditDialog } from "./iso-metadata-edit-dialog";
 import { useState } from "react";
 
-interface Document {
-  id: string;
-  name: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  updatedAt: string;
-  folderId?: string;
-  deletionExpiresAt?: string | null;
+const PLACEHOLDER = "—";
+
+function getLevelDisplayName(
+  level: DocumentLevel | null | undefined,
+  locale: string
+): string {
+  if (!level) return PLACEHOLDER;
+  if (locale === "vi" && level.nameVi) return level.nameVi;
+  if (locale === "zh" && level.nameZh) return level.nameZh;
+  if (locale === "en" && level.nameEn) return level.nameEn;
+  return level.name;
+}
+
+function formatUserName(user: DocumentUser | null | undefined): string {
+  if (!user) return PLACEHOLDER;
+  return user.fullName?.trim() || user.username || PLACEHOLDER;
+}
+
+function formatDateOrPlaceholder(
+  date: string | null | undefined,
+  locale: string
+): string {
+  if (date == null || date === "") return PLACEHOLDER;
+  try {
+    return formatDateShort(date, locale);
+  } catch {
+    return PLACEHOLDER;
+  }
 }
 
 interface DocumentListProps {
   documents: Document[];
+  locale?: string;
   onDocumentClick?: (doc: Document) => void;
-  folderId?: string | null;
   onDocumentDeleted?: (documentId: string) => void;
-  onDocumentRenamed?: (documentId: string) => void;
+  onDocumentMetadataUpdated?: (documentId: string) => void;
 }
 
 export function DocumentList({
   documents,
+  locale = "en",
   onDocumentClick,
-  folderId,
   onDocumentDeleted,
-  onDocumentRenamed,
+  onDocumentMetadataUpdated,
 }: DocumentListProps) {
   const t = useTranslations("documents.list");
   const { ability } = useAbility();
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
+  const [selectedDocumentForMetadata, setSelectedDocumentForMetadata] =
+    useState<Document | null>(null);
 
   if (documents.length === 0) {
     return (
@@ -57,20 +82,44 @@ export function DocumentList({
       <table className="w-full">
         <thead>
           <tr className="border-b">
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              {t("columns.name")}
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.no")}
             </th>
             <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              {t("columns.type")}
+              {t("columns.title")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.version")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.level")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.responsibleDepartment")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.preparer")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.reviewer")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.approver")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.approvalDate")}
+            </th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.receiptDate")}
             </th>
             <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              {t("columns.size")}
+              {t("columns.storageLocation")}
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              {t("columns.updated")}
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.status")}
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-              Deletion Status
+            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {t("columns.uploadPDF")}
             </th>
             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
               {t("columns.actions")}
@@ -78,46 +127,79 @@ export function DocumentList({
           </tr>
         </thead>
         <tbody>
-          {documents.map((doc) => (
+          {documents.map((doc, index) => (
             <tr
               key={doc.id}
               className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => onDocumentClick?.(doc)}
             >
+              <td className="py-3 px-4 text-sm">{index + 1}</td>
               <td className="py-3 px-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
-                  <div>
-                    <p className="font-medium">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {fixFileNameEncoding(doc.fileName)}
-                    </p>
-                  </div>
-                </div>
+                <p className="font-medium">{doc.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {fixFileNameEncoding(doc.fileName)}
+                </p>
+              </td>
+              <td className="py-3 px-4 text-sm">
+                {doc._count?.versions != null && doc._count.versions > 0
+                  ? doc._count.versions
+                  : doc._count?.versions === 0
+                    ? "0"
+                    : PLACEHOLDER}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {getLevelDisplayName(doc.level, locale)}
+              </td>
+              <td className="py-3 px-4 text-sm">
+                {doc.folder?.department?.name ?? PLACEHOLDER}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatUserName(doc.preparer)}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatUserName(doc.reviewer)}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatUserName(doc.approver)}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatDateOrPlaceholder(doc.approvalDate, locale)}
+              </td>
+              <td className="py-3 px-4 text-sm text-muted-foreground">
+                {formatDateOrPlaceholder(doc.receiptDate, locale)}
+              </td>
+              <td
+                className="py-3 px-4 text-sm text-muted-foreground max-w-[12rem] truncate"
+                title={doc.folder?.path}
+              >
+                {doc.folder?.path ?? PLACEHOLDER}
               </td>
               <td className="py-3 px-4">
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted">
-                  {doc.fileType.toUpperCase()}
+                  {doc.status ?? PLACEHOLDER}
                 </span>
-              </td>
-              <td className="py-3 px-4 text-sm text-muted-foreground">
-                {formatFileSize(doc.fileSize)}
-              </td>
-              <td className="py-3 px-4 text-sm text-muted-foreground">
-                {formatDate(doc.updatedAt)}
               </td>
               <td className="py-3 px-4">
                 <div onClick={(e) => e.stopPropagation()}>
-                  <DeletionErrorBoundary>
-                    <DeletionStatusBadge
-                      documentId={doc.id}
-                      expiresAt={
-                        doc.deletionExpiresAt
-                          ? new Date(doc.deletionExpiresAt)
-                          : null
-                      }
-                    />
-                  </DeletionErrorBoundary>
+                  {ability?.can("view", {
+                    id: doc.id,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(
+                          `/${locale}/dashboard/documents/${doc.id}/view`,
+                          "_blank"
+                        );
+                      }}
+                    >
+                      {t("actions.view")}
+                    </Button>
+                  )}
                 </div>
               </td>
               <td className="py-3 px-4">
@@ -127,7 +209,7 @@ export function DocumentList({
                 >
                   {ability?.can("view", {
                     id: doc.id,
-                    folderId: doc.folderId || folderId || undefined,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
                   } as DocumentType) && (
                     <Button
                       variant="ghost"
@@ -139,7 +221,7 @@ export function DocumentList({
                   )}
                   {ability?.can("download", {
                     id: doc.id,
-                    folderId: doc.folderId || folderId || undefined,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
                   } as DocumentType) && (
                     <Button
                       variant="ghost"
@@ -151,7 +233,7 @@ export function DocumentList({
                   )}
                   {ability?.can("edit", {
                     id: doc.id,
-                    folderId: doc.folderId || folderId || undefined,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
                   } as DocumentType) && (
                     <Button
                       variant="ghost"
@@ -161,21 +243,26 @@ export function DocumentList({
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Rename"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedDocument(doc);
-                      setRenameDialogOpen(true);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  {ability?.can("edit", {
+                    id: doc.id,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
+                  } as DocumentType) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.editMetadata")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDocumentForMetadata(doc);
+                        setMetadataDialogOpen(true);
+                      }}
+                    >
+                      <FileEdit className="h-4 w-4" />
+                    </Button>
+                  )}
                   {ability?.can("view", {
                     id: doc.id,
-                    folderId: doc.folderId || folderId || undefined,
+                    folderId: doc.folderId ?? doc.folder?.id ?? undefined,
                   } as DocumentType) && (
                     <Button
                       variant="ghost"
@@ -186,12 +273,20 @@ export function DocumentList({
                     </Button>
                   )}
                   <DeletionErrorBoundary>
+                    <DeletionStatusBadge
+                      documentId={doc.id}
+                      expiresAt={
+                        doc.deletionExpiresAt
+                          ? new Date(doc.deletionExpiresAt)
+                          : null
+                      }
+                    />
+                  </DeletionErrorBoundary>
+                  <DeletionErrorBoundary>
                     <DeletionActions
                       documentId={doc.id}
                       documentName={doc.name}
-                      onDeleted={() => {
-                        onDocumentDeleted?.(doc.id);
-                      }}
+                      onDeleted={() => onDocumentDeleted?.(doc.id)}
                     />
                   </DeletionErrorBoundary>
                 </div>
@@ -201,20 +296,18 @@ export function DocumentList({
         </tbody>
       </table>
 
-      {/* Rename Dialog */}
-      {selectedDocument && (
-        <RenameDocumentDialog
-          open={renameDialogOpen}
-          onOpenChange={setRenameDialogOpen}
-          documentId={selectedDocument.id}
-          currentName={selectedDocument.name}
-          currentFileName={selectedDocument.fileName}
-          onRenamed={() => {
-            onDocumentRenamed?.(selectedDocument.id);
-            setSelectedDocument(null);
-          }}
-        />
-      )}
+      {/* ISO Metadata Edit Dialog */}
+      <IsoMetadataEditDialog
+        open={metadataDialogOpen}
+        onOpenChange={setMetadataDialogOpen}
+        document={selectedDocumentForMetadata}
+        onSaved={() => {
+          if (selectedDocumentForMetadata) {
+            onDocumentMetadataUpdated?.(selectedDocumentForMetadata.id);
+            setSelectedDocumentForMetadata(null);
+          }
+        }}
+      />
     </div>
   );
 }

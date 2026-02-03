@@ -5,7 +5,7 @@
   },
   "navigation": {
     "dashboard": "仪表板",
-    "documents": "文档",
+    "documents": "ISO文档",
     "kpi": "KPI",
     "departments": "部门",
     "users": "用户",
@@ -22,7 +22,9 @@
     "create": "创建",
     "update": "更新",
     "save": "保存",
+    "saving": "保存中...",
     "cancel": "取消",
+    "select": "选择",
     "submit": "提交",
     "close": "关闭",
     "search": "搜索",
@@ -35,7 +37,7 @@
     "success": "成功",
     "noData": "无数据"
   },
-  "searchPlaceholder": "搜索文档...",
+  "searchPlaceholder": "搜索ISO文档...",
   "admin": "管理员",
   "passwordChangeDescription": "修改您的账户密码。",
   "cancel": "取消",

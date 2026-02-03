@@ -61,14 +61,14 @@ apps/web/
 │   ├── [locale]/          # Internationalization
 │   │   ├── /login              # Public login page
 │   │   └── /dashboard          # Protected routes
-│   │       ├── /documents      # Document browser
+│   │       ├── /documents      # ISO Document browser
 │   │       ├── /departments    # Department management
 │   │       ├── /kpi            # KPI tracking
 │   │       └── /maintenance    # Maintenance notices
 │
 ├── Client Components
 │   ├── Layout (Sidebar, Header)
-│   ├── Documents (Tree, List, Toolbar)
+│   ├── Documents (ISO Document Table with filters, Toolbar, Folder Picker Dialog)
 │   ├── Boss (Boss role UI components)
 │   ├── AccessDenied (Permission denied UI)
 │   ├── PageGuard (Automatic page permission guard)
@@ -161,10 +161,12 @@ User → Login Page → POST /auth/login
   → Stored in localStorage
 ```
 
-### 2. Document View Flow
+### 2. ISO Document View Flow
 
 ```
-User → Document List → Click document
+User → ISO Document page → Select folder → Table shows documents
+  → Filters: Status (ACTIVE/ARCHIVED/DELETED), Department
+  → Click document in table
   → GET /storage/documents/:id
   → Permission check (RBAC/ABAC)
   → GET /storage/documents/:id/stream
@@ -178,7 +180,9 @@ User → Document List → Click document
 
 ```
 User → Upload button → Select file
-  → POST /storage/documents/upload
+  → Folder picker dialog opens
+  → User selects destination folder
+  → POST /storage/documents/upload?folderId={folderId}
   → Permission check (create)
   → File buffer received
   → Encoding Util fixes UTF-8 filename (fixes mojibake)
@@ -189,7 +193,10 @@ User → Upload button → Select file
   → Checksum calculated (SHA-256 via ChecksumUtil)
   → deletionExpiresAt set (72 hours from upload)
   → Response with document info
+  → Document list refreshes automatically
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+grep
 
 ### 4. File System Sync Flow
 
@@ -502,8 +509,8 @@ Folder ──┬── Folder (self-reference for hierarchy)
 │   │   ├── PATCH  /:id       # Update
 │   │   ├── DELETE /:id       # Delete
 │   │   ├── GET    /:id/export # Export to Excel
-│   │   ├── POST   /:id/attachments # Upload PDF attachment (folderId optional, auto-creates folder)
-│   │   └── GET    /:id/attachments # List attachments
+│   │   ├── POST   /:id/attachments # Upload PDF (body: month 1–12 optional; folderId optional, auto-creates folder)
+│   │   └── GET    /:id/attachments # List attachments (query ?month=1…12 optional; legacy NULL month included)
 │   ├── /attachments
 │   │   ├── GET    /:id/stream     # Stream PDF for viewer
 │   │   ├── GET    /:id/download   # Download PDF
@@ -525,8 +532,8 @@ Folder ──┬── Folder (self-reference for hierarchy)
 └── /storage
     ├── /folders
     │   ├── GET    /          # List
-    │   ├── GET    /tree       # Tree structure
-    │   ├── GET    /:id        # Get with contents
+    │   ├── GET    /tree       # Tree structure (query: ?departmentId=)
+    │   ├── GET    /:id        # Get with contents (query: ?status=ACTIVE|ARCHIVED|DELETED; includes _count.versions; invalid values ignored)
     │   ├── POST   /          # Create
     │   ├── PATCH  /:id       # Update
     │   ├── DELETE /:id       # Delete
@@ -536,10 +543,11 @@ Folder ──┬── Folder (self-reference for hierarchy)
     │   └── GET    /          # Dashboard statistics
     │
     └── /documents
+        ├── GET    /                 # List all documents (query: ?status=ACTIVE|ARCHIVED|DELETED&departmentId=&level=)
         ├── GET    /:id              # Get info
         ├── GET    /:id/stream       # Stream for viewer
         ├── GET    /:id/download     # Download file
-        ├── POST   /upload           # Upload new
+        ├── POST   /upload           # Upload new (body: folderId)
         ├── POST   /:id/upload-version # Upload version
         ├── GET    /:id/versions     # Version history
         └── GET    /:id/open-path    # Local edit path

@@ -1,5 +1,5 @@
 {
-  "title": "Document Management",
+  "title": "ISO Document",
   "description": "Browse and manage ISO documents",
   "folder": "Folder",
   "selectFolder": "Select a folder to view documents",
@@ -9,10 +9,18 @@
     "refresh": "Refresh",
     "openFolder": "Open folder",
     "upload": "Upload",
+    "uploadToDepartment": "Upload to department",
     "assignDepartment": "Assign Department",
     "location": "Location",
     "pathCopied": "Path copied:\n{path}\n\nPaste into Windows Explorer (Win+E) to open folder.",
-    "pathCopiedTitle": "Path copied"
+    "pathCopiedTitle": "Path copied",
+    "uploadSuccess": "Success",
+    "uploadSuccessDescription": "Document uploaded successfully",
+    "uploadError": "Upload Error"
+  },
+  "errors": {
+    "loadFailed": "Error",
+    "loadFailedDescription": "Failed to load documents. Please try again."
   },
   "assignDepartment": {
     "title": "Assign Department to {folder}",
@@ -21,20 +29,82 @@
     "selectDepartment": "Select a department",
     "none": "None (Unassign)"
   },
+  "filters": {
+    "status": "Status",
+    "level": "Level",
+    "department": "Department",
+    "all": "All",
+    "statusActive": "Active",
+    "statusArchived": "Archived",
+    "statusDeleted": "Deleted",
+    "levelAll": "All Levels",
+    "loadingLevels": "Loading levels..."
+  },
+  "upload": {
+    "selectFolder": "Select Folder",
+    "selectFolderDescription": "Choose a folder to upload the document to",
+    "noFolders": "No folders available",
+    "noDepartment": "No department available for upload. Please contact admin.",
+    "documentsFolder": "Documents",
+    "selectDepartment": "Select department",
+    "level": "Level",
+    "selectLevel": "Select level",
+    "loadingLevels": "Loading levels..."
+  },
+  "pagination": {
+    "showing": "Showing {from} to {to} of {total} documents"
+  },
   "list": {
-    "empty": "No documents in this folder",
+    "empty": "No documents found",
     "columns": {
+      "no": "No.",
       "name": "Document Name",
+      "title": "Title",
       "type": "Type",
       "size": "Size",
       "updated": "Updated",
+      "version": "Version",
+      "level": "Level",
+      "responsibleDepartment": "Responsible Department",
+      "preparer": "Preparer",
+      "reviewer": "Reviewer",
+      "approver": "Approver",
+      "approvalDate": "Approval Date",
+      "receiptDate": "Receipt Date",
+      "storageLocation": "Storage Location",
+      "status": "Status",
+      "uploadPDF": "uploadPDF",
       "actions": "Actions"
     },
     "actions": {
       "view": "View",
       "download": "Download",
       "openToEdit": "Open to Edit",
-      "versionHistory": "Version History"
+      "versionHistory": "Version History",
+      "editMetadata": "Edit Metadata",
+      "rename": "Rename"
     }
+  },
+  "editMetadata": {
+    "title": "Edit ISO Metadata",
+    "loadingUsers": "Loading...",
+    "noMatches": "No matches",
+    "description": "Edit level, preparer, reviewer, approver and dates for \"{name}\".",
+    "nameLabel": "Document Name",
+    "namePlaceholder": "Enter document name",
+    "nameRequired": "Document name cannot be empty.",
+    "fileNameHint": "Filename will be automatically set to: {fileName}",
+    "preparer": "Preparer",
+    "reviewer": "Reviewer",
+    "approver": "Approver",
+    "approvalDate": "Approval Date",
+    "receiptDate": "Receipt Date",
+    "none": "None",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "successTitle": "Saved",
+    "successDescription": "Document name and metadata updated successfully.",
+    "errorTitle": "Error"
   }
 }

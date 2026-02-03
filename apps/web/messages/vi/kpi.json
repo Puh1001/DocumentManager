@@ -2,6 +2,8 @@
   "title": "KPI",
   "subtitle": "Quản lý KPI theo bộ môn và tháng",
   "year": "Năm",
+  "month": "Tháng",
+  "allMonths": "Tất cả tháng",
   "kpiTitle": "Tiêu đề KPI",
   "target": "Mục tiêu",
   "efficiency": "Hiệu suất (%)",

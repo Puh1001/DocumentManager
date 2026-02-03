@@ -11,7 +11,7 @@
   "searchPermissions": "Search permissions...",
   "usedBy": "Used by",
   "folderDocumentPermissions": "Folder & Document Permissions",
-  "folderDocumentPermissionsDescription": "Folder and document permission management can be accessed from the Documents page. Select a folder or document and use the permissions button to manage access.",
+  "folderDocumentPermissionsDescription": "Folder and document permission management can be accessed from the ISO Document page. Select a folder or document and use the permissions button to manage access.",
   "form": {
     "createRoleTitle": "Add New Role",
     "updateRoleTitle": "Update Role",

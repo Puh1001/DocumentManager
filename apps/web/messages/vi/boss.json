@@ -1,11 +1,11 @@
 {
   "title": "Ban quản trị BPVN",
-  "description": "Xem tất cả phòng ban, KPI, bảo trì và tài liệu",
+  "description": "Xem tất cả phòng ban, KPI, bảo trì và tài liệu ISO",
   "comingSoon": "Giao diện ban quản trị BPVN đang được triển khai...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "Bảo trì",
-    "documents": "Tài liệu",
+    "documents": "Tài liệu ISO",
     "departments": "Danh sách phòng ban",
     "kpiStatus": "Trạng thái KPI"
   },
@@ -17,7 +17,7 @@
   "viewDescriptions": {
     "kpi": "Xem bản ghi KPI",
     "maintenance": "Xem thông báo bảo trì",
-    "documents": "Xem tài liệu"
+    "documents": "Xem tài liệu ISO"
   },
   "months": {
     "jan": "T1",
@@ -39,7 +39,7 @@
   "notFound": {
     "kpi": "Không tìm thấy bản ghi KPI",
     "maintenance": "Không tìm thấy thông báo bảo trì",
-    "document": "Không tìm thấy tài liệu"
+    "document": "Không tìm thấy tài liệu ISO"
   },
   "kpi": {
     "untitled": "KPI chưa có tiêu đề",
@@ -52,6 +52,12 @@
       "noAttachments": "Không có tệp đính kèm",
       "moreFiles": "+{count} tệp khác",
       "upload": "Tải lên PDF",
+      "uploading": "Đang tải...",
+      "toastError": "Lỗi",
+      "toastSuccess": "Thành công",
+      "pdfOnly": "Chỉ chấp nhận file PDF",
+      "uploadSuccess": "Đã tải lên file PDF thành công",
+      "uploadFailed": "Không thể tải lên file",
       "delete": "Xóa file",
       "deleteConfirm": "Bạn có chắc muốn xóa file này?",
       "viewer": {
@@ -76,8 +82,8 @@
     "noKpiDescription": "Không có bản ghi KPI cho phòng ban này.",
     "noMaintenance": "Không có thông báo bảo trì",
     "noMaintenanceDescription": "Không có thông báo bảo trì cho phòng ban này.",
-    "noDocuments": "Không có tài liệu",
-    "noDocumentsDescription": "Không có tài liệu trong thư mục phòng ban này.",
+    "noDocuments": "Không có tài liệu ISO",
+    "noDocumentsDescription": "Không có tài liệu ISO trong thư mục phòng ban này.",
     "noFolder": "Không tìm thấy thư mục phòng ban",
     "noFolderDescription": "Không tìm thấy thư mục cho phòng ban {department} trong hệ thống."
   },
@@ -85,7 +91,7 @@
     "loadFailed": "Không thể tải danh sách phòng ban",
     "loadKpiFailed": "Không thể tải bản ghi KPI",
     "loadMaintenanceFailed": "Không thể tải thông báo bảo trì",
-    "loadDocumentsFailed": "Không thể tải tài liệu",
+    "loadDocumentsFailed": "Không thể tải tài liệu ISO",
     "loadKpiStatusFailed": "Không thể tải trạng thái KPI"
   },
   "kpiStatus": {

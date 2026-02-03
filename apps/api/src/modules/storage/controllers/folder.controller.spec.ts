@@ -1,9 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { HttpException, HttpStatus } from "@nestjs/common";
 import { FolderController } from "./folder.controller";
 import { FolderService, FolderTreeNode } from "../services/folder.service";
 import { FolderSyncService } from "../services/folder-sync.service";
+import { FolderSyncGateway } from "../gateways/folder-sync.gateway";
 import { LocalEditService } from "../services/local-edit.service";
+import { UsersService } from "@/modules/users/users.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
 
@@ -12,6 +13,7 @@ describe("FolderController", () => {
   let folderService: jest.Mocked<FolderService>;
   let folderSyncService: jest.Mocked<FolderSyncService>;
   let localEditService: jest.Mocked<LocalEditService>;
+  let usersService: jest.Mocked<UsersService>;
 
   const mockFolder = {
     id: "folder-1",
@@ -46,6 +48,7 @@ describe("FolderController", () => {
       update: jest.fn(),
       delete: jest.fn(),
       getTree: jest.fn(),
+      getTreeWithDocuments: jest.fn(),
     };
 
     const mockFolderSyncService = {
@@ -56,12 +59,22 @@ describe("FolderController", () => {
       getOpenFolderPath: jest.fn(),
     };
 
+    const mockFolderSyncGateway = {
+      broadcastSyncEvent: jest.fn(),
+    };
+
+    const mockUsersService = {
+      getUserDepartments: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FolderController],
       providers: [
         { provide: FolderService, useValue: mockFolderService },
         { provide: FolderSyncService, useValue: mockFolderSyncService },
+        { provide: FolderSyncGateway, useValue: mockFolderSyncGateway },
         { provide: LocalEditService, useValue: mockLocalEditService },
+        { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
@@ -69,6 +82,7 @@ describe("FolderController", () => {
     folderService = module.get(FolderService);
     folderSyncService = module.get(FolderSyncService);
     localEditService = module.get(LocalEditService);
+    usersService = module.get(UsersService);
   });
 
   afterEach(() => {
@@ -83,7 +97,7 @@ describe("FolderController", () => {
       const result = await controller.findAll();
 
       expect(result).toEqual(mockFolders);
-      expect(folderService.findAll).toHaveBeenCalledWith(undefined);
+      expect(folderService.findAll).toHaveBeenCalledWith(undefined, undefined);
     });
 
     it("should return folders with parentId filter", async () => {
@@ -93,7 +107,10 @@ describe("FolderController", () => {
       const result = await controller.findAll("parent-1");
 
       expect(result).toEqual(mockFolders);
-      expect(folderService.findAll).toHaveBeenCalledWith("parent-1");
+      expect(folderService.findAll).toHaveBeenCalledWith(
+        "parent-1",
+        undefined,
+      );
     });
   });
 
@@ -106,6 +123,85 @@ describe("FolderController", () => {
       expect(result).toEqual(mockTree);
       expect(folderService.getTree).toHaveBeenCalled();
     });
+
+    it("should allow admin to get tree for any departmentId", async () => {
+      folderService.getTree = jest.fn().mockResolvedValue(mockTree);
+      const req = {
+        user: { id: "user-1", roles: ["admin"] },
+      } as unknown as Parameters<FolderController["getTree"]>[1];
+
+      const result = await controller.getTree("dept-1", req);
+
+      expect(result).toEqual(mockTree);
+      expect(folderService.getTree).toHaveBeenCalledWith("dept-1", true);
+      expect(usersService.getUserDepartments).not.toHaveBeenCalled();
+    });
+
+    it("should allow user in department to get tree for that department", async () => {
+      folderService.getTree = jest.fn().mockResolvedValue(mockTree);
+      usersService.getUserDepartments = jest
+        .fn()
+        .mockResolvedValue([{ id: "dept-1", name: "Dept 1", code: "D1" }]);
+      const req = {
+        user: { id: "user-1", roles: ["user"] },
+      } as unknown as Parameters<FolderController["getTree"]>[1];
+
+      const result = await controller.getTree("dept-1", req);
+
+      expect(result).toEqual(mockTree);
+      expect(usersService.getUserDepartments).toHaveBeenCalledWith("user-1");
+      expect(folderService.getTree).toHaveBeenCalledWith("dept-1", false);
+    });
+
+    it("should deny user not in department when departmentId provided", async () => {
+      usersService.getUserDepartments = jest
+        .fn()
+        .mockResolvedValue([{ id: "other-dept", name: "Other", code: "O" }]);
+      const req = {
+        user: { id: "user-1", roles: ["user"] },
+      } as unknown as Parameters<FolderController["getTree"]>[1];
+
+      await expect(controller.getTree("dept-1", req)).rejects.toThrow();
+      expect(folderService.getTree).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getTreeWithDocuments", () => {
+    it("should return tree with documents and allow admin for any departmentId", async () => {
+      const mockTreeWithDocs = mockTree.map((n) => ({
+        ...n,
+        documents: [],
+      }));
+      folderService.getTreeWithDocuments = jest
+        .fn()
+        .mockResolvedValue(mockTreeWithDocs);
+      const req = {
+        user: { id: "user-1", roles: ["admin"] },
+      } as unknown as Parameters<FolderController["getTreeWithDocuments"]>[1];
+
+      const result = await controller.getTreeWithDocuments("dept-1", req);
+
+      expect(result).toEqual(mockTreeWithDocs);
+      expect(folderService.getTreeWithDocuments).toHaveBeenCalledWith(
+        "dept-1",
+        true,
+      );
+      expect(usersService.getUserDepartments).not.toHaveBeenCalled();
+    });
+
+    it("should deny user not in department when departmentId provided", async () => {
+      usersService.getUserDepartments = jest
+        .fn()
+        .mockResolvedValue([{ id: "other-dept", name: "Other", code: "O" }]);
+      const req = {
+        user: { id: "user-1", roles: ["user"] },
+      } as unknown as Parameters<FolderController["getTreeWithDocuments"]>[1];
+
+      await expect(
+        controller.getTreeWithDocuments("dept-1", req),
+      ).rejects.toThrow();
+      expect(folderService.getTreeWithDocuments).not.toHaveBeenCalled();
+    });
   });
 
   describe("findOne", () => {
@@ -115,7 +211,26 @@ describe("FolderController", () => {
       const result = await controller.findOne("folder-1");
 
       expect(result).toEqual(mockFolder);
-      expect(folderService.findById).toHaveBeenCalledWith("folder-1");
+      expect(folderService.findById).toHaveBeenCalledWith("folder-1", undefined);
+    });
+
+    it("should return folder by id with status filter", async () => {
+      folderService.findById = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await controller.findOne("folder-1", "ACTIVE");
+
+      expect(result).toEqual(mockFolder);
+      expect(folderService.findById).toHaveBeenCalledWith("folder-1", "ACTIVE");
+    });
+
+    it("should handle empty string status", async () => {
+      folderService.findById = jest.fn().mockResolvedValue(mockFolder);
+
+      const result = await controller.findOne("folder-1", "");
+
+      expect(result).toEqual(mockFolder);
+      expect(folderService.findById).toHaveBeenCalledWith("folder-1", "");
+      // Note: Empty string will be treated as invalid by service, which is fine
     });
   });
 
@@ -199,20 +314,25 @@ describe("FolderController", () => {
 
       const result = await controller.sync();
 
-      expect(result).toEqual({ message: "Sync completed" });
+      expect(result).toEqual({
+        message: "Sync started",
+        status: "processing",
+      });
       expect(folderSyncService.syncWithFileSystem).toHaveBeenCalled();
     });
 
-    it("should throw HttpException when sync fails", async () => {
-      const error = new Error("Sync failed");
-      folderSyncService.syncWithFileSystem = jest.fn().mockRejectedValue(error);
+    it("should return immediately when sync is triggered (errors handled in background)", async () => {
+      folderSyncService.syncWithFileSystem = jest
+        .fn()
+        .mockRejectedValue(new Error("Sync failed"));
 
-      await expect(controller.sync()).rejects.toThrow(HttpException);
-      await expect(controller.sync()).rejects.toThrow(
-        expect.objectContaining({
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-        })
-      );
+      const result = await controller.sync();
+
+      expect(result).toEqual({
+        message: "Sync started",
+        status: "processing",
+      });
+      expect(folderSyncService.syncWithFileSystem).toHaveBeenCalled();
     });
   });
 });

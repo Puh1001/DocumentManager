@@ -90,14 +90,14 @@ src/
 │   │   └── dashboard/
 │   │       ├── layout.tsx     # Dashboard layout
 │   │       ├── page.tsx      # Dashboard home
-│   │       ├── documents/    # Document browser
+│   │       ├── documents/    # ISO Document browser
 │   │       ├── departments/  # Department management
 │   │       ├── kpi/          # KPI tracking
 │   │       └── maintenance/  # Maintenance notices
 ├── components/
 │   ├── ui/                # ShadcnUI components
 │   ├── layout/            # Sidebar, Header
-│   ├── documents/         # Document components
+│   ├── documents/         # ISO Document components (table, filters, toolbar)
 │   │   ├── deletion-actions.tsx        # Deletion action buttons
 │   │   └── deletion-request-dialog.tsx # Deletion request form
 │   ├── boss/              # Boss role components
@@ -169,6 +169,11 @@ src/
 - **Real-time sync** (WebSocket + file watcher)
 - **Automated sync scheduling** (cron jobs)
 - **Dashboard statistics** (total documents, folders, users, recent uploads)
+- **ISO Document table view**: Flat list (no folder tree sidebar)
+  - **Table columns**: No., Title (from Document.name/fileName), Version (from DocumentVersion count), Level (placeholder), Responsible Department (from Document.folder.department), Preparer/Reviewer/Approver (placeholders), Approval Date/Receipt Date (placeholders), Storage Location (from Document.folder.path), Status (from Document.status), uploadPDF (view link), Actions
+  - **Filters**: Status (ACTIVE/ARCHIVED/DELETED), Department, Level (placeholder for future schema extension)
+  - **API**: `GET /storage/documents?status=ACTIVE&departmentId=dept-1&level=LEVEL1` - Returns all documents with folder info
+  - **Upload**: Folder picker dialog for selecting destination folder
 
 ### 2.5. Department Management
 
@@ -186,7 +191,8 @@ src/
 - Chart visualization (Chart.js)
 - Excel export functionality
 - Support for historical and future year data entry (e.g., 2025)
-- **PDF Attachments**: Upload, view, and delete PDF files for KPI records
+- **PDF Attachments**: Upload, view, and delete PDF files for KPI records (month-scoped)
+  - **Monthly uploads**: Month selector next to year; list filtered by `?month=1`…`12`; upload accepts `month` (1–12, default current month); legacy attachments (NULL month) shown for all months
   - Upload component with permission checks
   - **Auto-folder creation**: Backend automatically creates `Department/KPI/current` folder structure if not exists
   - **Optional folderId**: `folderId` parameter is optional; backend handles auto-creation when omitted
@@ -319,7 +325,11 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Recent Updates
 
-### Latest Updates (2026-01-26)
+### Latest Updates (2026-01-30)
+
+- **Monthly KPI uploads**: Attachments are month-scoped; list accepts `?month=1`…`12`; upload accepts `month` (1–12, default current month); month selector next to year on KPI page; legacy attachments (NULL month) shown for all months.
+
+### Previous Updates (2026-01-26)
 
 - **Document Deletion Workflow**: Complete implementation of 72-hour self-deletion window and DCC approval workflow
   - Users can delete their own documents within 72 hours of upload

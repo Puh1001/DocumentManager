@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { KpiAttachmentController } from "./kpi-attachment.controller";
 import { KpiAttachmentService } from "../services/kpi-attachment.service";
@@ -30,6 +31,7 @@ describe("KpiAttachmentController", () => {
     documentId: "doc-1",
     description: "Test attachment",
     createdAt: new Date(),
+    month: null as number | null,
   };
 
   const mockAttachmentList = [
@@ -135,7 +137,7 @@ describe("KpiAttachmentController", () => {
         { folderId: "folder-1", description: "Test" }
       );
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: mockAttachment.id,
         documentId: mockAttachment.documentId,
         description: mockAttachment.description,
@@ -146,7 +148,9 @@ describe("KpiAttachmentController", () => {
         mockPdfFile,
         "folder-1",
         "Test",
-        mockUser
+        mockUser,
+        undefined,
+        undefined
       );
     });
 
@@ -167,7 +171,39 @@ describe("KpiAttachmentController", () => {
         mockPdfFile,
         "folder-1",
         undefined,
-        mockUser
+        mockUser,
+        undefined,
+        undefined
+      );
+    });
+
+    it("should pass month to service and return month in response when month in body", async () => {
+      const attachmentWithMonth = { ...mockAttachment, month: 3 };
+      service.uploadAttachment = jest
+        .fn()
+        .mockResolvedValue(attachmentWithMonth);
+
+      const result = await controller.uploadAttachment(
+        mockUser,
+        "kpi-record-1",
+        mockPdfFile,
+        { folderId: "folder-1", month: 3 }
+      );
+
+      expect(result).toMatchObject({
+        id: mockAttachment.id,
+        documentId: mockAttachment.documentId,
+        month: 3,
+        createdAt: mockAttachment.createdAt,
+      });
+      expect(service.uploadAttachment).toHaveBeenCalledWith(
+        "kpi-record-1",
+        mockPdfFile,
+        "folder-1",
+        undefined,
+        mockUser,
+        undefined,
+        3
       );
     });
   });
@@ -186,7 +222,26 @@ describe("KpiAttachmentController", () => {
       expect(result).toEqual(mockAttachmentList);
       expect(service.listAttachments).toHaveBeenCalledWith(
         "kpi-record-1",
-        mockUser
+        mockUser,
+        undefined
+      );
+    });
+
+    it("should pass month to service when month query provided", async () => {
+      service.listAttachments = jest
+        .fn()
+        .mockResolvedValue(mockAttachmentList);
+
+      await controller.listAttachments(
+        mockUser,
+        "kpi-record-1",
+        "3"
+      );
+
+      expect(service.listAttachments).toHaveBeenCalledWith(
+        "kpi-record-1",
+        mockUser,
+        3
       );
     });
 
@@ -199,6 +254,16 @@ describe("KpiAttachmentController", () => {
       );
 
       expect(result).toEqual([]);
+    });
+
+    it("should throw BadRequestException when month query is invalid", async () => {
+      await expect(
+        controller.listAttachments(mockUser, "kpi-record-1", "13"),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.listAttachments(mockUser, "kpi-record-1", "0"),
+      ).rejects.toThrow(BadRequestException);
+      expect(service.listAttachments).not.toHaveBeenCalled();
     });
   });
 

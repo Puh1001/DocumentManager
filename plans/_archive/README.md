@@ -20,6 +20,17 @@ Thư mục này chứa các kế hoạch đã hoàn thành được nén lại �
 14. **20251225-1354-boss-role-ui.zip** - BOSS Role UI Implementation (completed - all phases done)
 15. **20251225-1522-folder-role-mapping.zip** - Folder Role Mapping (completed - all phases done)
 16. **20251225-1720-boss-role-simplified-ui.zip** - BOSS Role Simplified UI (completed - all phases done)
+17. **260121-department-name-standardization.zip** - Department name standardization (migration completed)
+18. **260121-1422-improve-migration-scripts.zip** - Improve migration scripts (improvements completed)
+19. **260121-kpi-status-completion-tracking.zip** - KPI status completion tracking (implemented)
+20. **260122-0747-document-optimization-realtime-sync.zip** - Document optimization & real-time sync (all phases done)
+21. **260122-1515-fix-filename-encoding-complete.zip** - Fix filename encoding (completed)
+22. **260122-kpi-attachment-deletion-workflow.zip** - KPI attachment deletion workflow (completed)
+23. **260123-document-folder-restructure.zip** - Document folder restructure (phases 1-6 done)
+24. **20260107-1700-user-multi-department-kpi.zip** - Multi-department user KPI (all phases done)
+25. **20241222-1430-kpi-tab-implementation.zip** - KPI tab implementation (completed)
+
+Báo cáo trạng thái (2026-01-30): **plans-completion-report-20260130.md**
 
 ## Cách sử dụng:
 
@@ -40,4 +51,4 @@ Remove-Item -Path "../temp" -Recurse -Force
 - Các file zip này chỉ để tham khảo, không cần thiết cho việc phát triển hiện tại
 - Có thể xóa các file zip này nếu cần giải phóng thêm không gian
 - Ngày archive: 2025-12-25
-- Cập nhật: 2025-12-25 (thêm maintenance, websocket fixes, boss role UI plans)
+- Cập nhật: 2026-01-30 (thêm 9 plan đã hoàn thành: department name, migration scripts, KPI status, document sync, encoding, folder restructure, multi-dept KPI, KPI tab)

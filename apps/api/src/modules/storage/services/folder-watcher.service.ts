@@ -14,6 +14,7 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(FolderWatcherService.name);
   private watcher: chokidar.FSWatcher | null = null;
   private basePath: string;
+  private restartTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -50,10 +51,7 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
         "SMB_MOUNT_PATH",
         "/shared"
       );
-      const basePath = this.configService.get<string>(
-        "SMB_BASE_PATH",
-        ""
-      );
+      const basePath = this.configService.get<string>("SMB_BASE_PATH", "");
 
       // Append basePath to mountPath if provided
       // This ensures we watch only the specified subfolder, not the entire share
@@ -81,6 +79,10 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    if (this.restartTimeoutId) {
+      clearTimeout(this.restartTimeoutId);
+      this.restartTimeoutId = null;
+    }
     await this.stopWatching();
   }
 
@@ -88,9 +90,13 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log(`Starting file watcher for: ${this.basePath}`);
 
-      // Check if this is a UNC path (Windows network share)
-      const isUncPath = process.platform === "win32" && this.basePath.startsWith("\\\\");
-      
+      // On Windows, use polling for any SMB path (UNC or mapped drive Z:).
+      // Native fs.watch fails on network/mapped drives with "UNKNOWN: unknown error, watch".
+      const usePolling =
+        process.platform === "win32" &&
+        (this.basePath.startsWith("\\\\") ||
+          /^[A-Za-z]:\\/.test(this.basePath));
+
       // Configure watcher options
       const watchOptions: {
         ignored: RegExp;
@@ -113,20 +119,16 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
         },
       };
 
-      // For UNC paths on Windows, use polling for reliability
-      // Native fs.watch doesn't work well with network shares
-      if (isUncPath) {
+      if (usePolling) {
         watchOptions.usePolling = true;
-        // Optimized polling interval: 3 seconds for production (reduced from 1s)
-        // This reduces CPU/IO overhead by 66% while maintaining reasonable responsiveness
         const pollingInterval = this.configService.get<number>(
           "SMB_POLLING_INTERVAL_MS",
           3000
         );
         watchOptions.interval = pollingInterval;
-        watchOptions.binaryInterval = pollingInterval * 2; // Poll slower for binary files
+        watchOptions.binaryInterval = pollingInterval * 2;
         this.logger.log(
-          `Using polling mode for UNC path (network share) with ${pollingInterval}ms interval`
+          `Using polling mode for Windows path with ${pollingInterval}ms interval`
         );
       }
 
@@ -168,9 +170,13 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
       // Watch for folder additions
       this.watcher.on("addDir", (dirPath) => {
         // Normalize path separators to forward slashes for consistency with database
-        const relativePath = path.relative(this.basePath, dirPath).replace(/\\/g, '/');
-        this.logger.log(`[WATCHER] Folder added detected: ${dirPath} -> relative: ${relativePath}`);
-        
+        const relativePath = path
+          .relative(this.basePath, dirPath)
+          .replace(/\\/g, "/");
+        this.logger.log(
+          `[WATCHER] Folder added detected: ${dirPath} -> relative: ${relativePath}`
+        );
+
         // Async event emission to prevent blocking watcher
         setImmediate(() => {
           this.eventEmitter.emit("folder.added", {
@@ -186,20 +192,22 @@ export class FolderWatcherService implements OnModuleInit, OnModuleDestroy {
         setImmediate(() => {
           this.eventEmitter.emit("folder.deleted", {
             path: dirPath,
-            relativePath: path.relative(this.basePath, dirPath).replace(/\\/g, '/'),
+            relativePath: path
+              .relative(this.basePath, dirPath)
+              .replace(/\\/g, "/"),
           });
         });
       });
 
-      // Error handling
+      // Error handling: single debounced restart to avoid spam and overlapping watchers
       this.watcher.on("error", (error: unknown) => {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         this.logger.error(`File watcher error: ${errorMessage}`);
-        // Attempt to restart watcher after delay
-        setTimeout(() => {
-          this.stopWatching();
-          this.startWatching();
+        if (this.restartTimeoutId) return;
+        this.restartTimeoutId = setTimeout(() => {
+          this.restartTimeoutId = null;
+          this.stopWatching().then(() => this.startWatching());
         }, 5000);
       });
 

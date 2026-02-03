@@ -361,7 +361,7 @@ class ApiClient {
 
     const formData = new FormData();
     formData.append("file", file);
-    
+
     // Gửi filename riêng như text field (UTF-8 thô, không qua Content-Disposition header)
     // Điều này tránh vấn đề encoding khi Multer parse filename từ header
     formData.append("fileName", file.name);
@@ -432,7 +432,7 @@ class ApiClient {
   ): { promise: Promise<T>; abort: () => void } {
     const formData = new FormData();
     formData.append("file", file);
-    
+
     // Gửi filename riêng như text field (UTF-8 thô, không qua Content-Disposition header)
     formData.append("fileName", file.name);
 
@@ -873,13 +873,16 @@ export interface KpiAttachment {
   fileName: string;
   uploadedBy: string;
   createdAt: string;
+  month?: number | null;
   description?: string | null;
   deletionExpiresAt?: string | null;
 }
 
 export const kpiAttachmentApi = {
-  getAttachments: (kpiRecordId: string) =>
-    api.get<KpiAttachment[]>(`/kpi/records/${kpiRecordId}/attachments`),
+  getAttachments: (kpiRecordId: string, month?: number) =>
+    api.get<KpiAttachment[]>(
+      `/kpi/records/${kpiRecordId}/attachments${month != null && month >= 1 && month <= 12 ? `?month=${month}` : ""}`
+    ),
   getAttachmentStreamUrl: (attachmentId: string) =>
     `/kpi/attachments/${attachmentId}/stream`,
   downloadAttachment: (attachmentId: string) =>
@@ -888,17 +891,21 @@ export const kpiAttachmentApi = {
     kpiRecordId: string,
     file: File,
     folderId: string | undefined,
-    description?: string
+    description?: string,
+    month?: number
   ) =>
     api.upload<{
       id: string;
       documentId: string;
+      month?: number | null;
       description?: string | null;
       createdAt: string;
     }>(`/kpi/records/${kpiRecordId}/attachments`, file, {
-      // Only include folderId if it's a valid non-empty string
       ...(folderId && folderId.trim() !== "" && { folderId }),
       ...(description && { description }),
+      ...(month != null &&
+        month >= 1 &&
+        month <= 12 && { month: String(month) }),
     }),
   getDeletionStatus: (attachmentId: string) =>
     api.get<DeletionStatus>(`/kpi/attachments/${attachmentId}/deletion-status`),
@@ -943,7 +950,7 @@ export interface DeletionRequest {
   requestedAt: string;
   reason: string;
   replacementFileId?: string | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: string | null;
   reviewedAt?: string | null;
   reviewerComment?: string | null;
@@ -979,6 +986,15 @@ export interface RenameDocumentDto {
   fileName: string;
 }
 
+export interface UpdateIsoMetadataDto {
+  levelId?: string;
+  preparerId?: string | null;
+  reviewerId?: string | null;
+  approverId?: string | null;
+  approvalDate?: string | null;
+  receiptDate?: string | null;
+}
+
 export interface Document {
   id: string;
   name: string;
@@ -993,24 +1009,21 @@ export interface Document {
 export const documentApi = {
   rename: (documentId: string, data: RenameDocumentDto) =>
     api.patch<Document>(`/storage/documents/${documentId}/rename`, data),
+  updateIsoMetadata: (documentId: string, data: UpdateIsoMetadataDto) =>
+    api.patch<Document>(`/storage/documents/${documentId}/iso-metadata`, data),
 };
 
 export const deletionRequestApi = {
   getDeletionStatus: (documentId: string) =>
-    api.get<DeletionStatus>(
-      `/storage/documents/${documentId}/deletion-status`,
-    ),
+    api.get<DeletionStatus>(`/storage/documents/${documentId}/deletion-status`),
 
-  submitDeletionRequest: (
-    documentId: string,
-    data: SubmitDeletionRequestDto,
-  ) =>
+  submitDeletionRequest: (documentId: string, data: SubmitDeletionRequestDto) =>
     api.post<DeletionRequest>(
       `/storage/documents/${documentId}/deletion-requests`,
-      data,
+      data
     ),
 
-  listPending: () => api.get<DeletionRequest[]>('/storage/deletion-requests'),
+  listPending: () => api.get<DeletionRequest[]>("/storage/deletion-requests"),
 
   getById: (id: string) =>
     api.get<DeletionRequest>(`/storage/deletion-requests/${id}`),

@@ -30,12 +30,17 @@ export const ErrorCodes = {
     PARENT_NOT_FOUND: "folder.create.parent_not_found",
     DELETED: "folder.deleted",
     TREE_FETCH_FAILED: "folder.tree.fetch_failed",
+    ACCESS_DENIED: "folder.access_denied",
   },
   DOCUMENT: {
     NOT_FOUND: "document.not_found",
+    ACCESS_DENIED: "document.access_denied",
     FOLDER_REQUIRED: "document.upload.folder_required",
     FILE_REQUIRED: "document.upload.file_required",
     FOLDER_NOT_FOUND: "document.upload.folder_not_found",
+    LEVEL_REQUIRED: "document.upload.level_required",
+    INVALID_LEVEL: "document.upload.invalid_level",
+    FOLDER_ACCESS_DENIED: "document.upload.folder_access_denied",
     INVALID_FILENAME: "document.rename.invalid_filename",
   },
   VERSION: {

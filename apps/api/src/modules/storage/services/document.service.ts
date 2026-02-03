@@ -9,13 +9,27 @@ import * as path from "path";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { fixFileNameEncoding } from "@/common/utils/encoding.util";
+import { DocumentLevelService } from "./document-level.service";
+import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
+
+export interface FindAllDocumentsFilters {
+  status?: "ACTIVE" | "ARCHIVED" | "DELETED";
+  departmentId?: string;
+  /** When set (e.g. for non-admin users), restrict to documents in these departments. */
+  departmentIdsForFilter?: string[];
+  /** Filter by document level ID. */
+  level?: string;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class DocumentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smbService: SmbService,
-    private readonly versionService: VersionService
+    private readonly versionService: VersionService,
+    private readonly documentLevelService: DocumentLevelService
   ) {}
 
   async findById(id: string) {
@@ -25,6 +39,16 @@ export class DocumentService {
       where: { id },
       include: {
         folder: true,
+        level: true,
+        preparer: {
+          select: { id: true, username: true, fullName: true },
+        },
+        reviewer: {
+          select: { id: true, username: true, fullName: true },
+        },
+        approver: {
+          select: { id: true, username: true, fullName: true },
+        },
         permissions: {
           include: { permission: true },
         },
@@ -49,10 +73,12 @@ export class DocumentService {
   }
 
   async findByFolder(folderId: string) {
-    const documents = await (this.prisma as PrismaClientLike).document.findMany({
-      where: { folderId, status: "ACTIVE" },
-      orderBy: { name: "asc" },
-    });
+    const documents = await (this.prisma as PrismaClientLike).document.findMany(
+      {
+        where: { folderId, status: "ACTIVE" },
+        orderBy: { name: "asc" },
+      }
+    );
 
     // Apply encoding fix to all documents as defense-in-depth
     // fixFileNameEncoding() already normalizes to NFC
@@ -63,12 +89,135 @@ export class DocumentService {
     }));
   }
 
+  async findAll(filters?: FindAllDocumentsFilters) {
+    const where: Prisma.DocumentWhereInput = {};
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    // Status filter: default to ACTIVE when not specified so list does not show DELETED
+    const status =
+      filters?.status === "ACTIVE" ||
+      filters?.status === "ARCHIVED" ||
+      filters?.status === "DELETED"
+        ? filters.status
+        : "ACTIVE";
+    where.status = status as Prisma.EnumDocumentStatusFilter["equals"];
+
+    // Always exclude version folders from main document listing
+    // Exclude folders whose path contains "/versions/" or "\versions\" (Windows paths)
+    const folderWhere: Prisma.FolderWhereInput = {
+      AND: [
+        { path: { not: { contains: "/versions/" } } },
+        { path: { not: { contains: "\\versions\\" } } },
+      ],
+    };
+
+    // Department filter (via folder): access control and/or explicit department filter
+    // When departmentIdsForFilter is set (including []), restrict to those departments or none
+    if (filters?.departmentIdsForFilter !== undefined) {
+      folderWhere.departmentId =
+        filters.departmentId?.trim() &&
+        filters.departmentIdsForFilter.includes(filters.departmentId)
+          ? filters.departmentId
+          : filters.departmentIdsForFilter.length > 0
+            ? { in: filters.departmentIdsForFilter }
+            : { in: [] };
+    } else if (filters?.departmentId?.trim()) {
+      folderWhere.departmentId = filters.departmentId;
+    }
+
+    where.folder = folderWhere;
+
+    // Level filter (by document level ID)
+    if (filters?.level?.trim()) {
+      where.levelId = filters.level;
+    }
+
+    const [documents, total] = await Promise.all([
+      (this.prisma as PrismaClientLike).document.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          folder: {
+            include: {
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          level: true,
+          preparer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          reviewer: {
+            select: { id: true, username: true, fullName: true },
+          },
+          approver: {
+            select: { id: true, username: true, fullName: true },
+          },
+          _count: {
+            select: {
+              versions: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      }),
+      (this.prisma as PrismaClientLike).document.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    // Apply encoding fix to all documents as defense-in-depth
+    // fixFileNameEncoding() already normalizes to NFC
+    const fixedDocuments = documents.map((doc) => ({
+      ...doc,
+      fileName: fixFileNameEncoding(doc.fileName),
+      name: fixFileNameEncoding(doc.name),
+    }));
+
+    // Deduplicate by (folderId, fileName): keep latest updatedAt so the same file never appears twice (e.g. from duplicate Folder paths or sync races)
+    const seen = new Map<string, (typeof fixedDocuments)[0]>();
+    for (const doc of fixedDocuments) {
+      const key = `${doc.folderId}:${doc.fileName}`;
+      const existing = seen.get(key);
+      const docUpdatedAt = doc.updatedAt ?? new Date(0);
+      const existingUpdatedAt = existing?.updatedAt ?? new Date(0);
+      if (!existing || docUpdatedAt > existingUpdatedAt) {
+        seen.set(key, doc);
+      }
+    }
+    const deduped = Array.from(seen.values()).sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "")
+    );
+
+    return {
+      data: deduped,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  /** Options for access control: when provided, folder must belong to user's department unless userCanUploadToAnyFolder. */
   async upload(
     folderId: string,
     file: Express.Multer.File,
     userId: string,
     name?: string,
-    fileName?: string
+    fileName?: string,
+    levelId?: string,
+    options?: {
+      userDepartmentIds?: string[];
+      userCanUploadToAnyFolder?: boolean;
+    }
   ) {
     if (!folderId) {
       throw CustomException.badRequest(
@@ -84,6 +233,20 @@ export class DocumentService {
       );
     }
 
+    if (!levelId || levelId.trim() === "") {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.LEVEL_REQUIRED,
+        "levelId is required"
+      );
+    }
+    const level = await this.documentLevelService.findById(levelId);
+    if (!level || !level.isActive) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.INVALID_LEVEL,
+        "Invalid or inactive document level"
+      );
+    }
+
     const folder = await (this.prisma as PrismaClientLike).folder.findUnique({
       where: { id: folderId },
     });
@@ -95,14 +258,46 @@ export class DocumentService {
       );
     }
 
+    if (
+      options &&
+      !options.userCanUploadToAnyFolder &&
+      options.userDepartmentIds &&
+      options.userDepartmentIds.length > 0
+    ) {
+      if (
+        !folder.departmentId ||
+        !options.userDepartmentIds.includes(folder.departmentId)
+      ) {
+        throw CustomException.forbidden(
+          ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
+          "Folder is not in your department"
+        );
+      }
+    }
+
+    // Enforce upload only to Documents (ISO_documents) folder (defence in depth)
+    const normalizedPath = (folder.path ?? "").toLowerCase();
+    const isUnderIsoDocuments =
+      normalizedPath.includes("/iso_documents") ||
+      normalizedPath === "iso_documents";
+    if (!isUnderIsoDocuments) {
+      throw CustomException.forbidden(
+        ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
+        "Upload only allowed to Documents (ISO_documents) folder"
+      );
+    }
+
     // Ưu tiên dùng fileName từ body (gửi riêng như text field, UTF-8 thô)
     // Fallback về file.originalname nếu không có (đã được fix bởi interceptor)
     // Điều này tránh vấn đề encoding khi Multer parse filename từ Content-Disposition header
     const sourceFileName = fileName || file.originalname;
-    const normalizedFileName = sourceFileName.normalize('NFC');
+    const normalizedFileName = sourceFileName.normalize("NFC");
     const fileType = path.extname(normalizedFileName).slice(1).toLowerCase();
     const documentName =
-      name || path.basename(normalizedFileName, path.extname(normalizedFileName)).normalize('NFC');
+      name ||
+      path
+        .basename(normalizedFileName, path.extname(normalizedFileName))
+        .normalize("NFC");
     const checksum = crypto
       .createHash("sha256")
       .update(file.buffer)
@@ -132,6 +327,9 @@ export class DocumentService {
         fileCreatedAt: now,
         fileModifiedAt: now,
         folderId,
+        levelId,
+        preparerId: userId,
+        receiptDate: now,
         // Deletion tracking fields
         uploadedBy: userId,
         uploadedAt: now,
@@ -139,31 +337,34 @@ export class DocumentService {
       },
     });
 
-    // Save file using version service (creates v1)
-    const version = await this.versionService.createVersion(
+    // Save file using version service (creates v1 and sets document.filePath to current path)
+    await this.versionService.createVersion(
       document.id,
       file.buffer,
       userId,
       "Initial upload"
     );
 
-    // Get file stats from saved file to extract actual file dates
-    try {
-      const stats = await this.smbService.getFileStats(version.filePath);
-      await (this.prisma as PrismaClientLike).document.update({
+    // Update file dates from current file (do not overwrite filePath: createVersion already set it to currentPath)
+    const updated = await (this.prisma as PrismaClientLike).document.findUnique(
+      {
         where: { id: document.id },
-        data: {
-          filePath: version.filePath,
-          fileCreatedAt: stats.birthtime,
-          fileModifiedAt: stats.mtime,
-        },
-      });
-    } catch (error) {
-      // If stats unavailable, just update filePath
-      await (this.prisma as PrismaClientLike).document.update({
-        where: { id: document.id },
-        data: { filePath: version.filePath },
-      });
+        select: { filePath: true },
+      }
+    );
+    if (updated?.filePath) {
+      try {
+        const stats = await this.smbService.getFileStats(updated.filePath);
+        await (this.prisma as PrismaClientLike).document.update({
+          where: { id: document.id },
+          data: {
+            fileCreatedAt: stats.birthtime,
+            fileModifiedAt: stats.mtime,
+          },
+        });
+      } catch {
+        // Stats unavailable; filePath already correct from createVersion
+      }
     }
 
     return this.findById(document.id);
@@ -175,7 +376,8 @@ export class DocumentService {
     userId: string,
     comment?: string
   ) {
-    const document = await this.findById(documentId);
+    // Validate document exists (throws if not found)
+    await this.findById(documentId);
     const now = new Date();
 
     // Calculate new deletion expiry (72 hours from update) - reset deletion window
@@ -234,7 +436,12 @@ export class DocumentService {
     });
   }
 
-  async rename(documentId: string, newName: string, newFileName: string, userId: string) {
+  async rename(
+    documentId: string,
+    newName: string,
+    newFileName: string,
+    userId: string
+  ) {
     const document = await this.findById(documentId);
 
     // Validate new filename has extension
@@ -295,6 +502,122 @@ export class DocumentService {
     return this.findById(documentId);
   }
 
+  /**
+   * Update ISO metadata fields (level, preparer, reviewer, approver, dates).
+   * Validates level and user IDs exist before updating.
+   */
+  async updateIsoMetadata(
+    id: string,
+    dto: UpdateIsoMetadataDto,
+    userId: string
+  ) {
+    const document = await (
+      this.prisma as PrismaClientLike
+    ).document.findUnique({
+      where: { id },
+    });
+    if (!document) {
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.NOT_FOUND,
+        "Document not found"
+      );
+    }
+
+    if (dto.levelId !== undefined) {
+      const level = await this.documentLevelService.findById(dto.levelId);
+      if (!level || !level.isActive) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.INVALID_LEVEL,
+          "Invalid or inactive document level"
+        );
+      }
+    }
+
+    const userIds = [dto.preparerId, dto.reviewerId, dto.approverId].filter(
+      (v): v is string => v != null && v !== ""
+    );
+    if (userIds.length > 0) {
+      const users = await (this.prisma as PrismaClientLike).user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true },
+      });
+      const foundIds = new Set(users.map((u) => u.id));
+      const missing = userIds.filter((uid) => !foundIds.has(uid));
+      if (missing.length > 0) {
+        throw CustomException.badRequest(
+          ErrorCodes.USER.NOT_FOUND,
+          `User(s) not found: ${missing.join(", ")}`
+        );
+      }
+    }
+
+    const data: Prisma.DocumentUpdateInput = {};
+    if (dto.levelId !== undefined) {
+      data.level = { connect: { id: dto.levelId } };
+    }
+    if (dto.preparerId !== undefined) {
+      data.preparer =
+        dto.preparerId != null && dto.preparerId !== ""
+          ? { connect: { id: dto.preparerId } }
+          : { disconnect: true };
+    }
+    if (dto.reviewerId !== undefined) {
+      data.reviewer =
+        dto.reviewerId != null && dto.reviewerId !== ""
+          ? { connect: { id: dto.reviewerId } }
+          : { disconnect: true };
+    }
+    if (dto.approverId !== undefined) {
+      data.approver =
+        dto.approverId != null && dto.approverId !== ""
+          ? { connect: { id: dto.approverId } }
+          : { disconnect: true };
+    }
+    if (dto.approvalDate !== undefined) {
+      data.approvalDate =
+        dto.approvalDate == null || dto.approvalDate === ""
+          ? null
+          : new Date(dto.approvalDate);
+    }
+    if (dto.receiptDate !== undefined) {
+      data.receiptDate =
+        dto.receiptDate == null || dto.receiptDate === ""
+          ? null
+          : new Date(dto.receiptDate);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return this.findById(id);
+    }
+
+    await (this.prisma as PrismaClientLike).document.update({
+      where: { id },
+      data,
+    });
+
+    try {
+      await (this.prisma as PrismaClientLike).auditLog.create({
+        data: {
+          userId,
+          action: "UPDATE",
+          resourceType: "Document",
+          resourceId: id,
+          details: {
+            isoMetadataUpdate: true,
+            fields: Object.keys(data),
+          },
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Failed to create audit log for ISO metadata update:",
+        error
+      );
+    }
+
+    return this.findById(id);
+  }
+
   async search(query: string, folderId?: string) {
     const where: Prisma.DocumentWhereInput = {
       status: "ACTIVE",
@@ -308,11 +631,13 @@ export class DocumentService {
       where.folderId = folderId;
     }
 
-    const documents = await (this.prisma as PrismaClientLike).document.findMany({
-      where,
-      include: { folder: true },
-      take: 50,
-    });
+    const documents = await (this.prisma as PrismaClientLike).document.findMany(
+      {
+        where,
+        include: { folder: true },
+        take: 50,
+      }
+    );
 
     // Apply encoding fix to all documents as defense-in-depth
     // fixFileNameEncoding() already normalizes to NFC

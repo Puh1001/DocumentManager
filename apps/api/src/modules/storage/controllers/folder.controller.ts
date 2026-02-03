@@ -26,6 +26,9 @@ import {
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
 import { AuthenticatedRequest } from "@/common/types/request.types";
+import { UsersService } from "@/modules/users/users.service";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 @ApiTags("Folders")
 @ApiBearerAuth()
@@ -37,7 +40,36 @@ export class FolderController {
     private readonly folderSyncService: FolderSyncService,
     private readonly folderSyncGateway: FolderSyncGateway,
     private readonly localEditService: LocalEditService,
+    private readonly usersService: UsersService,
   ) {}
+
+  /**
+   * Ensures the user can access the given department (user's departments or admin/dcc/boss).
+   * Throws 403 if not allowed.
+   */
+  private async ensureDepartmentAccess(
+    departmentId: string,
+    req: AuthenticatedRequest,
+  ): Promise<void> {
+    const roles = req.user?.roles ?? [];
+    const canSeeAll = roles.some((r) =>
+      ["admin", "dcc", "boss"].includes(r),
+    );
+    if (canSeeAll) return;
+    let userDepartmentIds: string[];
+    try {
+      const depts = await this.usersService.getUserDepartments(req.user!.id);
+      userDepartmentIds = depts.map((d) => d.id);
+    } catch {
+      userDepartmentIds = [];
+    }
+    if (!userDepartmentIds.includes(departmentId)) {
+      throw CustomException.forbidden(
+        ErrorCodes.FOLDER.ACCESS_DENIED,
+        "Department not accessible",
+      );
+    }
+  }
 
   @Get()
   @ApiOperation({ summary: "List folders" })
@@ -54,6 +86,9 @@ export class FolderController {
     @Query("departmentId") departmentId?: string,
     @Request() req?: AuthenticatedRequest,
   ): Promise<FolderTreeNode[]> {
+    if (departmentId && req?.user) {
+      await this.ensureDepartmentAccess(departmentId, req);
+    }
     const roles = req?.user?.roles || [];
     const includeInternal = roles.includes("admin") || roles.includes("dcc");
     return this.folderService.getTree(departmentId, includeInternal);
@@ -65,6 +100,9 @@ export class FolderController {
     @Query("departmentId") departmentId?: string,
     @Request() req?: AuthenticatedRequest,
   ): Promise<FolderTreeNodeWithDocuments[]> {
+    if (departmentId && req?.user) {
+      await this.ensureDepartmentAccess(departmentId, req);
+    }
     const roles = req?.user?.roles || [];
     const includeInternal = roles.includes("admin") || roles.includes("dcc");
     return this.folderService.getTreeWithDocuments(
@@ -75,8 +113,11 @@ export class FolderController {
 
   @Get(":id")
   @ApiOperation({ summary: "Get folder by ID with contents" })
-  async findOne(@Param("id") id: string) {
-    return this.folderService.findById(id);
+  async findOne(
+    @Param("id") id: string,
+    @Query("status") status?: string,
+  ) {
+    return this.folderService.findById(id, status);
   }
 
   @Post()

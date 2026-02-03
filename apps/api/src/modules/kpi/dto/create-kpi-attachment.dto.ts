@@ -1,5 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsString, IsUUID, ValidateIf } from "class-validator";
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  ValidateIf,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreateKpiAttachmentDto {
   @ApiProperty({
@@ -14,6 +23,19 @@ export class CreateKpiAttachmentDto {
   @IsUUID()
   @IsOptional()
   folderId?: string;
+
+  @ApiProperty({
+    description: "Month (1-12) for this attachment. Omitted = current month. Legacy attachments use NULL.",
+    minimum: 1,
+    maximum: 12,
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month?: number;
 
   @ApiProperty({
     description: "Optional description for the signed KPI PDF",

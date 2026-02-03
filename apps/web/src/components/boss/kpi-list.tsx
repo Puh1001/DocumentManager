@@ -10,6 +10,8 @@ import { KpiAttachmentList } from "./kpi-attachment-list";
 import { KpiAttachmentViewer } from "./kpi-attachment-viewer";
 import { KpiAttachmentUpload } from "./kpi-attachment-upload";
 
+const MONTH_KEYS = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12"] as const;
+
 interface KpiRecord {
   id: string;
   departmentId: string;
@@ -30,6 +32,8 @@ interface KpiListProps {
 export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const t = useTranslations("boss");
   const tCommon = useTranslations("common");
+  const tKpi = useTranslations("kpi");
+  const tKpiTable = useTranslations("kpi.table");
   const [records, setRecords] = useState<KpiRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +45,7 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(() => new Date().getMonth() + 1);
 
   const loadRecords = useCallback(async () => {
     try {
@@ -51,11 +56,15 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
       );
       setRecords(data);
 
-      // Load attachments for each KPI if user has view permission
+      // Load attachments for each KPI if user has view permission (filter by selected month)
       if (canViewAttachments) {
+        const monthParam =
+          selectedMonth != null && selectedMonth >= 1 && selectedMonth <= 12
+            ? selectedMonth
+            : undefined;
         const attachmentsPromises = data.map(async (record) => {
           try {
-            const attachments = await kpiAttachmentApi.getAttachments(record.id);
+            const attachments = await kpiAttachmentApi.getAttachments(record.id, monthParam);
             return { kpiId: record.id, attachments };
           } catch (err) {
             console.warn(`Failed to load attachments for KPI ${record.id}:`, err);
@@ -76,7 +85,7 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
     } finally {
       setLoading(false);
     }
-  }, [departmentId, selectedYear, tCommon, canViewAttachments]);
+  }, [departmentId, selectedYear, selectedMonth, tCommon, canViewAttachments]);
 
   useEffect(() => {
     loadRecords();
@@ -128,19 +137,38 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
         </button>
-        <select
-          className="cyber-button px-4 py-2 font-cyber text-sm bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-300 hover:bg-cyan-500/20 transition-colors"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(Number(e.target.value))}
-        >
-          {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(
-            (y) => (
-              <option key={y} value={y} className="bg-gray-900 text-cyan-300">
-                {t("year")} {y}
+        <div className="flex items-center gap-2">
+          <select
+            className="cyber-button px-4 py-2 font-cyber text-sm bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-300 hover:bg-cyan-500/20 transition-colors"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+          >
+            {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(
+              (y) => (
+                <option key={y} value={y} className="bg-gray-900 text-cyan-300">
+                  {t("year")} {y}
+                </option>
+              )
+            )}
+          </select>
+          <select
+            className="cyber-button px-4 py-2 font-cyber text-sm bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-300 hover:bg-cyan-500/20 transition-colors"
+            value={selectedMonth ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSelectedMonth(v === "" ? null : parseInt(v, 10));
+            }}
+          >
+            <option value="" className="bg-gray-900 text-cyan-300">
+              {tKpi("allMonths")}
+            </option>
+            {MONTH_KEYS.map((key, i) => (
+              <option key={key} value={i + 1} className="bg-gray-900 text-cyan-300">
+                {tKpiTable(`months.${key}`)}
               </option>
-            )
-          )}
-        </select>
+            ))}
+          </select>
+        </div>
       </div>
 
       {records.length === 0 ? (
@@ -177,7 +205,8 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
                     <div onClick={(e) => e.stopPropagation()}>
                       <KpiAttachmentUpload
                         kpiRecordId={record.id}
-                        folderId={undefined} // Backend enforces canonical {dept}/KPI/current
+                        folderId={undefined}
+                        selectedMonth={selectedMonth}
                         onUploadSuccess={(attachment) => {
                           const currentAttachments = attachmentsMap.get(record.id) || [];
                           setAttachmentsMap(
@@ -205,6 +234,18 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
                         );
                       } catch (error) {
                         console.error("Failed to delete attachment:", error);
+                      }
+                    }}
+                    onAttachmentRenamed={async () => {
+                      try {
+                        const monthParam =
+                          selectedMonth != null && selectedMonth >= 1 && selectedMonth <= 12
+                            ? selectedMonth
+                            : undefined;
+                        const attachments = await kpiAttachmentApi.getAttachments(record.id, monthParam);
+                        setAttachmentsMap(new Map(attachmentsMap.set(record.id, attachments)));
+                      } catch (error) {
+                        console.error("Failed to refresh attachments after rename:", error);
                       }
                     }}
                     canView={canViewAttachments}

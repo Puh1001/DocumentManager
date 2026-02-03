@@ -44,7 +44,6 @@ export function KpiAttachmentRenameDialog({
 }: KpiAttachmentRenameDialogProps) {
   const { toast } = useToast();
   const [name, setName] = useState("");
-  const [fileName, setFileName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Initialize form when dialog opens
@@ -54,18 +53,8 @@ export function KpiAttachmentRenameDialog({
       const ext = getExtension(currentFileName);
       const nameWithoutExt = getBasename(currentFileName, ext);
       setName(nameWithoutExt);
-      // Auto-generate fileName from name + extension
-      setFileName(nameWithoutExt + ext);
     }
   }, [open, currentFileName]);
-
-  // Auto-update fileName when name changes
-  useEffect(() => {
-    if (open && name) {
-      const ext = getExtension(currentFileName);
-      setFileName(name.trim() + ext);
-    }
-  }, [name, open, currentFileName]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -121,8 +110,8 @@ export function KpiAttachmentRenameDialog({
         <DialogHeader>
           <DialogTitle>Rename KPI Attachment</DialogTitle>
           <DialogDescription>
-            Update the attachment name. The filename will be automatically updated
-            with the same extension.
+            Update the attachment name. The filename will be automatically
+            updated with the same extension.
           </DialogDescription>
         </DialogHeader>
 

@@ -2,14 +2,14 @@
   "title": "Dashboard",
   "description": "Tổng quan hệ thống quản lý tài liệu ISO",
   "stats": {
-    "totalDocuments": "Tổng tài liệu",
+    "totalDocuments": "Tổng tài liệu ISO",
     "folders": "Thư mục",
     "users": "Người dùng",
     "recentUploads": "Upload gần đây"
   },
   "sections": {
-    "recentDocuments": "Tài liệu gần đây",
-    "recentDocumentsDescription": "Danh sách tài liệu được cập nhật gần đây sẽ hiển thị ở đây.",
+    "recentDocuments": "Tài liệu ISO gần đây",
+    "recentDocumentsDescription": "Danh sách tài liệu ISO được cập nhật gần đây sẽ hiển thị ở đây.",
     "activity": "Hoạt động",
     "activityDescription": "Lịch sử hoạt động của hệ thống sẽ hiển thị ở đây.",
     "maintenance": "Lịch bảo trì",

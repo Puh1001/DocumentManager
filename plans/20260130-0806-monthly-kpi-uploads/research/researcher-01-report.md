@@ -49,7 +49,8 @@
 - Existing attachments without month: need clear UX (show in "All" or assign default month).
 - If unique (kpiRecordId, month): only one file per month per KPI; confirm with product.
 
-## Unresolved
+## Resolved (product)
 
-- One attachment per month per KPI vs multiple per month?
-- Migrate existing attachments to which month (or leave NULL)?
+- **Multiple files per month:** Cho phép nhiều file cùng tháng (no unique on kpiRecordId+month).
+- **Legacy (NULL month):** Không backfill; list `?month=M` trả về (month = M) OR (month IS NULL) → dữ liệu cũ hiển thị mọi tháng cùng năm.
+- **Upload default:** Khi không gửi month, default tháng hiện tại.

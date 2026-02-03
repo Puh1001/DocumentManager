@@ -1,11 +1,11 @@
 {
   "title": "BPVN 管理看板",
-  "description": "查看所有部门、KPI、维护和文档",
+  "description": "查看所有部门、KPI、维护和ISO文档",
   "comingSoon": "BPVN 管理看板界面正在实施中...",
   "viewType": {
     "kpi": "KPI",
     "maintenance": "维护",
-    "documents": "文档",
+    "documents": "ISO文档",
     "departments": "部门列表",
     "kpiStatus": "KPI状态"
   },
@@ -39,7 +39,7 @@
   "notFound": {
     "kpi": "未找到 KPI 记录",
     "maintenance": "未找到维护通知",
-    "document": "未找到文档"
+    "document": "未找到ISO文档"
   },
   "kpi": {
     "untitled": "未命名 KPI",
@@ -52,6 +52,12 @@
       "noAttachments": "无附件",
       "moreFiles": "+{count} 个其他文件",
       "upload": "上传 PDF",
+      "uploading": "上传中...",
+      "toastError": "错误",
+      "toastSuccess": "成功",
+      "pdfOnly": "仅接受 PDF 文件",
+      "uploadSuccess": "PDF 文件上传成功",
+      "uploadFailed": "无法上传文件",
       "delete": "删除文件",
       "deleteConfirm": "您确定要删除此文件吗？",
       "viewer": {
@@ -76,8 +82,8 @@
     "noKpiDescription": "此部门没有 KPI 记录。",
     "noMaintenance": "未找到维护通知",
     "noMaintenanceDescription": "此部门没有维护通知。",
-    "noDocuments": "未找到文档",
-    "noDocumentsDescription": "此部门文件夹中没有文档。",
+    "noDocuments": "未找到ISO文档",
+    "noDocumentsDescription": "此部门文件夹中没有ISO文档。",
     "noFolder": "未找到部门文件夹",
     "noFolderDescription": "系统中未找到部门 {department} 的文件夹。"
   },
@@ -85,7 +91,7 @@
     "loadFailed": "加载部门失败",
     "loadKpiFailed": "加载 KPI 记录失败",
     "loadMaintenanceFailed": "加载维护通知失败",
-    "loadDocumentsFailed": "加载文档失败",
+    "loadDocumentsFailed": "加载ISO文档失败",
     "loadKpiStatusFailed": "加载 KPI 状态失败"
   },
   "kpiStatus": {

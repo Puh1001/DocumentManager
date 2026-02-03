@@ -1,5 +1,5 @@
 {
-  "title": "文档管理",
+  "title": "ISO文档",
   "description": "浏览和管理ISO文档",
   "folder": "文件夹",
   "selectFolder": "选择一个文件夹以查看文档",
@@ -9,10 +9,18 @@
     "refresh": "刷新",
     "openFolder": "打开文件夹",
     "upload": "上传",
+    "uploadToDepartment": "上传到部门",
     "assignDepartment": "分配部门",
     "location": "位置",
     "pathCopied": "路径已复制:\n{path}\n\n粘贴到Windows资源管理器 (Win+E) 以打开文件夹。",
-    "pathCopiedTitle": "路径已复制"
+    "pathCopiedTitle": "路径已复制",
+    "uploadSuccess": "成功",
+    "uploadSuccessDescription": "文档上传成功",
+    "uploadError": "上传错误"
+  },
+  "errors": {
+    "loadFailed": "错误",
+    "loadFailedDescription": "无法加载文档。请重试。"
   },
   "assignDepartment": {
     "title": "为 {folder} 分配部门",
@@ -21,20 +29,82 @@
     "selectDepartment": "选择部门",
     "none": "无（取消分配）"
   },
+  "filters": {
+    "status": "状态",
+    "level": "级别",
+    "department": "部门",
+    "all": "全部",
+    "statusActive": "有效",
+    "statusArchived": "已归档",
+    "statusDeleted": "已删除",
+    "levelAll": "所有级别",
+    "loadingLevels": "正在加载级别..."
+  },
+  "upload": {
+    "selectFolder": "选择文件夹",
+    "selectFolderDescription": "选择要上传文档的文件夹",
+    "noFolders": "没有可用的文件夹",
+    "noDepartment": "没有可用的部门用于上传。请联系管理员。",
+    "documentsFolder": "文档",
+    "selectDepartment": "选择部门",
+    "level": "级别",
+    "selectLevel": "选择级别",
+    "loadingLevels": "加载级别中..."
+  },
+  "pagination": {
+    "showing": "显示第 {from} 到 {to} 条，共 {total} 条文档"
+  },
   "list": {
-    "empty": "此文件夹中没有文档",
+    "empty": "未找到文档",
     "columns": {
+      "no": "序号",
       "name": "文档名称",
+      "title": "标题",
       "type": "类型",
       "size": "大小",
       "updated": "更新",
+      "version": "版本",
+      "level": "级别",
+      "responsibleDepartment": "负责部门",
+      "preparer": "编制人",
+      "reviewer": "审核人",
+      "approver": "批准人",
+      "approvalDate": "批准日期",
+      "receiptDate": "接收日期",
+      "storageLocation": "存储位置",
+      "status": "状态",
+      "uploadPDF": "uploadPDF",
       "actions": "操作"
     },
     "actions": {
       "view": "查看",
       "download": "下载",
       "openToEdit": "打开编辑",
-      "versionHistory": "版本历史"
+      "versionHistory": "版本历史",
+      "editMetadata": "编辑元数据",
+      "rename": "重命名"
     }
+  },
+  "editMetadata": {
+    "title": "编辑 ISO 元数据",
+    "loadingUsers": "加载中...",
+    "noMatches": "无匹配",
+    "description": "编辑 \"{name}\" 的级别、编制人、审核人、批准人及日期。",
+    "nameLabel": "文档名称",
+    "namePlaceholder": "输入文档名称",
+    "nameRequired": "文档名称不能为空。",
+    "fileNameHint": "文件名将自动设置为：{fileName}",
+    "preparer": "编制人",
+    "reviewer": "审核人",
+    "approver": "批准人",
+    "approvalDate": "批准日期",
+    "receiptDate": "接收日期",
+    "none": "无",
+    "save": "保存",
+    "cancel": "取消",
+    "saving": "保存中...",
+    "successTitle": "已保存",
+    "successDescription": "文档名称和元数据已成功更新。",
+    "errorTitle": "错误"
   }
 }

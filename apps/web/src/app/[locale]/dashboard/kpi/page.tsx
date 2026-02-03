@@ -215,6 +215,9 @@ export default function KpiPage() {
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(
+    () => new Date().getMonth() + 1,
+  );
 
   // Filter departments based on user access
   const departments = useMemo(() => {
@@ -266,7 +269,7 @@ export default function KpiPage() {
       // Current selected department is no longer accessible - reset to first available
       setSelectedDepartmentId(departments[0].id);
     }
-    // Reset auto-create flag when department or year changes
+    // Reset auto-create flag when department or year changes (not on month change)
     setHasAttemptedAutoCreate(false);
   }, [departments, selectedDepartmentId, selectedYear]);
 
@@ -442,12 +445,19 @@ export default function KpiPage() {
         setHasUnsavedChanges(false);
         setLastSavedAt(new Date());
 
-        // Load attachments for each KPI if user has view permission
+        // Load attachments for each KPI if user has view permission (filter by selected month)
         if (canViewAttachments) {
+          const monthParam =
+            selectedMonth != null &&
+            selectedMonth >= 1 &&
+            selectedMonth <= 12
+              ? selectedMonth
+              : undefined;
           const attachmentsPromises = recordsWithMetrics.map(async (record) => {
             try {
               const attachments = await kpiAttachmentApi.getAttachments(
                 record.id,
+                monthParam,
               );
               return { kpiId: record.id, attachments };
             } catch (err) {
@@ -509,6 +519,7 @@ export default function KpiPage() {
   }, [
     selectedDepartmentId,
     selectedYear,
+    selectedMonth,
     toast,
     canCreate,
     hasAttemptedAutoCreate,
@@ -1378,6 +1389,32 @@ export default function KpiPage() {
                   ),
                 )}
               </select>
+              <select
+                className="border rounded-md px-2 py-1 text-sm"
+                value={selectedMonth ?? ""}
+                onChange={(e) => {
+                  if (hasUnsavedChanges && isEditMode) {
+                    if (
+                      !confirm(
+                        "Bạn có thay đổi chưa lưu. Bạn có chắc muốn chuyển tháng không?",
+                      )
+                    ) {
+                      return;
+                    }
+                  }
+                  const v = e.target.value;
+                  setSelectedMonth(
+                    v === "" ? null : parseInt(v, 10),
+                  );
+                }}
+              >
+                <option value="">{t("allMonths")}</option>
+                {MONTH_KEYS.map((key, i) => (
+                  <option key={key} value={i + 1}>
+                    {tTable(`months.${key}`)}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1564,10 +1601,16 @@ export default function KpiPage() {
                             }}
                             onAttachmentRenamed={async (_attachmentId) => {
                               try {
-                                // Refresh attachments for this KPI record
+                                const monthParam =
+                                  selectedMonth != null &&
+                                  selectedMonth >= 1 &&
+                                  selectedMonth <= 12
+                                    ? selectedMonth
+                                    : undefined;
                                 const attachments =
                                   await kpiAttachmentApi.getAttachments(
                                     record.id,
+                                    monthParam,
                                   );
                                 setAttachmentsMap(
                                   new Map(
@@ -1953,7 +1996,8 @@ export default function KpiPage() {
                         {canCreateAttachments && (
                           <KpiAttachmentUpload
                             kpiRecordId={record.id}
-                            folderId={undefined} // Backend enforces canonical {dept}/KPI/current
+                            folderId={undefined}
+                            selectedMonth={selectedMonth}
                             onUploadSuccess={(attachment) => {
                               const currentAttachments =
                                 attachmentsMap.get(record.id) || [];

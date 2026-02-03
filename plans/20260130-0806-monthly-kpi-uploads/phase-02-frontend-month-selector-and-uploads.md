@@ -13,15 +13,16 @@
 |-------|--------|
 | Date | 2026-01-30 |
 | Priority | High |
-| Implementation status | Pending |
-| Review status | Not started |
+| Implementation status | Done |
+| Review status | Done (see [reports/phase-02-code-review.md](./reports/phase-02-code-review.md)) |
 | Description | Add month dropdown next to year on KPI page; scope attachment list and upload to selected month. |
 
 ## Key Insights
 
 - Current KPI page has only Year dropdown (current ± 5). Screenshot shows empty space for month next to “Year 2025”.
 - Records load remains by department + year; only attachment list and upload are month-scoped.
-- Default month: current month or “All months”; product to confirm.
+- **Default month:** Chọn sẵn tháng hiện tại — `selectedMonth` default = `new Date().getMonth() + 1`.
+- **Multiple files:** Cho phép nhiều file một tháng; UI không giới hạn số lượng upload.
 
 ## Requirements
 
@@ -29,7 +30,7 @@
 
 - Month selector next to Year (1–12 or “All months”). Same row, top-right of main content.
 - When a month is selected: list attachments for each KPI record filtered by that month; upload sends selected month.
-- When “All months”: list all attachments for the record (no month filter); upload may use current month as default or require selecting a month first.
+- When “All months”: list all attachments for the record (no month filter); upload defaults to current month when “All” selected.
 - Unsaved-changes warning when switching month (same as year/department).
 
 ### Non-functional
@@ -39,7 +40,7 @@
 
 ## Architecture
 
-- **State:** `selectedMonth: number | null` (1–12 or null = “All”). Default e.g. current month.
+- **State:** `selectedMonth: number | null` (1–12 or null = “All”). **Default: current month** (`new Date().getMonth() + 1`).
 - **API client:** `getAttachments(recordId, month?: number)`; `uploadAttachment(recordId, file, folderId?, description?, month?)`.
 - **Components:** KpiAttachmentList receives optional month filter (or backend returns filtered list); KpiAttachmentUpload receives current selectedMonth and sends in upload.
 
@@ -56,8 +57,8 @@
 ## Implementation Steps
 
 1. **State & UI**
-   - Add `selectedMonth` state (number | null). Default: `new Date().getMonth() + 1` or null for “All”.
-   - In the same flex row as the Year dropdown, add a Month `<select>`: options “All months” (value "") plus 1–12 (or Jan–Dec). Set value from `selectedMonth`; on change update state and optionally confirm if unsaved.
+   - Add `selectedMonth` state (number | null). **Default: current month** — `useState<number | null>(() => new Date().getMonth() + 1)`.
+   - In the same flex row as the Year dropdown, add a Month `<select>`: options “All months” (value "") plus 1–12 (or Jan–Dec). Set value from `selectedMonth`; on change update state and confirm if unsaved.
 
 2. **Load attachments**
    - In the effect that loads attachments per record, call API with current month when selected: `getAttachments(record.id, selectedMonth ?? undefined)`. When “All months”, call without month param.
@@ -77,12 +78,12 @@
 
 ## Todo List
 
-- [ ] Add selectedMonth state and month dropdown to KPI page.
-- [ ] Wire getAttachments(recordId, month) in load effect.
-- [ ] Pass month to KpiAttachmentUpload and include in upload API.
-- [ ] Update api.ts getAttachments and uploadAttachment for month.
-- [ ] Add i18n keys for month labels (en, vi, zh).
-- [ ] Confirm dialog when changing month with unsaved changes.
+- [x] Add selectedMonth state and month dropdown to KPI page.
+- [x] Wire getAttachments(recordId, month) in load effect.
+- [x] Pass month to KpiAttachmentUpload and include in upload API.
+- [x] Update api.ts getAttachments and uploadAttachment for month.
+- [x] Add i18n keys for month labels (en, vi, zh).
+- [x] Confirm dialog when changing month with unsaved changes.
 
 ## Success Criteria
 
@@ -93,8 +94,8 @@
 
 ## Risk Assessment
 
-- **Default “All” vs current month:** Affects first-time UX and upload default. Mitigation: document choice; default to current month for upload if “All” selected.
-- **Performance:** One attachment list request per record; unchanged from today. No extra N+1.
+- **Default = current month:** First load shows current month; no “All” as default.
+- **Performance:** One attachment list request per record; unchanged. No extra N+1.
 
 ## Security Considerations
 
