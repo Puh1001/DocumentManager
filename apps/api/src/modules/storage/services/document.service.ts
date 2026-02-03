@@ -107,6 +107,8 @@ export class DocumentService {
     // Always exclude version folders and Delete_files folders from main document listing
     // Exclude folders whose path contains "/versions/" or "\versions\" (Windows paths)
     // Exclude folders whose path contains "Delete_files", "delete files", or "Deleted files" (case-insensitive, various formats)
+    // Additionally, only include folders under the ISO_documents section so the flat list
+    // behaves as an ISO documents view and does not show KPI or Maintenance files.
     const folderWhere: Prisma.FolderWhereInput = {
       AND: [
         { path: { not: { contains: "/versions/" } } },
@@ -118,6 +120,17 @@ export class DocumentService {
         { path: { not: { contains: "\\delete files" } } },
         { path: { not: { contains: "/Deleted files" } } },
         { path: { not: { contains: "\\Deleted files" } } },
+        // Only include folders under ISO_documents section (documents area)
+        {
+          OR: [
+            // New canonical layout: "{dept}/ISO_documents" and children
+            { path: { contains: "/ISO_documents" } },
+            { path: { contains: "\\ISO_documents" } },
+            // Safety for rare root/legacy layouts
+            { path: { endsWith: "/ISO_documents" } },
+            { path: { equals: "ISO_documents" } },
+          ],
+        },
       ],
     };
 
