@@ -249,13 +249,13 @@ User → Dashboard page
 User → Delete button → Check deletion status
   → GET /storage/documents/:id/deletion-status
   → DocumentDeletionService.checkDeletionStatus()
-  
+
   If within 72 hours:
     → User can self-delete
     → DELETE /storage/documents/:id
     → File moved to "delete files" folder
     → Document status = DELETED
-  
+
   If after 72 hours:
     → Submit deletion request
     → POST /storage/documents/:id/deletion-requests
@@ -343,7 +343,7 @@ Folder ──┬── Folder (self-reference for hierarchy)
 - **Boss Role**: Read-only access (view, download, print) to all resources
 - **Implementation**: CASL MongoAbility with dynamic ability factory
 - **Backend Enforcement**: PoliciesGuard with CheckPolicies decorator
-- **Frontend Enforcement**: 
+- **Frontend Enforcement**:
   - `useCanAccess` hook with route-level checks
   - `PageGuard` component for automatic permission checks from page metadata
 - **Navigation Filtering**: Sidebar items filtered based on permissions

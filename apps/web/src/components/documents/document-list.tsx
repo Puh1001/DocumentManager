@@ -6,6 +6,7 @@ import { formatDateShort } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, History, ExternalLink, FileEdit } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
+import { useDeletionStatus } from "@/hooks/use-deletion-status";
 import { Document as DocumentType } from "@/lib/types/ability.types";
 import type {
   Document,
@@ -272,23 +273,10 @@ export function DocumentList({
                       <History className="h-4 w-4" />
                     </Button>
                   )}
-                  <DeletionErrorBoundary>
-                    <DeletionStatusBadge
-                      documentId={doc.id}
-                      expiresAt={
-                        doc.deletionExpiresAt
-                          ? new Date(doc.deletionExpiresAt)
-                          : null
-                      }
-                    />
-                  </DeletionErrorBoundary>
-                  <DeletionErrorBoundary>
-                    <DeletionActions
-                      documentId={doc.id}
-                      documentName={doc.name}
-                      onDeleted={() => onDocumentDeleted?.(doc.id)}
-                    />
-                  </DeletionErrorBoundary>
+                  <DocumentDeletionControls
+                    document={doc}
+                    onDeleted={onDocumentDeleted}
+                  />
                 </div>
               </td>
             </tr>
@@ -309,5 +297,44 @@ export function DocumentList({
         }}
       />
     </div>
+  );
+}
+
+interface DocumentDeletionControlsProps {
+  document: Document;
+  onDeleted?: (documentId: string) => void;
+}
+
+function DocumentDeletionControls({
+  document,
+  onDeleted,
+}: DocumentDeletionControlsProps) {
+  const { status, loading, refetch } = useDeletionStatus(document.id);
+
+  return (
+    <>
+      <DeletionErrorBoundary>
+        <DeletionStatusBadge
+          documentId={document.id}
+          expiresAt={
+            document.deletionExpiresAt
+              ? new Date(document.deletionExpiresAt)
+              : null
+          }
+          status={status}
+          loading={loading}
+        />
+      </DeletionErrorBoundary>
+      <DeletionErrorBoundary>
+        <DeletionActions
+          documentId={document.id}
+          documentName={document.name}
+          status={status}
+          loading={loading}
+          refetchStatus={refetch}
+          onDeleted={() => onDeleted?.(document.id)}
+        />
+      </DeletionErrorBoundary>
+    </>
   );
 }

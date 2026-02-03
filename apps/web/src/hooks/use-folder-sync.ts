@@ -151,6 +151,9 @@ export function useFolderSync({
   const folderIdRef = useRef(folderId);
   const connectingRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // When we hit a hard browser error (e.g. 'Insufficient resources'),
+  // disable further WebSocket attempts for this session to avoid log spam.
+  const permanentErrorRef = useRef(false);
 
   // Update refs when props change (without causing reconnection)
   useEffect(() => {
@@ -194,7 +197,11 @@ export function useFolderSync({
     // Connect to WebSocket with token refresh
     const connectWebSocket = async () => {
       // Prevent duplicate connections
-      if (connectingRef.current || socketRef.current?.connected) {
+      if (
+        permanentErrorRef.current ||
+        connectingRef.current ||
+        socketRef.current?.connected
+      ) {
         return;
       }
 
@@ -207,6 +214,7 @@ export function useFolderSync({
           console.warn(
             "No valid access token available, skipping WebSocket connection"
           );
+          connectingRef.current = false;
           return;
         }
 
@@ -215,6 +223,7 @@ export function useFolderSync({
           console.warn(
             "WebSocket URL is not configured; realtime sync disabled"
           );
+          connectingRef.current = false;
           return;
         }
         console.log(`Connecting to WebSocket: ${wsUrl}/storage`);
@@ -300,6 +309,14 @@ export function useFolderSync({
             }
           } else {
             console.error("WebSocket connection error:", error.message);
+            if (errorMessage.includes("insufficient resources")) {
+              console.warn(
+                "Disabling realtime folder sync due to browser resource limits. " +
+                  "WebSocket will not reconnect for this session."
+              );
+              permanentErrorRef.current = true;
+              socket.disconnect();
+            }
           }
         });
 
@@ -312,6 +329,12 @@ export function useFolderSync({
         });
       } catch (error) {
         console.error("Error setting up WebSocket connection:", error);
+        if (
+          error instanceof Error &&
+          error.message.toLowerCase().includes("insufficient resources")
+        ) {
+          permanentErrorRef.current = true;
+        }
         connectingRef.current = false;
       }
     };

@@ -142,7 +142,7 @@ export class DocumentService {
       where.levelId = filters.level;
     }
 
-    const [documents, total] = await Promise.all([
+    const [documents, uniquePairs] = await Promise.all([
       (this.prisma as PrismaClientLike).document.findMany({
         where,
         skip,
@@ -177,9 +177,13 @@ export class DocumentService {
         },
         orderBy: { name: "asc" },
       }),
-      (this.prisma as PrismaClientLike).document.count({ where }),
+      (this.prisma as PrismaClientLike).document.groupBy({
+        where,
+        by: ["folderId", "fileName"],
+      }),
     ]);
 
+    const total = uniquePairs.length;
     const totalPages = Math.ceil(total / limit);
 
     // Apply encoding fix to all documents as defense-in-depth

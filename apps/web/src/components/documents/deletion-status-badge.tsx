@@ -10,13 +10,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Clock, AlertTriangle, CheckCircle, XCircle, User, Calendar } from 'lucide-react';
-import { useDeletionStatus } from '@/hooks/use-deletion-status';
+import { useDeletionStatus, type DeletionStatus } from '@/hooks/use-deletion-status';
 import { useDeletionCountdown } from '@/hooks/use-deletion-countdown';
 import { api } from '@/lib/api';
 
 interface DeletionStatusBadgeProps {
   documentId: string;
   expiresAt: Date | null;
+  /**
+   * Optional externally provided status/loading to avoid duplicate API calls.
+   * When not provided, this component will fetch status internally.
+   */
+  status?: DeletionStatus | null;
+  loading?: boolean;
 }
 
 interface DeletionRequest {
@@ -40,35 +46,51 @@ interface DeletionRequest {
 export function DeletionStatusBadge({
   documentId,
   expiresAt,
+  status: externalStatus,
+  loading: externalLoading,
 }: DeletionStatusBadgeProps) {
-  const { status, loading } = useDeletionStatus(documentId);
+  // If status/loading are not provided, fall back to internal hook.
+  // This keeps the component reusable while allowing callers to share status.
+  const shouldUseInternalHook =
+    typeof externalStatus === 'undefined' || typeof externalLoading === 'undefined';
+
+  const {
+    status: internalStatus,
+    loading: internalLoading,
+  } = useDeletionStatus(shouldUseInternalHook ? documentId : '');
+
+  const status = shouldUseInternalHook ? internalStatus : externalStatus ?? null;
+  const loading = shouldUseInternalHook ? internalLoading : !!externalLoading;
+
   const countdown = useDeletionCountdown(expiresAt);
   const [rejectionRequest, setRejectionRequest] = useState<DeletionRequest | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Fetch deletion request if status indicates there was a request
+  // Fetch deletion request only for expired documents without active requests.
+  // This avoids spamming the API for documents that were never part of the workflow.
   useEffect(() => {
-    if (!status || !status.hasActiveRequest) {
-      // Check if there's a rejected request
-      const fetchRequest = async () => {
-        try {
-          const request = await api.get<DeletionRequest | null>(
-            `/storage/documents/${documentId}/deletion-request`
-          );
-          if (request && request.status === 'REJECTED') {
-            setRejectionRequest(request);
-          } else {
-            setRejectionRequest(null);
-          }
-        } catch (error) {
-          // Request might not exist, that's okay
+    if (!status || !status.isExpired || status.hasActiveRequest) {
+      setRejectionRequest(null);
+      return;
+    }
+
+    const fetchRequest = async () => {
+      try {
+        const request = await api.get<DeletionRequest | null>(
+          `/storage/documents/${documentId}/deletion-request`,
+        );
+        if (request && request.status === 'REJECTED') {
+          setRejectionRequest(request);
+        } else {
           setRejectionRequest(null);
         }
-      };
-      fetchRequest();
-    } else {
-      setRejectionRequest(null);
-    }
+      } catch {
+        // Request might not exist – that's fine, just clear state
+        setRejectionRequest(null);
+      }
+    };
+
+    fetchRequest();
   }, [documentId, status]);
 
   if (loading || !status) {

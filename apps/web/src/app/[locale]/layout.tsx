@@ -28,19 +28,15 @@ export default async function LocaleLayout({
   const messages = await getMessages({ locale });
 
   return (
-    <html lang={locale}>
-      <body>
-        <NextIntlClientProvider
-          messages={messages}
-          locale={locale}
-          key={locale} // Force re-render when locale changes
-        >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider
+      messages={messages}
+      locale={locale}
+      key={locale} // Force re-render when locale changes
+    >
+      <AuthProvider>
+        {children}
+        <Toaster />
+      </AuthProvider>
+    </NextIntlClientProvider>
   );
 }

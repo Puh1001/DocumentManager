@@ -127,6 +127,12 @@ export default function DocumentsPage() {
     async (page: number) => {
       try {
         setLoading(true);
+        console.log("[Documents] Loading documents", {
+          requestedPage: page,
+          statusFilter,
+          departmentFilter,
+          levelFilter,
+        });
         const params = new URLSearchParams();
         params.append("page", page.toString());
         params.append("limit", limit.toString());
@@ -163,6 +169,22 @@ export default function DocumentsPage() {
         setDocuments(deduped);
         setTotal(response.total || 0);
         setTotalPages(response.totalPages || 0);
+        // Ensure currentPage reflects the latest successful response
+        if (typeof response.page === "number") {
+          setCurrentPage((prev) =>
+            prev === response.page ? prev : response.page
+          );
+        }
+        if (response.page && response.page !== page) {
+          // Log mismatch for debugging; backend and frontend should agree on page
+          console.warn(
+            "[Documents] Page mismatch between request and response",
+            {
+              requestedPage: page,
+              responsePage: response.page,
+            }
+          );
+        }
         // Don't update currentPage here - it's managed by the caller
         // This prevents circular dependency in useEffect
       } catch (error) {
@@ -190,8 +212,15 @@ export default function DocumentsPage() {
   }, 300);
 
   useEffect(() => {
+    console.log("[Documents] currentPage state changed", currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
     debouncedLoadDocuments();
-  }, [statusFilter, departmentFilter, levelFilter, debouncedLoadDocuments]);
+    // We intentionally omit debouncedLoadDocuments from deps to avoid
+    // resetting the page on every render due to function identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, departmentFilter, levelFilter]);
 
   // Load documents when page changes (without debounce)
   // Only depend on currentPage - loadAllDocuments is stable (doesn't change unless filters change)
@@ -217,9 +246,15 @@ export default function DocumentsPage() {
         } else {
           console.log("Sync completed successfully");
         }
-        // Refresh document list (reset to page 1)
-        setCurrentPage(1);
-        loadAllDocuments(1);
+        // Refresh document list but keep current page to avoid unexpected jumps
+        loadAllDocuments(currentPage);
+        // Refresh deleted count
+        api
+          .get<{ total: number }>(
+            "/storage/documents?status=DELETED&limit=1&page=1"
+          )
+          .then((res) => setDeletedCount(res.total || 0))
+          .catch(() => setDeletedCount(0));
         return;
       }
 

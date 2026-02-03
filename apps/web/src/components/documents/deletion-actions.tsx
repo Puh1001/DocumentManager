@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, FileText, Clock } from 'lucide-react';
-import { useDeletionStatus } from '@/hooks/use-deletion-status';
+import { useDeletionStatus, type DeletionStatus } from '@/hooks/use-deletion-status';
 import { DeletionRequestDialog } from './deletion-request-dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { api } from '@/lib/api';
@@ -13,23 +13,45 @@ interface DeletionActionsProps {
   documentId: string;
   documentName: string;
   onDeleted?: () => void;
+  /**
+   * Optional externally provided status/loading/refetch to avoid duplicate API calls.
+   * When not provided, this component will fetch status internally.
+   */
+  status?: DeletionStatus | null;
+  loading?: boolean;
+  refetchStatus?: () => void;
 }
 
 export function DeletionActions({
   documentId,
   documentName,
   onDeleted,
+  status: externalStatus,
+  loading: externalLoading,
+  refetchStatus,
 }: DeletionActionsProps) {
-  const { status, loading, refetch } = useDeletionStatus(documentId);
+  const shouldUseInternalHook =
+    typeof externalStatus === 'undefined' ||
+    typeof externalLoading === 'undefined' ||
+    typeof refetchStatus === 'undefined';
+
+  const {
+    status: internalStatus,
+    loading: internalLoading,
+    refetch: internalRefetch,
+  } = useDeletionStatus(shouldUseInternalHook ? documentId : '');
+
+  const status = shouldUseInternalHook ? internalStatus : externalStatus ?? null;
+  const loading = shouldUseInternalHook ? internalLoading : !!externalLoading;
+  const refetch = shouldUseInternalHook ? internalRefetch : refetchStatus ?? (() => {});
+
   const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleDelete = async () => {
-    if (
-      !confirm(`Are you sure you want to delete "${documentName}"?`)
-    ) {
+    if (!confirm(`Are you sure you want to delete "${documentName}"?`)) {
       return;
     }
 

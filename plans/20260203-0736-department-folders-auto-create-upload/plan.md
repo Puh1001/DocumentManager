@@ -11,11 +11,11 @@
 
 ## Phases
 
-| Phase | Description                                                                              | Status  | Link                                                                                                                                       |
-| ----- | ---------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 01    | Backend: Ensure folder structure when loading tree (or dedicated endpoint)               | Done    | [phase-01-backend-ensure-folder-on-tree-load.md](./phase-01-backend-ensure-folder-on-tree-load.md)                                         |
-| 02    | Frontend: Department selector (multi-dept) + Documents-only folder picker for ISO upload | Done    | [phase-02-frontend-department-selector-and-documents-only-picker.md](./phase-02-frontend-department-selector-and-documents-only-picker.md) |
-| 03    | Testing, validation, docs                                                                | Done    | [phase-03-testing-and-docs.md](./phase-03-testing-and-docs.md)                                                                             |
+| Phase | Description                                                                              | Status | Link                                                                                                                                       |
+| ----- | ---------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 01    | Backend: Ensure folder structure when loading tree (or dedicated endpoint)               | Done   | [phase-01-backend-ensure-folder-on-tree-load.md](./phase-01-backend-ensure-folder-on-tree-load.md)                                         |
+| 02    | Frontend: Department selector (multi-dept) + Documents-only folder picker for ISO upload | Done   | [phase-02-frontend-department-selector-and-documents-only-picker.md](./phase-02-frontend-department-selector-and-documents-only-picker.md) |
+| 03    | Testing, validation, docs                                                                | Done   | [phase-03-testing-and-docs.md](./phase-03-testing-and-docs.md)                                                                             |
 
 ## Context
 
