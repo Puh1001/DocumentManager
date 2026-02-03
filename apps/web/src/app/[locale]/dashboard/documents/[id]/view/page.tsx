@@ -30,7 +30,8 @@ interface Permissions {
 }
 
 export default function DocumentViewPage() {
-  const params = useParams<{ locale: string; id: string }>();
+  const params = useParams<{ locale?: string; id?: string }>();
+  const documentId = params?.id;
   const router = useRouter();
   const { user } = useAuth();
   const [document, setDocument] = useState<Document | null>(null);
@@ -47,7 +48,8 @@ export default function DocumentViewPage() {
 
   const loadDocument = useCallback(async () => {
     try {
-      const doc = await api.get<Document>(`/storage/documents/${params.id}`);
+      if (!documentId) return;
+      const doc = await api.get<Document>(`/storage/documents/${documentId}`);
       setDocument(doc);
 
       // TODO: Load actual permissions from API
@@ -62,23 +64,25 @@ export default function DocumentViewPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [documentId]);
 
   useEffect(() => {
     loadDocument();
   }, [loadDocument]);
 
   const handleDownload = () => {
-    window.open(`/api/storage/documents/${params.id}/download`, "_blank");
+    if (!documentId) return;
+    window.open(`/api/storage/documents/${documentId}/download`, "_blank");
   };
 
   const handleOpenLocal = async () => {
     try {
+      if (!documentId) return;
       interface OpenPathResponse {
         networkPath: string;
       }
       const response = await api.get<OpenPathResponse>(
-        `/storage/documents/${params.id}/open-path`
+        `/storage/documents/${documentId}/open-path`
       );
       await navigator.clipboard.writeText(response.networkPath);
       alert(
@@ -105,7 +109,7 @@ export default function DocumentViewPage() {
     );
   }
 
-  const fileUrl = `/api/storage/documents/${params.id}/stream`;
+  const fileUrl = `/api/storage/documents/${documentId}/stream`;
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -117,7 +121,9 @@ export default function DocumentViewPage() {
           </Button>
           <div>
             <h1 className="font-semibold">{document.name}</h1>
-            <p className="text-xs text-muted-foreground">{fixFileNameEncoding(document.fileName)}</p>
+            <p className="text-xs text-muted-foreground">
+              {fixFileNameEncoding(document.fileName)}
+            </p>
           </div>
         </div>
 

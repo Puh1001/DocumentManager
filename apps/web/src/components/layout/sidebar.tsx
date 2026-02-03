@@ -45,7 +45,7 @@ interface NavigationItem {
  */
 export function Sidebar() {
   const t = useTranslations("common");
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const locale = useLocale();
   const { pages, loading } = usePages();
 

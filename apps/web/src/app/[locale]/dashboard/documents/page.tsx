@@ -381,38 +381,44 @@ export default function DocumentsPage() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <DocumentToolbar
-            statusFilter={statusFilter}
-            departmentFilter={departmentFilter}
-            levelFilter={levelFilter}
-            onStatusChange={setStatusFilter}
-            onDepartmentChange={setDepartmentFilter}
-            onLevelChange={setLevelFilter}
-            departments={departments}
-            levels={levels}
-            levelsLoading={levelsLoading}
-            locale={locale}
-            onUpload={handleFileSelect}
-            onRefresh={() => loadAllDocuments(currentPage)}
-            onSync={handleSync}
-            uploadDepartments={uploadDepartments}
-            selectedDepartmentIdForUpload={selectedDepartmentIdForUpload}
-            onUploadDepartmentChange={setSelectedDepartmentIdForUpload}
-          />
-          {deletedCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="cursor-pointer"
-              onClick={() => {
-                setStatusFilter("DELETED");
-                setCurrentPage(1);
-              }}
-            >
-              {t("filters.statusDeleted")}: {deletedCount}
-            </Badge>
-          )}
-        </div>
+        <Card className="p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex-1 min-w-0">
+              <DocumentToolbar
+                statusFilter={statusFilter}
+                departmentFilter={departmentFilter}
+                levelFilter={levelFilter}
+                onStatusChange={setStatusFilter}
+                onDepartmentChange={setDepartmentFilter}
+                onLevelChange={setLevelFilter}
+                departments={departments}
+                levels={levels}
+                levelsLoading={levelsLoading}
+                locale={locale}
+                onUpload={handleFileSelect}
+                onRefresh={() => loadAllDocuments(currentPage)}
+                onSync={handleSync}
+                uploadDepartments={uploadDepartments}
+                selectedDepartmentIdForUpload={selectedDepartmentIdForUpload}
+                onUploadDepartmentChange={setSelectedDepartmentIdForUpload}
+              />
+            </div>
+            {deletedCount > 0 && (
+              <div className="lg:pt-6 lg:pl-3 lg:shrink-0">
+                <Badge
+                  variant="destructive"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setStatusFilter("DELETED");
+                    setCurrentPage(1);
+                  }}
+                >
+                  {t("filters.statusDeleted")}: {deletedCount}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </Card>
 
         <Card className="p-4">
           <DocumentList

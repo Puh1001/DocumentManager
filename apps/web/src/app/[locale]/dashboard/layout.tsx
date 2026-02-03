@@ -15,7 +15,7 @@ export default function DashboardLayout({
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const locale = useLocale();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
 
   // Redirect to login if not authenticated
   useEffect(() => {
