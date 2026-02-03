@@ -3,7 +3,13 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Upload, RefreshCw, RotateCw } from "lucide-react";
+import {
+  Upload,
+  RefreshCw,
+  RotateCw,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   type DocumentLevel,
   getDocumentLevelDisplayName,
@@ -80,84 +86,102 @@ export function DocumentToolbar({
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5">
+    <div className="space-y-3">
+      {/* Filter Row */}
+      <div className="flex items-center gap-4 flex-wrap">
+        {/* Status Filter */}
+        <div className="flex items-center gap-2">
           <label
             htmlFor="status-filter"
             className="text-sm text-muted-foreground whitespace-nowrap"
           >
             {tFilters("status")}:
           </label>
-          <select
-            id="status-filter"
-            aria-label={tFilters("status")}
-            value={statusFilter}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-          >
-            <option value="">{tFilters("all")}</option>
-            <option value="ACTIVE">{tFilters("statusActive")}</option>
-            <option value="ARCHIVED">{tFilters("statusArchived")}</option>
-            <option value="DELETED">{tFilters("statusDeleted")}</option>
-          </select>
+          <div className="relative">
+            <select
+              id="status-filter"
+              aria-label={tFilters("status")}
+              value={statusFilter}
+              onChange={(e) => onStatusChange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 pr-8 py-1 text-sm text-foreground cursor-pointer transition-colors hover:border-input/80 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring appearance-none"
+            >
+              <option value="">{tFilters("all")}</option>
+              <option value="ACTIVE">{tFilters("statusActive")}</option>
+              <option value="ARCHIVED">{tFilters("statusArchived")}</option>
+              <option value="DELETED">{tFilters("statusDeleted")}</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
+
+        {/* Department Filter */}
+        <div className="flex items-center gap-2">
           <label
             htmlFor="department-filter"
             className="text-sm text-muted-foreground whitespace-nowrap"
           >
             {tFilters("department")}:
           </label>
-          <select
-            id="department-filter"
-            aria-label={tFilters("department")}
-            value={departmentFilter}
-            onChange={(e) => onDepartmentChange(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[8rem]"
-          >
-            <option value="">{tFilters("all")}</option>
-            {departments?.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="department-filter"
+              aria-label={tFilters("department")}
+              value={departmentFilter}
+              onChange={(e) => onDepartmentChange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 pr-8 py-1 text-sm text-foreground cursor-pointer transition-colors hover:border-input/80 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring appearance-none min-w-[8rem]"
+            >
+              <option value="">{tFilters("all")}</option>
+              {departments?.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
+
+        {/* Level Filter */}
+        <div className="flex items-center gap-2">
           <label
             htmlFor="level-filter"
             className="text-sm text-muted-foreground whitespace-nowrap"
           >
             {tFilters("level")}:
           </label>
-          <select
-            id="level-filter"
-            aria-label={tFilters("level")}
-            value={levelFilter}
-            onChange={(e) => onLevelChange(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[8rem]"
-            disabled={levelsLoading}
-          >
-            {levelsLoading ? (
-              <option value="">{tFilters("loadingLevels")}</option>
-            ) : (
-              <option value="">{tFilters("levelAll")}</option>
-            )}
-            {!levelsLoading &&
-              levels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {getDocumentLevelDisplayName(level, locale)}
-                </option>
-              ))}
-          </select>
+          <div className="relative">
+            <select
+              id="level-filter"
+              aria-label={tFilters("level")}
+              value={levelFilter}
+              onChange={(e) => onLevelChange(e.target.value)}
+              disabled={levelsLoading}
+              className="h-9 rounded-md border-2 border-foreground bg-background px-3 pr-8 py-1 text-sm text-foreground cursor-pointer transition-colors hover:border-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50 disabled:cursor-not-allowed appearance-none min-w-[8rem]"
+            >
+              {levelsLoading ? (
+                <option value="">{tFilters("loadingLevels")}</option>
+              ) : (
+                <option value="">{tFilters("levelAll")}</option>
+              )}
+              {!levelsLoading &&
+                levels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {getDocumentLevelDisplayName(level, locale)}
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
+
+        {/* Sync Button */}
         {onSync && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleSync}
             disabled={isSyncing}
+            className="h-9 rounded-md transition-colors cursor-pointer"
           >
             <RotateCw
               className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`}
@@ -165,46 +189,63 @@ export function DocumentToolbar({
             {isSyncing ? t("syncing") : t("sync")}
           </Button>
         )}
+      </div>
 
-        <Button variant="outline" size="sm" onClick={onRefresh}>
+      {/* Action Row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Refresh Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          className="h-9 rounded-md transition-colors cursor-pointer"
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           {t("refresh")}
         </Button>
 
-        {uploadDepartments &&
-          uploadDepartments.length > 1 &&
-          onUploadDepartmentChange && (
-            <div className="flex items-center gap-1.5">
-              <label
-                htmlFor="upload-department"
-                className="text-sm text-muted-foreground whitespace-nowrap"
-              >
-                {t("uploadToDepartment")}:
-              </label>
-              <select
-                id="upload-department"
-                aria-label={t("uploadToDepartment")}
-                value={selectedDepartmentIdForUpload ?? ""}
-                onChange={(e) => onUploadDepartmentChange(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[8rem]"
-              >
-                {uploadDepartments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {/* Upload Section */}
+        {uploadDepartments && uploadDepartments.length > 0 && (
+          <>
+            {uploadDepartments.length > 1 && onUploadDepartmentChange && (
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="upload-department"
+                  className="text-sm text-muted-foreground whitespace-nowrap"
+                >
+                  {t("uploadToDepartment")}:
+                </label>
+                <div className="relative">
+                  <select
+                    id="upload-department"
+                    aria-label={t("uploadToDepartment")}
+                    value={selectedDepartmentIdForUpload ?? ""}
+                    onChange={(e) => onUploadDepartmentChange(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 pr-8 py-1 text-sm text-foreground cursor-pointer transition-colors hover:border-input/80 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring appearance-none min-w-[8rem]"
+                  >
+                    {uploadDepartments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronUp className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+            )}
 
-        <Button
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadDepartments?.length === 0}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {t("upload")}
-        </Button>
+            {/* Upload Button - Primary Action */}
+            <Button
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadDepartments.length === 0}
+              className="h-9 rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {t("upload")}
+            </Button>
+          </>
+        )}
         <input
           ref={fileInputRef}
           type="file"

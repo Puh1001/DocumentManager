@@ -125,7 +125,7 @@ apps/api/
 │   │
 │   └── Storage
 │       ├── SMB Service (fs module - platform-aware)
-│       ├── Folder Service (CRUD, tree, soft delete)
+│       ├── Folder Service (CRUD, tree, soft delete, ensure department folder structure on tree load)
 │       ├── Folder Sync Service (two-pass sync with soft delete)
 │       ├── Folder Watcher Service (chokidar file system watcher)
 │       ├── Sync Scheduler Service (automated cron sync)
@@ -179,9 +179,10 @@ User → ISO Document page → Select folder → Table shows documents
 ### 3. Upload Flow
 
 ```
-User → Upload button → Select file
-  → Folder picker dialog opens
-  → User selects destination folder
+User → ISO Documents page → Upload button → Select file
+  → Department selector appears (multi-department users) or defaults to user's department (single-department)
+  → Folder picker dialog opens (filtered to show only Documents/ISO_documents folder tree)
+  → User selects destination folder (must be under ISO_documents)
   → POST /storage/documents/upload?folderId={folderId}
   → Permission check (create)
   → File buffer received
@@ -195,6 +196,8 @@ User → Upload button → Select file
   → Response with document info
   → Document list refreshes automatically
 ```
+
+**Note:** When loading folder tree with `departmentId` (`GET /storage/folders/tree?departmentId=...`), backend automatically ensures full department folder structure (root, KPI, ISO_documents, Maintenance, Delete_files, versions) exists if missing, preventing empty tree errors.
 <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
 grep
 

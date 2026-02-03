@@ -174,6 +174,8 @@ src/
   - **Filters**: Status (ACTIVE/ARCHIVED/DELETED), Department, Level (placeholder for future schema extension)
   - **API**: `GET /storage/documents?status=ACTIVE&departmentId=dept-1&level=LEVEL1` - Returns all documents with folder info
   - **Upload**: Folder picker dialog for selecting destination folder
+  - **Department folder auto-creation**: When loading folder tree with `departmentId` parameter (`GET /storage/folders/tree?departmentId=...`), backend automatically ensures full department folder structure exists (root, KPI, ISO_documents, Maintenance, Delete_files, versions) if missing, preventing "Không có thư mục nào" errors
+  - **ISO upload restriction**: From ISO documents page, all users (including admin) must select a department; uploads are restricted to the **Documents** (ISO_documents) folder of the selected department; folder picker shows only the Documents folder tree; document list/browse remains unchanged (shows documents from all folders)
 
 ### 2.5. Department Management
 

@@ -104,12 +104,20 @@ export class DocumentService {
         : "ACTIVE";
     where.status = status as Prisma.EnumDocumentStatusFilter["equals"];
 
-    // Always exclude version folders from main document listing
+    // Always exclude version folders and Delete_files folders from main document listing
     // Exclude folders whose path contains "/versions/" or "\versions\" (Windows paths)
+    // Exclude folders whose path contains "Delete_files", "delete files", or "Deleted files" (case-insensitive, various formats)
     const folderWhere: Prisma.FolderWhereInput = {
       AND: [
         { path: { not: { contains: "/versions/" } } },
         { path: { not: { contains: "\\versions\\" } } },
+        // Exclude Delete_files folders (case-insensitive matching for various formats)
+        { path: { not: { contains: "/Delete_files" } } },
+        { path: { not: { contains: "\\Delete_files" } } },
+        { path: { not: { contains: "/delete files" } } },
+        { path: { not: { contains: "\\delete files" } } },
+        { path: { not: { contains: "/Deleted files" } } },
+        { path: { not: { contains: "\\Deleted files" } } },
       ],
     };
 
