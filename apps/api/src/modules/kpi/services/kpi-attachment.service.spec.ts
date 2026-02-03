@@ -5,6 +5,7 @@ import { DocumentService } from "@/modules/storage/services/document.service";
 import { FolderService } from "@/modules/storage/services/folder.service";
 import { SmbService } from "@/modules/storage/services/smb.service";
 import { DocumentDeletionService } from "@/modules/storage/services/document-deletion.service";
+import { DocumentLevelService } from "@/modules/storage/services/document-level.service";
 import { UserDepartmentResolver } from "./user-department.resolver";
 import { CustomException } from "@/common/errors/custom-exception";
 import { UserWithDepartments } from "./user-department.resolver";
@@ -103,13 +104,18 @@ describe("KpiAttachmentService", () => {
   const mockNonPdfFile: Express.Multer.File = {
     ...mockPdfFile,
     originalname: "test-attachment.docx",
-    mimetype: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    mimetype:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   };
 
   beforeEach(async () => {
     const mockPrismaService: {
       kpiRecord: { findUnique: jest.Mock; update: jest.Mock };
-      kpiAttachment: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock };
+      kpiAttachment: {
+        create: jest.Mock;
+        findMany: jest.Mock;
+        findUnique: jest.Mock;
+      };
       auditLog: { create: jest.Mock };
       $transaction: jest.Mock;
     } = {
@@ -127,14 +133,16 @@ describe("KpiAttachmentService", () => {
       },
       $transaction: jest.fn(),
     };
-    mockPrismaService.$transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => {
-      const tx = {
-        kpiAttachment: mockPrismaService.kpiAttachment,
-        auditLog: mockPrismaService.auditLog,
-        kpiRecord: { update: mockPrismaService.kpiRecord.update },
-      };
-      return cb(tx);
-    });
+    mockPrismaService.$transaction.mockImplementation(
+      (cb: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          kpiAttachment: mockPrismaService.kpiAttachment,
+          auditLog: mockPrismaService.auditLog,
+          kpiRecord: { update: mockPrismaService.kpiRecord.update },
+        };
+        return cb(tx);
+      }
+    );
 
     const mockDocumentService = {
       upload: jest.fn(),
@@ -152,6 +160,14 @@ describe("KpiAttachmentService", () => {
         .mockResolvedValue({ kpiSectionRoot: "folder-1" }),
     };
 
+    const mockDocumentLevelService = {
+      findByCode: jest.fn().mockResolvedValue({
+        id: "level-1",
+        code: "LEVEL1",
+        isActive: true,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KpiAttachmentService,
@@ -164,6 +180,7 @@ describe("KpiAttachmentService", () => {
           useValue: mockUserDepartmentResolver,
         },
         { provide: DocumentDeletionService, useValue: {} },
+        { provide: DocumentLevelService, useValue: mockDocumentLevelService },
       ],
     }).compile();
 
@@ -203,7 +220,8 @@ describe("KpiAttachmentService", () => {
         mockPdfFile,
         mockAdminUser.userId,
         mockKpiRecord.title,
-        undefined
+        undefined,
+        "level-1" // Default level ID (LEVEL1) for KPI uploads
       );
       expect(prismaService.kpiAttachment.create).toHaveBeenCalled();
       expect(prismaService.auditLog.create).toHaveBeenCalledWith({
@@ -480,12 +498,10 @@ describe("KpiAttachmentService", () => {
   describe("getStream", () => {
     it("should return stream for attachment", async () => {
       const mockStream = new Readable();
-      prismaService.kpiAttachment.findUnique = jest
-        .fn()
-        .mockResolvedValue({
-          ...mockAttachment,
-          kpiRecord: { departmentId: "dept-1" },
-        });
+      prismaService.kpiAttachment.findUnique = jest.fn().mockResolvedValue({
+        ...mockAttachment,
+        kpiRecord: { departmentId: "dept-1" },
+      });
       documentService.getStream = jest.fn().mockReturnValue(mockStream);
       prismaService.auditLog.create = jest.fn().mockResolvedValue({});
 
@@ -514,12 +530,10 @@ describe("KpiAttachmentService", () => {
     });
 
     it("should deny access if user not in department", async () => {
-      prismaService.kpiAttachment.findUnique = jest
-        .fn()
-        .mockResolvedValue({
-          ...mockAttachment,
-          kpiRecord: { departmentId: "dept-2" },
-        });
+      prismaService.kpiAttachment.findUnique = jest.fn().mockResolvedValue({
+        ...mockAttachment,
+        kpiRecord: { departmentId: "dept-2" },
+      });
 
       await expect(
         service.getStream("attachment-1", mockRegularUser)
@@ -535,12 +549,10 @@ describe("KpiAttachmentService", () => {
         mimeType: "application/pdf",
       };
 
-      prismaService.kpiAttachment.findUnique = jest
-        .fn()
-        .mockResolvedValue({
-          ...mockAttachment,
-          kpiRecord: { departmentId: "dept-1" },
-        });
+      prismaService.kpiAttachment.findUnique = jest.fn().mockResolvedValue({
+        ...mockAttachment,
+        kpiRecord: { departmentId: "dept-1" },
+      });
       documentService.download = jest
         .fn()
         .mockResolvedValue(mockDownloadResult);

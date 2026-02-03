@@ -36,12 +36,12 @@
 
 ## 3. Bằng chứng (Evidence)
 
-| Nguồn                           | Nội dung                                                                                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| User report                     | File trong `BOC_SOI/Delete_files` vẫn hiển thị trong danh sách documents với status ACTIVE.                                                 |
-| document.service.ts             | `findAll()` chỉ filter `/versions/` và `\versions\`, không filter Delete_files.                                                             |
-| folder.service.ts               | `isInternalFolderForTree()` đánh dấu Delete_files là internal nhưng chỉ dùng cho tree, không dùng cho document filtering.                  |
-| Business logic                  | Delete_files là admin-only archive area, files trong đó không nên hiển thị cho users trong document list (tương tự version files).        |
+| Nguồn               | Nội dung                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| User report         | File trong `BOC_SOI/Delete_files` vẫn hiển thị trong danh sách documents với status ACTIVE.                                        |
+| document.service.ts | `findAll()` chỉ filter `/versions/` và `\versions\`, không filter Delete_files.                                                    |
+| folder.service.ts   | `isInternalFolderForTree()` đánh dấu Delete_files là internal nhưng chỉ dùng cho tree, không dùng cho document filtering.          |
+| Business logic      | Delete_files là admin-only archive area, files trong đó không nên hiển thị cho users trong document list (tương tự version files). |
 
 ---
 
