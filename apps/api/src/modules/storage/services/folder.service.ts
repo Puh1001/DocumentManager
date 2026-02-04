@@ -36,7 +36,7 @@ export class FolderService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smbService: SmbService,
+    private readonly smbService: SmbService
   ) {}
 
   async findAll(parentId?: string | null, departmentId?: string) {
@@ -114,7 +114,7 @@ export class FolderService {
     if (!folder || folder.deletedAt) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found",
+        "Folder not found"
       );
     }
 
@@ -132,7 +132,7 @@ export class FolderService {
       if (!parent || parent.deletedAt) {
         throw CustomException.notFound(
           ErrorCodes.FOLDER.PARENT_NOT_FOUND,
-          "Parent folder not found or deleted",
+          "Parent folder not found or deleted"
         );
       }
       if (parent) {
@@ -162,7 +162,7 @@ export class FolderService {
     if (!folder || folder.deletedAt) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found or deleted",
+        "Folder not found or deleted"
       );
     }
 
@@ -208,12 +208,12 @@ export class FolderService {
     if (!folder) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        "Folder not found",
+        "Folder not found"
       );
     }
 
     const hasActiveDocs = folder.documents.some(
-      (doc) => doc.status !== "DELETED",
+      (doc) => doc.status !== "DELETED"
     );
 
     if (folder.children.length > 0 || hasActiveDocs) {
@@ -273,7 +273,7 @@ export class FolderService {
         } catch (ensureError) {
           this.logger.warn(
             "Failed to ensure department folder structure",
-            ensureError instanceof Error ? ensureError.stack : ensureError,
+            ensureError instanceof Error ? ensureError.stack : ensureError
           );
           // Continue to build tree from existing DB state so UI does not break
         }
@@ -328,19 +328,19 @@ export class FolderService {
     } catch (error) {
       this.logger.error(
         "Error in getTree()",
-        error instanceof Error ? error.stack : error,
+        error instanceof Error ? error.stack : error
       );
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree",
-        error,
+        error
       );
     }
   }
 
   async getTreeWithDocuments(
     departmentId?: string,
-    includeInternal: boolean = false,
+    includeInternal: boolean = false
   ) {
     try {
       if (departmentId) {
@@ -349,7 +349,7 @@ export class FolderService {
         } catch (ensureError) {
           this.logger.warn(
             "Failed to ensure department folder structure",
-            ensureError instanceof Error ? ensureError.stack : ensureError,
+            ensureError instanceof Error ? ensureError.stack : ensureError
           );
         }
       }
@@ -388,7 +388,7 @@ export class FolderService {
 
       // Build tree structure with documents
       const buildTree = (
-        parentId: string | null = null,
+        parentId: string | null = null
       ): FolderTreeNodeWithDocuments[] => {
         return folders
           .filter((f: (typeof folders)[0]) => {
@@ -425,12 +425,12 @@ export class FolderService {
     } catch (error) {
       this.logger.error(
         "Error in getTreeWithDocuments()",
-        error instanceof Error ? error.stack : error,
+        error instanceof Error ? error.stack : error
       );
       throw CustomException.internalServerError(
         ErrorCodes.FOLDER.TREE_FETCH_FAILED,
         "Failed to fetch folder tree with documents",
-        error,
+        error
       );
     }
   }
@@ -481,7 +481,7 @@ export class FolderService {
     if (!department) {
       throw CustomException.notFound(
         ErrorCodes.DEPARTMENT.NOT_FOUND,
-        "Department not found",
+        "Department not found"
       );
     }
 
@@ -546,7 +546,7 @@ export class FolderService {
     if (!departmentRoot) {
       throw CustomException.notFound(
         ErrorCodes.FOLDER.NOT_FOUND,
-        `Failed to find or create department folder: ${folderPath}`,
+        `Failed to find or create department folder: ${folderPath}`
       );
     }
 
@@ -559,7 +559,7 @@ export class FolderService {
       let subfolder = await (this.prisma as PrismaClientLike).folder.findUnique(
         {
           where: { path: subfolderPath },
-        },
+        }
       );
 
       if (!subfolder) {
@@ -598,12 +598,12 @@ export class FolderService {
           }
         }
       } else {
-        // Update if needed
-        if (
+        // Update if needed (e.g. restored from sync with null departmentId, or wrong parent)
+        const needsUpdate =
           subfolder.deletedAt ||
-          subfolder.parentId !== departmentRoot.id
-          // isInternal will be enforced below via update data; we don't need to read it here
-        ) {
+          subfolder.parentId !== departmentRoot.id ||
+          subfolder.departmentId !== department.id;
+        if (needsUpdate) {
           await (this.prisma as PrismaClientLike).folder.update({
             where: { id: subfolder.id },
             data: {
@@ -619,7 +619,7 @@ export class FolderService {
           subfolder = await (this.prisma as PrismaClientLike).folder.findUnique(
             {
               where: { path: subfolderPath },
-            },
+            }
           );
         }
       }

@@ -46,3 +46,15 @@ Luồng hiện tại:
 
 - Mở trang ISO Document, chọn department (nếu có nhiều), bấm Upload → chọn file → dialog mở với danh sách folder (ít nhất một node "Documents" / ISO_documents). Nút Select chỉ enable khi đã chọn folder và level.
 - Nếu backend không tạo được structure: dialog vẫn mở nhưng có thể hiển thị "No folders available"; khi đó cần xử lý ở backend (ensure structure hoặc báo lỗi rõ).
+
+---
+
+## Update: API trả đúng nhưng tree thiếu ISO_documents (260204)
+
+**Evidence từ user:** API `GET .../tree?departmentId=a5bb7aaf-...` trả 200 với tree chỉ có root DCC và con **KPI**; không có **ISO_documents**. Trên disk (tree /f) thì DCC có đủ: Delete_files, ISO_documents, KPI, Maintenance.
+
+**Root cause:** Folder được tạo bởi **sync** (folder-sync.handler) với `syncFolderRecord` chỉ set `name, path, parentId` — **không set departmentId**. `getTree(departmentId)` lọc `where: { departmentId }` nên các folder có `departmentId = null` bị loại → tree thiếu ISO_documents (và Maintenance, Delete_files nếu cũng do sync tạo).
+
+**Fix (backend):** Trong `ensureDepartmentFolderStructure`, khi subfolder **đã tồn tại** (findUnique có bản ghi), thêm điều kiện update khi `subfolder.departmentId !== department.id` (hoặc null). Cập nhật `departmentId` (và parentId, deletedAt) để lần sau `getTree(departmentId)` trả đủ section.
+
+- File: `apps/api/src/modules/storage/services/folder.service.ts` — block "Update if needed" cho subfolder: thêm `subfolder.departmentId !== department.id` vào điều kiện update.
