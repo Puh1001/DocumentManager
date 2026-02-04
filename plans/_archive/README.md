@@ -29,6 +29,18 @@ Thư mục này chứa các kế hoạch đã hoàn thành được nén lại �
 23. **260123-document-folder-restructure.zip** - Document folder restructure (phases 1-6 done)
 24. **20260107-1700-user-multi-department-kpi.zip** - Multi-department user KPI (all phases done)
 25. **20241222-1430-kpi-tab-implementation.zip** - KPI tab implementation (completed)
+26. **260130-1359-remove-folder-tree-flat-document-list.zip** - Remove folder tree, flat document list UI (all phases Done)
+27. **20260130-1201-iso-documents-rename-and-ui.zip** - ISO documents rename & table UI (all phases Done)
+28. **20260130-0806-monthly-kpi-uploads.zip** - Monthly KPI uploads (all phases Done)
+29. **20260203-0736-department-folders-auto-create-upload.zip** - Department folders auto-create & ISO upload (all phases Done)
+30. **260130-1456-iso-documents-redesign.zip** - ISO documents redesign, client table (phases 00–05 done)
+31. **260130-1517-mandatory-storage-structure.zip** - Mandatory storage structure (implementation + migration done)
+32. **260121-fix-vietnamese-filename-encoding.zip** - Fix Vietnamese filename encoding (single-file plan)
+33. **260123-0819-implement-code-review-suggestions.zip** - Implement code review suggestions (single-file plan)
+34. **260123-simplify-encoding-fix.zip** - Simplify encoding fix (single-file plan)
+35. **260126-unique-id-filename-implementation.zip** - Unique ID filename implementation (single-file plan)
+36. **260129-boss-document-viewer-ui-fix.zip** - Boss document viewer UI fix (single-file plan)
+37. **260129-fix-kpi-current-current-cleanup.zip** - Fix KPI current/cleanup (single-file plan)
 
 Báo cáo trạng thái (2026-01-30): **plans-completion-report-20260130.md**
 
@@ -51,4 +63,4 @@ Remove-Item -Path "../temp" -Recurse -Force
 - Các file zip này chỉ để tham khảo, không cần thiết cho việc phát triển hiện tại
 - Có thể xóa các file zip này nếu cần giải phóng thêm không gian
 - Ngày archive: 2025-12-25
-- Cập nhật: 2026-01-30 (thêm 9 plan đã hoàn thành: department name, migration scripts, KPI status, document sync, encoding, folder restructure, multi-dept KPI, KPI tab)
+- Cập nhật: 2026-02-04 (thêm 12 plan: remove folder tree, iso rename & UI, monthly KPI uploads, dept folders auto-create, iso redesign, mandatory storage, + 6 single-file plans)
