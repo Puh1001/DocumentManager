@@ -75,6 +75,7 @@
     }
   },
   "year": "Năm",
+  "month": "Tháng",
   "empty": {
     "noDepartments": "Không có phòng ban",
     "noDepartmentsDescription": "Không có phòng ban nào để hiển thị.",

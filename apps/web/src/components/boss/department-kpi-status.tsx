@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { api, type Department, getDepartmentName } from "@/lib/api";
+import {
+  api,
+  kpiAttachmentApi,
+  type Department,
+  getDepartmentName,
+} from "@/lib/api";
 import {
   Building2,
   CheckCircle2,
@@ -82,13 +87,16 @@ function isKpiCompleted(record: KpiRecord): boolean {
   return record.status === "COMPLETED";
 }
 
-// Calculate department KPI status
+// Calculate department KPI status. If completedRecordIds is set, use it (e.g. "completed for month"); else use record.status.
 function calculateDepartmentStatus(
   department: Department,
   kpiRecords: KpiRecord[],
+  completedRecordIds?: Set<string>
 ): DepartmentKpiStatus {
   const totalKpis = kpiRecords.length;
-  const completedKpis = kpiRecords.filter(isKpiCompleted).length;
+  const completedKpis = completedRecordIds
+    ? kpiRecords.filter((r) => completedRecordIds.has(r.id)).length
+    : kpiRecords.filter(isKpiCompleted).length;
   const completionRate = totalKpis > 0 ? (completedKpis / totalKpis) * 100 : 0;
 
   let status: "completed" | "partial" | "incomplete";
@@ -125,26 +133,29 @@ export function DepartmentKpiStatus({
     "all" | "completed" | "partial" | "incomplete"
   >("all");
 
-  const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear - 1);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  // Default to previous month (e.g. Feb 2026 → show Jan 2026; Jan 2026 → show Dec 2025)
+  const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const defaultPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const [selectedYear, setSelectedYear] = useState(defaultPrevYear);
+  const [selectedMonth, setSelectedMonth] = useState(defaultPrevMonth);
 
-  // Load KPI records for all departments
+  // Load KPI records for all departments; when month is selected, "completed" = has ≥1 attachment for that month
   const loadStatuses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch KPI records for KPI-scope departments only (skip AC/IT/DCC/...)
       const kpiScopeDepartments = departments.filter(isDepartmentInKpiScope);
 
-      // Fetch KPI records for all KPI-scope departments in parallel
       const statusPromises = kpiScopeDepartments.map(async (dept) => {
         try {
           const records = await api.get<KpiRecord[]>(
-            `/kpi/records?departmentId=${dept.id}&year=${selectedYear}`,
+            `/kpi/records?departmentId=${dept.id}&year=${selectedYear}`
           );
 
-          // Parse metrics values correctly - handle both object and string
           const recordsWithParsedMetrics = records.map((record) => {
             if (!record.metrics || record.metrics.length === 0) {
               return record;
@@ -175,10 +186,31 @@ export function DepartmentKpiStatus({
             };
           });
 
-          return calculateDepartmentStatus(dept, recordsWithParsedMetrics);
+          // For selected month: completed = record has ≥1 attachment for that month
+          const completedIds = new Set<string>();
+          await Promise.all(
+            recordsWithParsedMetrics.map(async (record) => {
+              try {
+                const attachments = await kpiAttachmentApi.getAttachments(
+                  record.id,
+                  selectedMonth
+                );
+                if (attachments.length >= 1) {
+                  completedIds.add(record.id);
+                }
+              } catch {
+                // skip; record not completed for this month
+              }
+            })
+          );
+
+          return calculateDepartmentStatus(
+            dept,
+            recordsWithParsedMetrics,
+            completedIds
+          );
         } catch (err) {
           console.error(`Failed to load KPIs for department ${dept.id}:`, err);
-          // Return incomplete status on error
           return calculateDepartmentStatus(dept, []);
         }
       });
@@ -191,7 +223,7 @@ export function DepartmentKpiStatus({
     } finally {
       setLoading(false);
     }
-  }, [departments, selectedYear, tCommon]);
+  }, [departments, selectedYear, selectedMonth, tCommon]);
 
   useEffect(() => {
     if (departments.length > 0) {
@@ -207,7 +239,7 @@ export function DepartmentKpiStatus({
   // - with KPI records (totalKpis > 0)
   const filteredStatuses = useMemo(() => {
     const deptsWithKpi = statuses.filter(
-      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0,
+      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0
     );
 
     if (filter === "all") {
@@ -220,16 +252,16 @@ export function DepartmentKpiStatus({
   const summary = useMemo(() => {
     // Only count KPI-scope departments with KPI records
     const deptsWithKpi = statuses.filter(
-      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0,
+      (s) => isDepartmentInKpiScope(s.department) && s.totalKpis > 0
     );
 
     const total = deptsWithKpi.length;
     const completed = deptsWithKpi.filter(
-      (s) => s.status === "completed",
+      (s) => s.status === "completed"
     ).length;
     const partial = deptsWithKpi.filter((s) => s.status === "partial").length;
     const incomplete = deptsWithKpi.filter(
-      (s) => s.status === "incomplete",
+      (s) => s.status === "incomplete"
     ).length;
 
     return { total, completed, partial, incomplete };
@@ -264,7 +296,7 @@ export function DepartmentKpiStatus({
 
   return (
     <div className="space-y-6">
-      {/* Header with filters and year selector */}
+      {/* Header with filters, year and month selector */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <select
@@ -277,8 +309,38 @@ export function DepartmentKpiStatus({
                 <option key={y} value={y} className="bg-gray-900 text-cyan-300">
                   {t("year")} {y}
                 </option>
-              ),
+              )
             )}
+          </select>
+          <select
+            className="cyber-button px-4 py-2 font-cyber text-sm bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-300 hover:bg-cyan-500/20 transition-colors"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          >
+            {(
+              [
+                "jan",
+                "feb",
+                "mar",
+                "apr",
+                "may",
+                "jun",
+                "jul",
+                "aug",
+                "sep",
+                "oct",
+                "nov",
+                "dec",
+              ] as const
+            ).map((key, i) => (
+              <option
+                key={key}
+                value={i + 1}
+                className="bg-gray-900 text-cyan-300"
+              >
+                {t(`months.${key}`)}
+              </option>
+            ))}
           </select>
 
           <div className="flex gap-2">
@@ -298,7 +360,7 @@ export function DepartmentKpiStatus({
                 >
                   {t(`kpiStatus.filter.${f}`)}
                 </button>
-              ),
+              )
             )}
           </div>
         </div>

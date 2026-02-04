@@ -75,6 +75,7 @@
     }
   },
   "year": "年",
+  "month": "月份",
   "empty": {
     "noDepartments": "未找到部门",
     "noDepartmentsDescription": "没有可显示的部门。",

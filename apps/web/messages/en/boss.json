@@ -75,6 +75,7 @@
     }
   },
   "year": "Year",
+  "month": "Month",
   "empty": {
     "noDepartments": "No departments found",
     "noDepartmentsDescription": "There are no departments available to display.",

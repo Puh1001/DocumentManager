@@ -529,7 +529,7 @@ export default function DocumentsPage() {
         </Card>
       </div>
 
-      {/* Folder Picker Dialog */}
+      {/* Folder Picker Dialog: use effective department when open so we never pass empty (avoids "No folders available" race) */}
       <FolderPickerDialog
         open={folderPickerOpen}
         onOpenChange={(open) => {
@@ -539,7 +539,13 @@ export default function DocumentsPage() {
           }
         }}
         onSelect={handleFolderSelected}
-        departmentId={selectedDepartmentIdForUpload || undefined}
+        departmentId={
+          folderPickerOpen
+            ? selectedDepartmentIdForUpload ||
+              uploadDepartments[0]?.id ||
+              undefined
+            : undefined
+        }
         documentsOnly
       />
 
