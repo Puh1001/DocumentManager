@@ -52,11 +52,9 @@ export function IsoMetadataEditDialog({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [levelId, setLevelId] = useState("");
-  const [preparerId, setPreparerId] = useState<string | null>(null);
   const [reviewerId, setReviewerId] = useState<string | null>(null);
   const [approverId, setApproverId] = useState<string | null>(null);
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
-  const [receiptDate, setReceiptDate] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -65,7 +63,7 @@ export function IsoMetadataEditDialog({
     if (!open) return;
     setUsersLoading(true);
     userApi
-      .getAll({ limit: 300, isActive: true })
+      .getForAssignees({ limit: 100, isActive: true })
       .then((res) => {
         setUsers(res.data ?? []);
       })
@@ -77,11 +75,9 @@ export function IsoMetadataEditDialog({
     if (open && doc) {
       setName(doc.name ?? "");
       setLevelId(doc.level?.id ?? "");
-      setPreparerId(doc.preparer?.id ?? null);
       setReviewerId(doc.reviewer?.id ?? null);
       setApproverId(doc.approver?.id ?? null);
       setApprovalDate(parseDate(doc.approvalDate));
-      setReceiptDate(parseDate(doc.receiptDate));
     }
   }, [open, doc]);
 
@@ -107,13 +103,12 @@ export function IsoMetadataEditDialog({
           fileName: `${nextName}${ext}`,
         });
       }
+      // Preparer and receipt date are auto-assigned; do not send to avoid overwriting
       const payload = {
         levelId: levelId || undefined,
-        preparerId: preparerId ?? undefined,
         reviewerId: reviewerId ?? undefined,
         approverId: approverId ?? undefined,
         approvalDate: approvalDate ? approvalDate.toISOString() : null,
-        receiptDate: receiptDate ? receiptDate.toISOString() : null,
       };
       await documentApi.updateIsoMetadata(doc.id, payload);
       toast({
@@ -139,15 +134,15 @@ export function IsoMetadataEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] w-[min(28rem,calc(100vw-2rem))] overflow-auto">
         <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="pr-8">{t("title")}</DialogTitle>
+          <DialogDescription className="break-words">
             {t("description", { name: name?.trim() || doc.name })}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
+        <div className="grid min-w-0 gap-4 py-4">
+          <div className="space-y-2 min-w-0">
             <Label htmlFor="doc-name" className="text-sm font-medium">
               {t("nameLabel")}
             </Label>
@@ -157,8 +152,9 @@ export function IsoMetadataEditDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder={t("namePlaceholder")}
               disabled={submitting}
+              className="min-w-0"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground break-words min-w-0">
               {t("fileNameHint", { fileName: `${name.trim() || "..."}${ext}` })}
             </p>
           </div>
@@ -167,14 +163,6 @@ export function IsoMetadataEditDialog({
             onChange={(id) => setLevelId(id)}
             required={false}
             className="col-span-1"
-          />
-          <UserPicker
-            label={t("preparer")}
-            value={preparerId}
-            onChange={setPreparerId}
-            placeholder={t("none")}
-            users={users}
-            usersLoading={usersLoading}
           />
           <UserPicker
             label={t("reviewer")}
@@ -196,11 +184,6 @@ export function IsoMetadataEditDialog({
             label={t("approvalDate")}
             value={approvalDate}
             onChange={setApprovalDate}
-          />
-          <DatePickerField
-            label={t("receiptDate")}
-            value={receiptDate}
-            onChange={setReceiptDate}
           />
         </div>
         <DialogFooter>

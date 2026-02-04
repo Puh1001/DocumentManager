@@ -40,6 +40,21 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
+  @Get("for-assignees")
+  @CheckPolicies({ action: "edit", subject: "Document" })
+  @ApiOperation({
+    summary:
+      "List users for reviewer/approver assignees (anyone who can edit documents). Returns all users; frontend may filter by isActive.",
+  })
+  async findForAssignees(@Query() query: QueryUsersDto) {
+    const limit = Math.min(100, Math.max(1, Number(query?.limit) || 100));
+    return this.usersService.findAll({
+      page: 1,
+      limit,
+      // Do not filter by isActive so we always return users when any exist (avoids empty list when isActive parsing or DB state differs)
+    });
+  }
+
   @Get(":id")
   @CheckPolicies({ action: "manage", subject: "all" })
   @ApiOperation({ summary: "Get user by ID (admin only)" })

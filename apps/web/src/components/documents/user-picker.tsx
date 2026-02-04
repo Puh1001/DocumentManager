@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { userApi, type User } from "@/lib/api";
@@ -42,7 +43,8 @@ export function UserPicker({
   const [loadingInternal, setLoadingInternal] = useState(true);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const useExternalUsers = usersProp !== undefined;
   const users = useMemo(
@@ -92,20 +94,22 @@ export function UserPicker({
     [users, value]
   );
 
+  const displayValue = selectedUser ? userDisplayName(selectedUser) : "";
+  const noneLabel = placeholder ?? "None";
+
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      const target = e.target as Node;
+      const insideTrigger = triggerRef.current?.contains(target);
+      const insideList = listRef.current?.contains(target);
+      if (!insideTrigger && !insideList) {
         setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const displayValue = selectedUser ? userDisplayName(selectedUser) : "";
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   if (loading) {
     return (
@@ -119,60 +123,76 @@ export function UserPicker({
   }
 
   return (
-    <div className={cn("space-y-1.5", className)} ref={containerRef}>
+    <div className={cn("space-y-1.5", className)}>
       <Label className="text-muted-foreground">{label}</Label>
       <div className="relative">
-        <Input
-          type="text"
-          value={open ? search : displayValue}
-          onChange={(e) => (open ? setSearch(e.target.value) : null)}
-          onFocus={() => {
-            setOpen(true);
-            setSearch("");
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => {
+            if (!disabled) setOpen((o) => !o);
           }}
-          onBlur={() => {
-            // Delay to allow click on option
-            setTimeout(() => setOpen(false), 150);
-          }}
-          placeholder={placeholder}
           disabled={disabled}
-          className="h-9"
-          readOnly={!open}
-        />
+          className={cn(
+            "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            !displayValue && "text-muted-foreground"
+          )}
+        >
+          <span className="truncate">{displayValue || noneLabel}</span>
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+        </button>
         {open && (
-          <ul
-            className="absolute z-50 mt-1 w-full max-h-48 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md py-1"
+          <div
+            ref={listRef}
+            data-user-picker-list
+            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 min-w-[280px] overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md py-1"
             role="listbox"
           >
-            <li
-              role="option"
-              className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-              onMouseDown={() => {
-                onChange(null);
-                setOpen(false);
-              }}
-            >
-              {placeholder ?? "None"}
-            </li>
-            {filtered.map((u) => (
+            <div className="sticky top-0 z-10 border-b bg-popover p-1">
+              <Input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("searchUsers")}
+                className="h-8 text-sm"
+                autoFocus
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </div>
+            <ul className="py-1">
               <li
-                key={u.id}
                 role="option"
                 className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-                onMouseDown={() => {
-                  onChange(u.id);
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(null);
                   setOpen(false);
                 }}
               >
-                {userDisplayName(u)}
+                {noneLabel}
               </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted-foreground">
-                {t("noMatches")}
-              </li>
-            )}
-          </ul>
+              {filtered.map((u) => (
+                <li
+                  key={u.id}
+                  role="option"
+                  className="px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onChange(u.id);
+                    setOpen(false);
+                  }}
+                >
+                  {userDisplayName(u)}
+                </li>
+              ))}
+              {filtered.length === 0 && (
+                <li className="px-3 py-2 text-sm text-muted-foreground">
+                  {t("noMatches")}
+                </li>
+              )}
+            </ul>
+          </div>
         )}
       </div>
     </div>

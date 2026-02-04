@@ -89,6 +89,7 @@
     "title": "Edit ISO Metadata",
     "loadingUsers": "Loading...",
     "noMatches": "No matches",
+    "searchUsers": "Search users...",
     "description": "Edit level, preparer, reviewer, approver and dates for \"{name}\".",
     "nameLabel": "Document Name",
     "namePlaceholder": "Enter document name",

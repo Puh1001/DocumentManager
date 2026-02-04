@@ -714,6 +714,17 @@ export const userApi = {
     const query = queryParams.toString();
     return api.get<PaginatedUsersResponse>(`/users${query ? `?${query}` : ""}`);
   },
+  /** List active users for assignee dropdowns (reviewer/approver). Uses edit:Document policy so editors can load list. */
+  getForAssignees: (params?: { limit?: number; isActive?: boolean }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.isActive !== undefined)
+      queryParams.append("isActive", params.isActive.toString());
+    const query = queryParams.toString();
+    return api.get<PaginatedUsersResponse>(
+      `/users/for-assignees${query ? `?${query}` : ""}`
+    );
+  },
   getById: (id: string) => api.get<User>(`/users/${id}`),
   create: (data: CreateUserDto) => api.post<User>("/users", data),
   update: (id: string, data: UpdateUserDto) =>

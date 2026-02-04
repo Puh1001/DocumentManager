@@ -89,6 +89,7 @@
     "title": "编辑 ISO 元数据",
     "loadingUsers": "加载中...",
     "noMatches": "无匹配",
+    "searchUsers": "搜索用户...",
     "description": "编辑 \"{name}\" 的级别、编制人、审核人、批准人及日期。",
     "nameLabel": "文档名称",
     "namePlaceholder": "输入文档名称",

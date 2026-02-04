@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { fixFileNameEncoding } from "@/lib/utils/encoding-fix";
 import { formatDateShort } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, History, ExternalLink, FileEdit } from "lucide-react";
@@ -137,9 +136,6 @@ export function DocumentList({
               <td className="py-3 px-4 text-sm">{index + 1}</td>
               <td className="py-3 px-4">
                 <p className="font-medium">{doc.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {fixFileNameEncoding(doc.fileName)}
-                </p>
               </td>
               <td className="py-3 px-4 text-sm">
                 {doc._count?.versions != null && doc._count.versions > 0

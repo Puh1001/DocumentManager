@@ -30,12 +30,14 @@ it("should include documents from ISO_documents folders", async () => {
       department: { id: "dept-1", name: "Test Dept", code: "DEPT" },
     },
   };
-  
+
   prismaService.document.findMany = jest.fn().mockResolvedValue([mockDocument]);
-  prismaService.document.groupBy = jest.fn().mockResolvedValue([{ folderId: "folder-iso", fileName: "test.pdf" }]);
-  
+  prismaService.document.groupBy = jest
+    .fn()
+    .mockResolvedValue([{ folderId: "folder-iso", fileName: "test.pdf" }]);
+
   const result = await service.findAll();
-  
+
   expect(result.data).toHaveLength(1);
   expect(result.data[0].folder.path).toContain("ISO_documents");
 });
@@ -58,12 +60,12 @@ it("should exclude documents from KPI folders", async () => {
       department: { id: "dept-1", name: "Test Dept", code: "DEPT" },
     },
   };
-  
+
   prismaService.document.findMany = jest.fn().mockResolvedValue([mockDocument]);
   prismaService.document.groupBy = jest.fn().mockResolvedValue([]);
-  
+
   const result = await service.findAll();
-  
+
   expect(result.data).toHaveLength(0);
 });
 ```
@@ -85,12 +87,12 @@ it("should exclude documents from Maintenance folders", async () => {
       department: { id: "dept-1", name: "Test Dept", code: "DEPT" },
     },
   };
-  
+
   prismaService.document.findMany = jest.fn().mockResolvedValue([mockDocument]);
   prismaService.document.groupBy = jest.fn().mockResolvedValue([]);
-  
+
   const result = await service.findAll();
-  
+
   expect(result.data).toHaveLength(0);
 });
 ```
@@ -112,12 +114,14 @@ it("should include documents from legacy ISO_documents/current paths", async () 
       department: { id: "dept-1", name: "Test Dept", code: "DEPT" },
     },
   };
-  
+
   prismaService.document.findMany = jest.fn().mockResolvedValue([mockDocument]);
-  prismaService.document.groupBy = jest.fn().mockResolvedValue([{ folderId: "folder-legacy", fileName: "test.pdf" }]);
-  
+  prismaService.document.groupBy = jest
+    .fn()
+    .mockResolvedValue([{ folderId: "folder-legacy", fileName: "test.pdf" }]);
+
   const result = await service.findAll();
-  
+
   expect(result.data).toHaveLength(1);
   expect(result.data[0].folder.path).toContain("ISO_documents");
 });
@@ -141,16 +145,18 @@ it("should apply ISO_documents filter with other filters", async () => {
       department: { id: "dept-1", name: "Test Dept", code: "DEPT" },
     },
   };
-  
+
   prismaService.document.findMany = jest.fn().mockResolvedValue([mockDocument]);
-  prismaService.document.groupBy = jest.fn().mockResolvedValue([{ folderId: "folder-iso", fileName: "test.pdf" }]);
-  
+  prismaService.document.groupBy = jest
+    .fn()
+    .mockResolvedValue([{ folderId: "folder-iso", fileName: "test.pdf" }]);
+
   const result = await service.findAll({
     status: "ACTIVE",
     departmentId: "dept-1",
     level: "level-1",
   });
-  
+
   expect(result.data).toHaveLength(1);
   expect(prismaService.document.findMany).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -181,10 +187,10 @@ it("should return only ISO_documents when calling findAll", async () => {
     totalPages: 1,
   };
   documentService.findAll = jest.fn().mockResolvedValue(mockPaginatedResponse);
-  
+
   const query: QueryDocumentsDto = {};
   const result = await controller.findAll(query, mockRequest);
-  
+
   expect(result.data).toHaveLength(1);
   expect(result.data[0].folder.path).toContain("ISO_documents");
 });
@@ -197,6 +203,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 **Action:** Verify KPI attachment upload/download still works
 
 **Steps:**
+
 1. Navigate to KPI module
 2. Upload attachment to a KPI record
 3. Verify attachment appears in KPI module
@@ -209,6 +216,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 **Action:** Verify Maintenance document upload/download still works (if module exists)
 
 **Steps:**
+
 1. Navigate to Maintenance module (if exists)
 2. Upload document
 3. Verify document appears in Maintenance module
@@ -221,6 +229,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 **Action:** Verify document upload from `/dashboard/documents` still works
 
 **Steps:**
+
 1. Navigate to `/dashboard/documents`
 2. Click upload
 3. Select file, department, folder (ISO_documents folder)
@@ -234,6 +243,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 **Action:** Verify document version history still works
 
 **Steps:**
+
 1. Open a document from `/dashboard/documents`
 2. View version history
 3. Download/restore versions
@@ -245,6 +255,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 **Action:** Verify ISO metadata editing still works
 
 **Steps:**
+
 1. Open a document from `/dashboard/documents`
 2. Edit ISO metadata (level, preparer, reviewer, approver)
 3. Save changes
@@ -255,6 +266,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 ## Testing Checklist
 
 ### Backend Tests
+
 - [ ] Unit test: ISO_documents documents included
 - [ ] Unit test: KPI documents excluded
 - [ ] Unit test: Maintenance documents excluded
@@ -264,6 +276,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 - [ ] All existing tests still pass
 
 ### Frontend Tests
+
 - [ ] Manual test: ISO_documents appear
 - [ ] Manual test: KPI excluded
 - [ ] Manual test: Maintenance excluded
@@ -272,6 +285,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 - [ ] Manual test: Upload flow works
 
 ### Regression Tests
+
 - [ ] KPI module unaffected
 - [ ] Maintenance module unaffected
 - [ ] Upload flow unaffected
@@ -281,6 +295,7 @@ it("should return only ISO_documents when calling findAll", async () => {
 ## Running Tests
 
 ### Backend
+
 ```bash
 cd apps/api
 npm test -- document.service.spec.ts
@@ -288,6 +303,7 @@ npm test -- document.controller.spec.ts
 ```
 
 ### Full Test Suite
+
 ```bash
 npm test
 ```
@@ -309,6 +325,7 @@ npm test
 ## Rollback Plan
 
 If tests fail or regressions found:
+
 1. Review test failures
 2. Check if filter logic is too strict/loose
 3. Adjust Prisma query if needed

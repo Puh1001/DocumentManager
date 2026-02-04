@@ -89,6 +89,7 @@
     "title": "Chỉnh sửa metadata ISO",
     "loadingUsers": "Đang tải...",
     "noMatches": "Không có kết quả",
+    "searchUsers": "Tìm người dùng...",
     "description": "Chỉnh sửa cấp độ, người soạn, người rà soát, người phê duyệt và ngày cho \"{name}\".",
     "nameLabel": "Tên tài liệu",
     "namePlaceholder": "Nhập tên tài liệu",

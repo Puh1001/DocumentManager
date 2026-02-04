@@ -14,6 +14,7 @@ Add filtering logic to `DocumentService.findAll()` to only include documents who
 **File:** `apps/api/src/modules/storage/services/document.service.ts`
 
 Add import at top:
+
 ```typescript
 import { StoragePathBuilder } from "../utils/storage-path.util";
 ```
@@ -25,6 +26,7 @@ import { StoragePathBuilder } from "../utils/storage-path.util";
 **Location:** Inside `findAll()` method, after existing folder exclusions (around line 122)
 
 **Current code:**
+
 ```typescript
 const folderWhere: Prisma.FolderWhereInput = {
   AND: [
@@ -36,6 +38,7 @@ const folderWhere: Prisma.FolderWhereInput = {
 ```
 
 **New code:**
+
 ```typescript
 const folderWhere: Prisma.FolderWhereInput = {
   AND: [
@@ -62,6 +65,7 @@ const folderWhere: Prisma.FolderWhereInput = {
 ```
 
 **Rationale:**
+
 - Uses Prisma `OR` to match paths containing `/ISO_documents` or `\ISO_documents` (Windows)
 - Also matches paths ending with `/ISO_documents` or exactly `ISO_documents`
 - Works with both new (`{dept}/ISO_documents`) and legacy (`{dept}/ISO_documents/current`) paths
@@ -70,6 +74,7 @@ const folderWhere: Prisma.FolderWhereInput = {
 ### Step 3: Verify Compilation
 
 Run TypeScript compilation:
+
 ```bash
 cd apps/api
 npm run build
@@ -88,9 +93,11 @@ npm run build
 ## Expected Behavior
 
 **Before:**
+
 - `/dashboard/documents` shows documents from all sections (KPI, ISO_documents, Maintenance)
 
 **After:**
+
 - `/dashboard/documents` shows ONLY documents from `ISO_documents` section
 - KPI attachments, Maintenance docs, Delete_files content are excluded
 
