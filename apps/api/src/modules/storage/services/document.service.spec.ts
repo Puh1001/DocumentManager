@@ -249,14 +249,12 @@ describe("DocumentService", () => {
       prismaService.document.findMany = jest
         .fn()
         .mockResolvedValue(mockDocuments);
-      prismaService.document.groupBy = jest
-        .fn()
-        .mockResolvedValue([
-          {
-            folderId: mockDocumentWithRelations.folderId,
-            fileName: mockDocumentWithRelations.fileName,
-          },
-        ]);
+      prismaService.document.groupBy = jest.fn().mockResolvedValue([
+        {
+          folderId: mockDocumentWithRelations.folderId,
+          fileName: mockDocumentWithRelations.fileName,
+        },
+      ]);
 
       const result = await service.findAll({ status: "ARCHIVED" });
 
@@ -281,14 +279,12 @@ describe("DocumentService", () => {
       prismaService.document.findMany = jest
         .fn()
         .mockResolvedValue(mockDocuments);
-      prismaService.document.groupBy = jest
-        .fn()
-        .mockResolvedValue([
-          {
-            folderId: mockDocumentWithRelations.folderId,
-            fileName: mockDocumentWithRelations.fileName,
-          },
-        ]);
+      prismaService.document.groupBy = jest.fn().mockResolvedValue([
+        {
+          folderId: mockDocumentWithRelations.folderId,
+          fileName: mockDocumentWithRelations.fileName,
+        },
+      ]);
 
       const result = await service.findAll({ departmentId: "dept-1" });
 
@@ -316,14 +312,12 @@ describe("DocumentService", () => {
       prismaService.document.findMany = jest
         .fn()
         .mockResolvedValue(mockDocuments);
-      prismaService.document.groupBy = jest
-        .fn()
-        .mockResolvedValue([
-          {
-            folderId: mockDocumentWithRelations.folderId,
-            fileName: mockDocumentWithRelations.fileName,
-          },
-        ]);
+      prismaService.document.groupBy = jest.fn().mockResolvedValue([
+        {
+          folderId: mockDocumentWithRelations.folderId,
+          fileName: mockDocumentWithRelations.fileName,
+        },
+      ]);
 
       const result = await service.findAll({
         status: "ACTIVE",
@@ -613,14 +607,14 @@ describe("DocumentService", () => {
       });
     });
 
-    it("should throw when folder path is not under ISO_documents", async () => {
-      const folderOutsideDocuments = {
+    it("should throw when folder path is not under ISO_documents or KPI", async () => {
+      const folderOutsideAllowedSections = {
         ...mockFolder,
-        path: "DEPT/KPI",
+        path: "DEPT/Maintenance",
       };
       prismaService.folder.findUnique = jest
         .fn()
-        .mockResolvedValue(folderOutsideDocuments);
+        .mockResolvedValue(folderOutsideAllowedSections);
 
       await expect(
         service.upload(
@@ -633,6 +627,46 @@ describe("DocumentService", () => {
           { userCanUploadToAnyFolder: true }
         )
       ).rejects.toThrow(CustomException);
+    });
+
+    it("should allow upload when folder path is under KPI", async () => {
+      const folderUnderKpi = {
+        ...mockFolder,
+        path: "DEPT/KPI",
+      };
+      const mockVersion = {
+        id: "version-1",
+        filePath: "DEPT/KPI/current/doc-1.pdf",
+      };
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValue(folderUnderKpi);
+      prismaService.document.create = jest.fn().mockResolvedValue({
+        ...mockDocument,
+        filePath: "",
+      });
+      versionService.createVersion = jest.fn().mockResolvedValue(mockVersion);
+      smbService.getFileStats = jest.fn().mockResolvedValue({
+        birthtime: new Date(),
+        mtime: new Date(),
+      } as fs.Stats);
+      prismaService.document.update = jest.fn().mockResolvedValue(mockDocument);
+      prismaService.document.findUnique = jest
+        .fn()
+        .mockResolvedValue(mockDocument);
+
+      const result = await service.upload(
+        "folder-1",
+        mockFile,
+        "user-1",
+        undefined,
+        undefined,
+        "level-1",
+        { userCanUploadToAnyFolder: true }
+      );
+
+      expect(result).toEqual(mockDocument);
+      expect(prismaService.document.create).toHaveBeenCalled();
     });
 
     it("should throw when folder is not in user department (restricted user)", async () => {

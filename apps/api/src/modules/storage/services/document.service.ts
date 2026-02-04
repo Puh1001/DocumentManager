@@ -300,15 +300,17 @@ export class DocumentService {
       }
     }
 
-    // Enforce upload only to Documents (ISO_documents) folder (defence in depth)
+    // Enforce upload only to allowed sections: Documents (ISO_documents) or KPI (defence in depth)
     const normalizedPath = (folder.path ?? "").toLowerCase();
     const isUnderIsoDocuments =
       normalizedPath.includes("/iso_documents") ||
       normalizedPath === "iso_documents";
-    if (!isUnderIsoDocuments) {
+    const isUnderKpi =
+      normalizedPath.includes("/kpi") || normalizedPath === "kpi";
+    if (!isUnderIsoDocuments && !isUnderKpi) {
       throw CustomException.forbidden(
         ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
-        "Upload only allowed to Documents (ISO_documents) folder"
+        "Upload only allowed to Documents (ISO_documents) or KPI folder"
       );
     }
 
