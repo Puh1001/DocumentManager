@@ -348,6 +348,8 @@ export default function DocumentsPage() {
       if (metadata.reviewerName) body.reviewerName = metadata.reviewerName;
       if (metadata.approverName) body.approverName = metadata.approverName;
       if (metadata.approvalDate) body.approvalDate = metadata.approvalDate;
+      if (metadata.receiptDate) body.receiptDate = metadata.receiptDate;
+      if (metadata.storageLocation) body.storageLocation = metadata.storageLocation;
     }
 
     const { promise, abort } = api.uploadWithProgress(

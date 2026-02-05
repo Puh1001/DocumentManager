@@ -7,11 +7,7 @@ import { Eye, Download, History, ExternalLink, FileEdit } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
 import { useDeletionStatus } from "@/hooks/use-deletion-status";
 import { Document as DocumentType } from "@/lib/types/ability.types";
-import type {
-  Document,
-  DocumentLevel,
-  DocumentUser,
-} from "@/lib/types/document.types";
+import type { Document, DocumentLevel } from "@/lib/types/document.types";
 import { getRevisionLabelFromVersionCount } from "@iso-docs/shared";
 import { DeletionStatusBadge } from "./deletion-status-badge";
 import { DeletionActions } from "./deletion-actions";
@@ -30,11 +26,6 @@ function getLevelDisplayName(
   if (locale === "zh" && level.nameZh) return level.nameZh;
   if (locale === "en" && level.nameEn) return level.nameEn;
   return level.name;
-}
-
-function formatUserName(user: DocumentUser | null | undefined): string {
-  if (!user) return PLACEHOLDER;
-  return user.fullName?.trim() || user.username || PLACEHOLDER;
 }
 
 function formatDateOrPlaceholder(
@@ -151,13 +142,13 @@ export function DocumentList({
                 {doc.folder?.department?.name ?? PLACEHOLDER}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
-                {formatUserName(doc.preparer)}
+                {doc.preparerName?.trim() || PLACEHOLDER}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
-                {formatUserName(doc.reviewer)}
+                {doc.reviewerName?.trim() || PLACEHOLDER}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
-                {formatUserName(doc.approver)}
+                {doc.approverName?.trim() || PLACEHOLDER}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
                 {formatDateOrPlaceholder(doc.approvalDate, locale)}
@@ -167,9 +158,9 @@ export function DocumentList({
               </td>
               <td
                 className="py-3 px-4 text-sm text-muted-foreground max-w-[12rem] truncate"
-                title={doc.folder?.path}
+                title={doc.storageLocation ?? undefined}
               >
-                {doc.folder?.path ?? PLACEHOLDER}
+                {doc.storageLocation?.trim() ?? PLACEHOLDER}
               </td>
               <td className="py-3 px-4">
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted">

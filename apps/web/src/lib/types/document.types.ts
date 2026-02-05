@@ -68,4 +68,5 @@ export interface Document {
   approverName?: string | null;
   approvalDate?: string | null;
   receiptDate?: string | null;
+  storageLocation?: string | null;
 }

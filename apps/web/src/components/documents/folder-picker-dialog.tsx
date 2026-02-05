@@ -29,6 +29,8 @@ export interface UploadMetadata {
   reviewerName?: string;
   approverName?: string;
   approvalDate?: string;
+  receiptDate?: string;
+  storageLocation?: string;
 }
 
 interface Folder {
@@ -85,6 +87,8 @@ export function FolderPickerDialog({
   const [reviewerName, setReviewerName] = useState<string>("");
   const [approverName, setApproverName] = useState<string>("");
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
+  const [receiptDate, setReceiptDate] = useState<Date | null>(null);
+  const [storageLocation, setStorageLocation] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const lastAutoSelectFoldersLength = useRef<number>(0);
 
@@ -135,6 +139,8 @@ export function FolderPickerDialog({
       setReviewerName("");
       setApproverName("");
       setApprovalDate(null);
+      setReceiptDate(null);
+      setStorageLocation("");
       lastAutoSelectFoldersLength.current = 0;
     }
   }, [open, loadFolders, initialFileName]);
@@ -158,7 +164,9 @@ export function FolderPickerDialog({
     preparerName.trim() &&
     reviewerName.trim() &&
     approverName.trim() &&
-    approvalDate
+    approvalDate &&
+    receiptDate &&
+    storageLocation.trim()
   );
   const canConfirm = Boolean(
     selectedFolderId &&
@@ -177,6 +185,8 @@ export function FolderPickerDialog({
             reviewerName: reviewerName.trim() || undefined,
             approverName: approverName.trim() || undefined,
             approvalDate: approvalDate ? approvalDate.toISOString() : undefined,
+            receiptDate: receiptDate ? receiptDate.toISOString() : undefined,
+            storageLocation: storageLocation.trim() || undefined,
           }
         : displayName.trim()
           ? { name: displayName.trim() }
@@ -313,6 +323,25 @@ export function FolderPickerDialog({
                     value={approvalDate}
                     onChange={setApprovalDate}
                   />
+                  <DatePickerField
+                    label={tMeta("receiptDate")}
+                    value={receiptDate}
+                    onChange={setReceiptDate}
+                  />
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-muted-foreground">
+                      {tMeta("storageLocation")}
+                    </Label>
+                    <Input
+                      value={storageLocation}
+                      onChange={(e) => setStorageLocation(e.target.value)}
+                      placeholder={tMeta("storageLocationPlaceholder")}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {tMeta("storageLocationHint")}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

@@ -226,9 +226,10 @@ model Document {
   approverId   String?    @map("approver_id") // Legacy, kept for backward compatibility
   preparerName String?   @map("preparer_name") // Full name entered by user
   reviewerName String?   @map("reviewer_name") // Full name entered by user
-  approverName String?   @map("approver_name") // Full name entered by user
-  approvalDate DateTime?  @map("approval_date")
-  receiptDate  DateTime?  @map("receipt_date")
+  approverName    String?   @map("approver_name") // Full name entered by user
+  approvalDate    DateTime? @map("approval_date")
+  receiptDate     DateTime? @map("receipt_date")
+  storageLocation String?   @map("storage_location") // Physical storage location entered by user
 
   // Deletion tracking fields
   uploadedBy        String?   @map("uploaded_by") // Uploader user ID

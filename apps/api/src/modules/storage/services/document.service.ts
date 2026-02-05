@@ -250,6 +250,8 @@ export class DocumentService {
       reviewerName?: string;
       approverName?: string;
       approvalDate?: string;
+      receiptDate?: string;
+      storageLocation?: string;
       documentNo?: string;
       revisionLabel?: string;
     }
@@ -330,6 +332,8 @@ export class DocumentService {
       const reviewerName = isoMetadata?.reviewerName?.trim();
       const approverName = isoMetadata?.approverName?.trim();
       const approvalDate = isoMetadata?.approvalDate?.trim();
+      const receiptDateStr = isoMetadata?.receiptDate?.trim();
+      const storageLocationStr = isoMetadata?.storageLocation?.trim();
 
       if (!preparerName) {
         throw CustomException.badRequest(
@@ -360,6 +364,25 @@ export class DocumentService {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.APPROVAL_DATE_REQUIRED,
           "approvalDate is invalid"
+        );
+      }
+      if (!receiptDateStr) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.RECEIPT_DATE_REQUIRED,
+          "receiptDate is required"
+        );
+      }
+      const parsedReceiptDate = new Date(receiptDateStr);
+      if (Number.isNaN(parsedReceiptDate.getTime())) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.RECEIPT_DATE_REQUIRED,
+          "receiptDate is invalid"
+        );
+      }
+      if (!storageLocationStr) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.STORAGE_LOCATION_REQUIRED,
+          "storageLocation is required"
         );
       }
 
@@ -453,6 +476,12 @@ export class DocumentService {
       isoMetadata.approvalDate.trim() !== ""
         ? new Date(isoMetadata.approvalDate)
         : null;
+    const receiptDate =
+      isoMetadata?.receiptDate?.trim() != null &&
+      isoMetadata.receiptDate.trim() !== ""
+        ? new Date(isoMetadata.receiptDate)
+        : null;
+    const storageLocation = isoMetadata?.storageLocation?.trim() || null;
     const documentNo =
       isoMetadata?.documentNo?.trim() != null &&
       isoMetadata.documentNo.trim() !== ""
@@ -488,7 +517,10 @@ export class DocumentService {
         ...(revisionLabel
           ? ({ revisionLabel } as Record<string, unknown>)
           : {}),
-        receiptDate: now,
+        receiptDate,
+        ...(storageLocation
+          ? ({ storageLocation } as Record<string, unknown>)
+          : {}),
         // Deletion tracking fields
         uploadedBy: userId,
         uploadedAt: now,
@@ -728,6 +760,12 @@ export class DocumentService {
         dto.receiptDate == null || dto.receiptDate === ""
           ? null
           : new Date(dto.receiptDate);
+    }
+    if (dto.storageLocation !== undefined) {
+      data.storageLocation =
+        dto.storageLocation != null && dto.storageLocation !== ""
+          ? dto.storageLocation.trim()
+          : null;
     }
 
     if (dto.documentNo !== undefined) {

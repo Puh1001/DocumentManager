@@ -52,6 +52,14 @@ export class UpdateIsoMetadataDto {
   receiptDate?: string | null;
 
   @ApiPropertyOptional({
+    description: "Physical storage location",
+  })
+  @IsOptional()
+  @ValidateIf((_, v) => v != null && v !== "")
+  @IsString()
+  storageLocation?: string | null;
+
+  @ApiPropertyOptional({
     description:
       "Business document number (No.). Level 1: BPVN-QESM-001. Level 2: BPVN-QEP-001. Level 3: BPVN-DCC-SMP-001. Level 4: BPVN-DCC-PR-001.",
   })

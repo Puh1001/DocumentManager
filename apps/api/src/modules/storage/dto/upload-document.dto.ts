@@ -69,6 +69,20 @@ export class UploadDocumentDto {
   approvalDate?: string;
 
   @ApiPropertyOptional({
+    description: "Receipt date ISO 8601 (required for ISO documents)",
+  })
+  @IsOptional()
+  @IsDateString()
+  receiptDate?: string;
+
+  @ApiPropertyOptional({
+    description: "Physical storage location (required for ISO documents)",
+  })
+  @IsOptional()
+  @IsString()
+  storageLocation?: string;
+
+  @ApiPropertyOptional({
     description:
       'Business document number (No.). For example: "BPVN-QESM-001", "BPVN-QEP-001", "BPVN-DCC-SMP-001".',
   })

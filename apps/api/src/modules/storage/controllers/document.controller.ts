@@ -227,7 +227,15 @@ export class DocumentController {
         },
         approvalDate: {
           type: "string",
-          description: "Optional approval date ISO 8601",
+          description: "Approval date ISO 8601 (required for ISO documents)",
+        },
+        receiptDate: {
+          type: "string",
+          description: "Receipt date ISO 8601 (required for ISO documents)",
+        },
+        storageLocation: {
+          type: "string",
+          description: "Physical storage location (required for ISO documents)",
         },
         documentNo: {
           type: "string",
@@ -248,6 +256,8 @@ export class DocumentController {
     @Body("reviewerName") reviewerName?: string,
     @Body("approverName") approverName?: string,
     @Body("approvalDate") approvalDate?: string,
+    @Body("receiptDate") receiptDate?: string,
+    @Body("storageLocation") storageLocation?: string,
     @Body("documentNo") documentNo?: string,
     @Body("revisionLabel") revisionLabel?: string
   ) {
@@ -292,6 +302,8 @@ export class DocumentController {
         reviewerName: reviewerName?.trim() || undefined,
         approverName: approverName?.trim() || undefined,
         approvalDate: approvalDate?.trim() || undefined,
+        receiptDate: receiptDate?.trim() || undefined,
+        storageLocation: storageLocation?.trim() || undefined,
         documentNo: documentNo?.trim() || undefined,
         revisionLabel: revisionLabel?.trim() || undefined,
       }

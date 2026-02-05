@@ -59,6 +59,8 @@ export function IsoMetadataEditDialog({
   const [reviewerName, setReviewerName] = useState<string>("");
   const [approverName, setApproverName] = useState<string>("");
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
+  const [receiptDate, setReceiptDate] = useState<Date | null>(null);
+  const [storageLocation, setStorageLocation] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -71,6 +73,8 @@ export function IsoMetadataEditDialog({
       setReviewerName(doc.reviewerName ?? doc.reviewer?.fullName ?? "");
       setApproverName(doc.approverName ?? doc.approver?.fullName ?? "");
       setApprovalDate(parseDate(doc.approvalDate));
+      setReceiptDate(parseDate(doc.receiptDate));
+      setStorageLocation(doc.storageLocation ?? "");
     }
   }, [open, doc]);
 
@@ -105,7 +109,6 @@ export function IsoMetadataEditDialog({
           fileName: `${nextName}${ext}`,
         });
       }
-      // Preparer and receipt date are auto-assigned; do not send to avoid overwriting
       const payload = {
         levelId: levelId || undefined,
         documentNo: nextDocumentNo || null,
@@ -113,6 +116,8 @@ export function IsoMetadataEditDialog({
         reviewerName: reviewerName.trim() || null,
         approverName: approverName.trim() || null,
         approvalDate: approvalDate ? approvalDate.toISOString() : null,
+        receiptDate: receiptDate ? receiptDate.toISOString() : null,
+        storageLocation: storageLocation.trim() || null,
       };
       await documentApi.updateIsoMetadata(doc.id, payload);
       toast({
@@ -247,6 +252,27 @@ export function IsoMetadataEditDialog({
             value={approvalDate}
             onChange={setApprovalDate}
           />
+          <DatePickerField
+            label={tEdit("receiptDate")}
+            value={receiptDate}
+            onChange={setReceiptDate}
+          />
+          <div className="space-y-2 min-w-0 col-span-2">
+            <Label htmlFor="storage-location" className="text-sm font-medium">
+              {tEdit("storageLocation")}
+            </Label>
+            <Input
+              id="storage-location"
+              value={storageLocation}
+              onChange={(e) => setStorageLocation(e.target.value)}
+              placeholder={tEdit("storageLocationPlaceholder")}
+              disabled={submitting}
+              className="min-w-0"
+            />
+            <p className="text-xs text-muted-foreground">
+              {tEdit("storageLocationHint")}
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button

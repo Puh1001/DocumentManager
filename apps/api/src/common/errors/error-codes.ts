@@ -46,6 +46,8 @@ export const ErrorCodes = {
     REVIEWER_REQUIRED: "document.upload.reviewer_required",
     APPROVER_REQUIRED: "document.upload.approver_required",
     APPROVAL_DATE_REQUIRED: "document.upload.approval_date_required",
+    RECEIPT_DATE_REQUIRED: "document.upload.receipt_date_required",
+    STORAGE_LOCATION_REQUIRED: "document.upload.storage_location_required",
     INVALID_FILENAME: "document.rename.invalid_filename",
     INVALID_REVISION_LABEL: "document.metadata.invalid_revision_label",
   },
