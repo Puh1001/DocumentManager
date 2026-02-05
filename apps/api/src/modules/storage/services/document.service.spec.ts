@@ -312,6 +312,7 @@ describe("DocumentService", () => {
       prismaService.document.findMany = jest
         .fn()
         .mockResolvedValue(mockDocuments);
+      prismaService.document.count = jest.fn().mockResolvedValue(1);
       prismaService.document.groupBy = jest.fn().mockResolvedValue([
         {
           folderId: mockDocumentWithRelations.folderId,
@@ -344,6 +345,14 @@ describe("DocumentService", () => {
               { path: { not: { contains: "\\delete files" } } },
               { path: { not: { contains: "/Deleted files" } } },
               { path: { not: { contains: "\\Deleted files" } } },
+              {
+                OR: [
+                  { path: { contains: "/ISO_documents" } },
+                  { path: { contains: "\\ISO_documents" } },
+                  { path: { endsWith: "/ISO_documents" } },
+                  { path: { equals: "ISO_documents" } },
+                ],
+              },
             ],
             departmentId: "dept-1",
           },
@@ -380,7 +389,8 @@ describe("DocumentService", () => {
         },
         orderBy: { name: "asc" },
       });
-      expect(prismaService.document.count).toHaveBeenCalledWith({
+      // Total is now calculated from groupBy result, not from count()
+      expect(prismaService.document.groupBy).toHaveBeenCalledWith({
         where: {
           status: "ACTIVE",
           folder: {
@@ -393,10 +403,19 @@ describe("DocumentService", () => {
               { path: { not: { contains: "\\delete files" } } },
               { path: { not: { contains: "/Deleted files" } } },
               { path: { not: { contains: "\\Deleted files" } } },
+              {
+                OR: [
+                  { path: { contains: "/ISO_documents" } },
+                  { path: { contains: "\\ISO_documents" } },
+                  { path: { endsWith: "/ISO_documents" } },
+                  { path: { equals: "ISO_documents" } },
+                ],
+              },
             ],
             departmentId: "dept-1",
           },
         },
+        by: ["folderId", "fileName"],
       });
     });
 
@@ -406,6 +425,12 @@ describe("DocumentService", () => {
         .fn()
         .mockResolvedValue(mockDocuments);
       prismaService.document.count = jest.fn().mockResolvedValue(1);
+      prismaService.document.groupBy = jest.fn().mockResolvedValue([
+        {
+          folderId: mockDocumentWithRelations.folderId,
+          fileName: mockDocumentWithRelations.fileName,
+        },
+      ]);
 
       // Test invalid status - service should default to ACTIVE
       const invalidFilters = {
@@ -555,6 +580,8 @@ describe("DocumentService", () => {
           reviewerName: "User Two",
           approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
+          receiptDate: "2026-01-30T00:00:00.000Z",
+          storageLocation: "Shelf A1",
         }
       );
 
@@ -611,6 +638,8 @@ describe("DocumentService", () => {
           reviewerName: "User Two",
           approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
+          receiptDate: "2026-01-30T00:00:00.000Z",
+          storageLocation: "Shelf A1",
         }
       );
 
@@ -750,6 +779,8 @@ describe("DocumentService", () => {
           reviewerName: "User Two",
           approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
+          receiptDate: "2026-01-30T00:00:00.000Z",
+          storageLocation: "Shelf A1",
         }
       );
 
@@ -821,6 +852,8 @@ describe("DocumentService", () => {
           reviewerName: "User Two",
           approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
+          receiptDate: "2026-01-30T00:00:00.000Z",
+          storageLocation: "Shelf A1",
         }
       );
 

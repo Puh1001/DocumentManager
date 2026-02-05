@@ -401,6 +401,9 @@ export class DocumentService {
         } else if (level.code === "LEVEL3") {
           const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
           valid = level3Regex.test(value);
+        } else if (level.code === "LEVEL4") {
+          const level4Regex = /^BPVN-[A-Z0-9]+-PR-\d{3}$/;
+          valid = level4Regex.test(value);
         }
 
         if (!valid) {
@@ -793,6 +796,10 @@ export class DocumentService {
         // BPVN-<DEPT>-(SOP|SMP)-001
         const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
         valid = level3Regex.test(value);
+      } else if (levelCode === "LEVEL4") {
+        // BPVN-<DEPT>-PR-001
+        const level4Regex = /^BPVN-[A-Z0-9]+-PR-\d{3}$/;
+        valid = level4Regex.test(value);
       }
 
       if (!valid) {

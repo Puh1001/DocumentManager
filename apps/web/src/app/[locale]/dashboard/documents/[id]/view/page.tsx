@@ -34,7 +34,7 @@ export default function DocumentViewPage() {
   const documentId = params?.id;
   const router = useRouter();
   const { user } = useAuth();
-  const [document, setDocument] = useState<Document | null>(null);
+  const [docData, setDocData] = useState<Document | null>(null);
   const [permissions, setPermissions] = useState<Permissions>({
     canView: true,
     canDownload: false,
@@ -46,19 +46,48 @@ export default function DocumentViewPage() {
   // Enable copy protection if user cannot download
   useCopyProtection(!permissions.canDownload);
 
+  // Block print/save keyboard shortcuts when user cannot download
+  useEffect(() => {
+    if (permissions.canDownload || permissions.canPrint) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block Ctrl+S (Save)
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        alert("Bạn không có quyền tải xuống tài liệu này.");
+        return false;
+      }
+
+      // Block Ctrl+P (Print)
+      if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+        e.preventDefault();
+        alert("Bạn không có quyền in tài liệu này.");
+        return false;
+      }
+
+      // Block F12, Ctrl+Shift+I (DevTools)
+      if (
+        e.key === "F12" ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "I")
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    window.document.addEventListener("keydown", handleKeyDown);
+    return () => window.document.removeEventListener("keydown", handleKeyDown);
+  }, [permissions.canDownload, permissions.canPrint]);
+
   const loadDocument = useCallback(async () => {
     try {
       if (!documentId) return;
-      const doc = await api.get<Document>(`/storage/documents/${documentId}`);
-      setDocument(doc);
-
-      // TODO: Load actual permissions from API
-      setPermissions({
-        canView: true,
-        canDownload: true, // For demo
-        canPrint: true,
-        canEdit: true,
-      });
+      const [doc, perms] = await Promise.all([
+        api.get<Document>(`/storage/documents/${documentId}`),
+        api.get<Permissions>(`/storage/documents/${documentId}/permissions`),
+      ]);
+      setDocData(doc);
+      setPermissions(perms);
     } catch (error) {
       console.error("Failed to load document:", error);
     } finally {
@@ -101,7 +130,7 @@ export default function DocumentViewPage() {
     );
   }
 
-  if (!document) {
+  if (!docData) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p>Không tìm thấy tài liệu</p>
@@ -120,9 +149,9 @@ export default function DocumentViewPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="font-semibold">{document.name}</h1>
+            <h1 className="font-semibold">{docData.name}</h1>
             <p className="text-xs text-muted-foreground">
-              {fixFileNameEncoding(document.fileName)}
+              {fixFileNameEncoding(docData.fileName)}
             </p>
           </div>
         </div>
@@ -155,7 +184,7 @@ export default function DocumentViewPage() {
       <div
         className={`flex-1 relative overflow-hidden ${!permissions.canDownload ? "viewer-protected" : ""}`}
       >
-        {document.fileType === "pdf" && (
+        {docData.fileType === "pdf" && (
           <PdfViewer
             fileUrl={fileUrl}
             canDownload={permissions.canDownload}
@@ -163,16 +192,16 @@ export default function DocumentViewPage() {
           />
         )}
 
-        {["doc", "docx"].includes(document.fileType) && (
+        {["doc", "docx"].includes(docData.fileType) && (
           <DocxViewer fileUrl={fileUrl} />
         )}
 
-        {["xls", "xlsx"].includes(document.fileType) && (
+        {["xls", "xlsx"].includes(docData.fileType) && (
           <XlsxViewer fileUrl={fileUrl} />
         )}
 
-        {["png", "jpg", "jpeg", "gif"].includes(document.fileType) && (
-          <ImageViewer fileUrl={fileUrl} alt={document.name} />
+        {["png", "jpg", "jpeg", "gif"].includes(docData.fileType) && (
+          <ImageViewer fileUrl={fileUrl} alt={docData.name} />
         )}
 
         {/* Watermark */}

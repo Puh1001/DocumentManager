@@ -104,7 +104,7 @@
     "documentNoLabel": "编号 (No.)",
     "documentNoPlaceholder": "如 BPVN-QESM-001、BPVN-DCC-QEP-001、BPVN-DCC-PR-001",
     "documentNoRequired": "文档编号不能为空。",
-    "documentNoHint": "级别1：BPVN-QESM-001。级别2：BPVN-<部门>-QEP-001。级别3：BPVN-<部门>-SOP/SMP-001。级别4：BPVN-<部门>-PR-001（如 BPVN-DCC-PR-001）。",
+    "documentNoHint": "级别1：BPVN-QESM-001。级别2：BPVN-(部门)-QEP-001。级别3：BPVN-(部门)-SOP/SMP-001。级别4：BPVN-(部门)-PR-001（如 BPVN-DCC-PR-001）。",
     "revisionLabelLabel": "版本（修订）",
     "revisionLabelPlaceholder": "A/0（原版）、A/1..A/10，然后 B/0..",
     "revisionLabelHint": "原版 = A/0，第一次修订 = A/1；超过10次后使用 B/0 等。",

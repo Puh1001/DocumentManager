@@ -104,7 +104,7 @@
     "documentNoLabel": "No.",
     "documentNoPlaceholder": "e.g. BPVN-QESM-001, BPVN-DCC-QEP-001, BPVN-DCC-PR-001",
     "documentNoRequired": "Document No. is required.",
-    "documentNoHint": "Level 1: BPVN-QESM-001. Level 2: BPVN-<Dept>-QEP-001. Level 3: BPVN-<Dept>-SOP/SMP-001. Level 4: BPVN-<Dept>-PR-001 (e.g. BPVN-DCC-PR-001).",
+    "documentNoHint": "Level 1: BPVN-QESM-001. Level 2: BPVN-(Dept)-QEP-001. Level 3: BPVN-(Dept)-SOP/SMP-001. Level 4: BPVN-(Dept)-PR-001 (e.g. BPVN-DCC-PR-001).",
     "revisionLabelLabel": "Version (revision)",
     "revisionLabelPlaceholder": "A/0 (original), A/1..A/10, then B/0..",
     "revisionLabelHint": "Original = A/0, first revision = A/1; after 10 revisions use B/0, etc.",

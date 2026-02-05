@@ -61,7 +61,6 @@ export class DocumentController {
 
   @Get()
   @ApiOperation({ summary: "List all documents with filters and pagination" })
-  @CheckPolicies({ action: "view", subject: "Document" })
   async findAll(
     @Query() query: QueryDocumentsDto,
     @Request() req: AuthenticatedRequest
@@ -133,6 +132,51 @@ export class DocumentController {
     return document;
   }
 
+  @Get(":id/permissions")
+  @ApiOperation({ summary: "Get document permissions for current user" })
+  async getPermissions(
+    @Param("id") id: string,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const document = await this.documentService.findById(id);
+    await this.ensureDocumentDepartmentAccess(document, req);
+
+    const roles = req.user?.roles ?? [];
+    const levelCode = document.level?.code;
+
+    // Everyone can view
+    const canView = true;
+
+    // Download/Print permissions based on level
+    let canDownload = false;
+    let canPrint = false;
+
+    if (levelCode === "LEVEL4") {
+      // Level 4: everyone can download/print
+      canDownload = true;
+      canPrint = true;
+    } else if (
+      levelCode === "LEVEL1" ||
+      levelCode === "LEVEL2" ||
+      levelCode === "LEVEL3"
+    ) {
+      // ISO documents (Level 1-3): only DCC and admin
+      const hasPermission = roles.some((r) => ["admin", "dcc"].includes(r));
+      canDownload = hasPermission;
+      canPrint = hasPermission;
+    }
+
+    // Edit permission: always false for now (not implemented)
+    const canEdit = false;
+
+    return {
+      canView,
+      canDownload,
+      canPrint,
+      canEdit,
+    };
+  }
+
   @Get(":id/stream")
   @ApiOperation({ summary: "Stream document content for viewer" })
   async stream(
@@ -168,8 +212,15 @@ export class DocumentController {
       }
     }
 
+    // Security headers to prevent download via DevTools
     res.setHeader("Content-Type", this.getMimeType(document.fileType));
     res.setHeader("Content-Disposition", "inline");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors 'self'; default-src 'self'"
+    );
     stream.pipe(res);
   }
 
@@ -182,6 +233,7 @@ export class DocumentController {
   ) {
     const document = await this.documentService.findById(id);
     await this.ensureDocumentDepartmentAccess(document, req);
+    await this.ensureDownloadPermission(document, req);
     const { buffer, fileName, mimeType } =
       await this.documentService.download(id);
 
@@ -470,6 +522,32 @@ export class DocumentController {
       throw CustomException.forbidden(
         ErrorCodes.DOCUMENT.ACCESS_DENIED,
         "Document not in your department"
+      );
+    }
+  }
+
+  /**
+   * Check download permission based on document level:
+   * - ISO documents (Level 1-3): only DCC and admin can download
+   * - Level 4: everyone can download
+   */
+  private async ensureDownloadPermission(
+    document: { level?: { code: string } | null },
+    req: AuthenticatedRequest
+  ): Promise<void> {
+    const levelCode = document.level?.code;
+    if (!levelCode) return;
+
+    // Level 4: everyone can download
+    if (levelCode === "LEVEL4") return;
+
+    // ISO documents (Level 1-3): only DCC and admin can download
+    const roles = req.user?.roles ?? [];
+    const canDownload = roles.some((r) => ["admin", "dcc"].includes(r));
+    if (!canDownload) {
+      throw CustomException.forbidden(
+        ErrorCodes.DOCUMENT.ACCESS_DENIED,
+        "Only DCC and Admin can download ISO documents (Level 1-3)"
       );
     }
   }
