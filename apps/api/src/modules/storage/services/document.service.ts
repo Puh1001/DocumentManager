@@ -411,11 +411,13 @@ export class DocumentService {
         }
 
         if (level.code === "LEVEL1") {
-          const where: Prisma.DocumentWhereInput = {};
-          (where as Record<string, unknown>).documentNo = value;
+          const where: Record<string, unknown> = {
+            documentNo: value,
+            status: "ACTIVE", // Only check active documents, exclude deleted ones
+          };
           const existing = await (
             this.prisma as PrismaClientLike
-          ).document.findFirst({ where });
+          ).document.findFirst({ where: where as Prisma.DocumentWhereInput });
           if (existing) {
             throw CustomException.badRequest(
               ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
