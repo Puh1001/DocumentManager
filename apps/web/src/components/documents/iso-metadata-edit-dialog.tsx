@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { documentApi, userApi, type User } from "@/lib/api";
 import type { Document } from "@/lib/types/document.types";
+import { REVISION_LABEL_OPTIONS } from "@iso-docs/shared";
 import { LevelSelector } from "./level-selector";
 import { UserPicker } from "./user-picker";
 import { DatePickerField } from "./date-picker-field";
@@ -52,6 +53,8 @@ export function IsoMetadataEditDialog({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [levelId, setLevelId] = useState("");
+  const [documentNo, setDocumentNo] = useState("");
+  const [revisionLabel, setRevisionLabel] = useState("");
   const [reviewerId, setReviewerId] = useState<string | null>(null);
   const [approverId, setApproverId] = useState<string | null>(null);
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
@@ -75,6 +78,8 @@ export function IsoMetadataEditDialog({
     if (open && doc) {
       setName(doc.name ?? "");
       setLevelId(doc.level?.id ?? "");
+      setDocumentNo(doc.documentNo ?? "");
+      setRevisionLabel(doc.revisionLabel ?? "A/0");
       setReviewerId(doc.reviewer?.id ?? null);
       setApproverId(doc.approver?.id ?? null);
       setApprovalDate(parseDate(doc.approvalDate));
@@ -84,11 +89,20 @@ export function IsoMetadataEditDialog({
   const handleSave = async () => {
     if (!doc) return;
     const nextName = name.trim();
+    const nextDocumentNo = documentNo.trim();
     const currentName = (doc.name ?? "").trim();
     if (!nextName) {
       toast({
         title: t("errorTitle"),
         description: t("nameRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!nextDocumentNo) {
+      toast({
+        title: t("errorTitle"),
+        description: t("documentNoRequired"),
         variant: "destructive",
       });
       return;
@@ -106,6 +120,8 @@ export function IsoMetadataEditDialog({
       // Preparer and receipt date are auto-assigned; do not send to avoid overwriting
       const payload = {
         levelId: levelId || undefined,
+        documentNo: nextDocumentNo || null,
+        revisionLabel: revisionLabel?.trim() || null,
         reviewerId: reviewerId ?? undefined,
         approverId: approverId ?? undefined,
         approvalDate: approvalDate ? approvalDate.toISOString() : null,
@@ -156,6 +172,46 @@ export function IsoMetadataEditDialog({
             />
             <p className="text-xs text-muted-foreground break-words min-w-0">
               {t("fileNameHint", { fileName: `${name.trim() || "..."}${ext}` })}
+            </p>
+            <p className="text-xs text-muted-foreground break-words min-w-0 italic">
+              {t("nameTitleRuleHint")}
+            </p>
+          </div>
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="doc-no" className="text-sm font-medium">
+              {t("documentNoLabel")}
+            </Label>
+            <Input
+              id="doc-no"
+              value={documentNo}
+              onChange={(e) => setDocumentNo(e.target.value)}
+              placeholder={t("documentNoPlaceholder")}
+              disabled={submitting}
+              className="min-w-0 uppercase"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("documentNoHint")}
+            </p>
+          </div>
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="revision-label" className="text-sm font-medium">
+              {t("revisionLabelLabel")}
+            </Label>
+            <select
+              id="revision-label"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[2.25rem]"
+              value={revisionLabel}
+              onChange={(e) => setRevisionLabel(e.target.value)}
+              disabled={submitting}
+            >
+              {REVISION_LABEL_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {t("revisionLabelHint")}
             </p>
           </div>
           <LevelSelector

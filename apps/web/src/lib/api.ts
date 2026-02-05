@@ -1004,6 +1004,8 @@ export interface UpdateIsoMetadataDto {
   approverId?: string | null;
   approvalDate?: string | null;
   receiptDate?: string | null;
+  documentNo?: string | null;
+  revisionLabel?: string | null;
 }
 
 export interface Document {

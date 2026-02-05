@@ -548,7 +548,14 @@ describe("DocumentService", () => {
         "user-1",
         undefined,
         undefined,
-        "level-1"
+        "level-1",
+        undefined,
+        {
+          preparerId: "user-1",
+          reviewerId: "user-2",
+          approverId: "user-3",
+          approvalDate: "2026-01-30T00:00:00.000Z",
+        }
       );
 
       expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
@@ -597,7 +604,14 @@ describe("DocumentService", () => {
         "user-1",
         "Custom Name",
         undefined,
-        "level-1"
+        "level-1",
+        undefined,
+        {
+          preparerId: "user-1",
+          reviewerId: "user-2",
+          approverId: "user-3",
+          approvalDate: "2026-01-30T00:00:00.000Z",
+        }
       );
 
       expect(prismaService.document.create).toHaveBeenCalledWith({
@@ -730,6 +744,12 @@ describe("DocumentService", () => {
         {
           userDepartmentIds: ["dept-1"],
           userCanUploadToAnyFolder: false,
+        },
+        {
+          preparerId: "user-1",
+          reviewerId: "user-2",
+          approverId: "user-3",
+          approvalDate: "2026-01-30T00:00:00.000Z",
         }
       );
 
@@ -794,7 +814,14 @@ describe("DocumentService", () => {
         "user-1",
         undefined,
         undefined,
-        "level-1"
+        "level-1",
+        undefined,
+        {
+          preparerId: "user-1",
+          reviewerId: "user-2",
+          approverId: "user-3",
+          approvalDate: "2026-01-30T00:00:00.000Z",
+        }
       );
 
       // When getFileStats fails we skip date update; we do not overwrite filePath (createVersion already set it)

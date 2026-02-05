@@ -213,6 +213,26 @@ export class DocumentController {
           description:
             "Original filename (UTF-8, sent as text field to avoid encoding issues)",
         },
+        preparerId: {
+          type: "string",
+          description: "Optional preparer user ID",
+        },
+        reviewerId: {
+          type: "string",
+          description: "Optional reviewer user ID",
+        },
+        approverId: {
+          type: "string",
+          description: "Optional approver user ID",
+        },
+        approvalDate: {
+          type: "string",
+          description: "Optional approval date ISO 8601",
+        },
+        documentNo: {
+          type: "string",
+          description: "Optional business document number (No.)",
+        },
       },
     },
   })
@@ -223,7 +243,13 @@ export class DocumentController {
     @Body("name") name: string,
     @Request() req: AuthenticatedRequest,
     @Body("fileName") fileName?: string,
-    @Body("levelId") levelId?: string
+    @Body("levelId") levelId?: string,
+    @Body("preparerId") preparerId?: string,
+    @Body("reviewerId") reviewerId?: string,
+    @Body("approverId") approverId?: string,
+    @Body("approvalDate") approvalDate?: string,
+    @Body("documentNo") documentNo?: string,
+    @Body("revisionLabel") revisionLabel?: string
   ) {
     if (!folderId?.trim()) {
       throw CustomException.badRequest(
@@ -260,6 +286,14 @@ export class DocumentController {
       {
         userDepartmentIds,
         userCanUploadToAnyFolder: canUploadToAnyFolder,
+      },
+      {
+        preparerId: preparerId?.trim() || undefined,
+        reviewerId: reviewerId?.trim() || undefined,
+        approverId: approverId?.trim() || undefined,
+        approvalDate: approvalDate?.trim() || undefined,
+        documentNo: documentNo?.trim() || undefined,
+        revisionLabel: revisionLabel?.trim() || undefined,
       }
     );
   }

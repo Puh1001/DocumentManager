@@ -752,12 +752,15 @@ export class DocumentDeletionService {
       } catch (error: unknown) {
         const nodeError = error as NodeJS.ErrnoException;
         if (nodeError.code === "ENOENT") {
-          if (!movedCurrentFile || !newFilePath) {
-            throw new NotFoundException(
-              `File not found at path: ${oldFilePath}. Document may have been moved or deleted.`
+          if (movedCurrentFile && newFilePath) {
+            // document.filePath missing but we moved current file; keep newFilePath from step 1
+          } else {
+            // File already missing on SMB (e.g. deleted externally). Allow DB-only update so user can clear the record.
+            this.logger.warn(
+              `File not found at path: ${oldFilePath}. Marking document ${documentId} as DELETED (file was already moved or deleted on storage).`
             );
+            newFilePath = oldFilePath;
           }
-          // document.filePath missing but we moved current file; keep newFilePath from step 1
         } else if (error instanceof BadRequestException) {
           throw error;
         } else {
@@ -814,10 +817,14 @@ export class DocumentDeletionService {
         });
       });
     } catch (error) {
-      // Best-effort revert: we may have moved one or two files; only primary move is reverted if possible
-      if (newFilePath && oldFilePath?.trim()) {
+      // Best-effort revert: only if we actually moved a file (newFilePath !== oldFilePath)
+      const actuallyMovedFile =
+        newFilePath &&
+        oldFilePath?.trim() &&
+        norm(newFilePath) !== norm(oldFilePath);
+      if (actuallyMovedFile) {
         try {
-          await this.smbService.rename(newFilePath, oldFilePath);
+          await this.smbService.rename(newFilePath!, oldFilePath!);
         } catch (revertError) {
           this.logger.error(
             `Failed to revert file move after DB error. File orphaned: ${newFilePath}`,

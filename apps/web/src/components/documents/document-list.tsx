@@ -12,6 +12,7 @@ import type {
   DocumentLevel,
   DocumentUser,
 } from "@/lib/types/document.types";
+import { getRevisionLabelFromVersionCount } from "@iso-docs/shared";
 import { DeletionStatusBadge } from "./deletion-status-badge";
 import { DeletionActions } from "./deletion-actions";
 import { DeletionErrorBoundary } from "./deletion-error-boundary";
@@ -127,22 +128,21 @@ export function DocumentList({
           </tr>
         </thead>
         <tbody>
-          {documents.map((doc, index) => (
+          {documents.map((doc) => (
             <tr
               key={doc.id}
               className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => onDocumentClick?.(doc)}
             >
-              <td className="py-3 px-4 text-sm">{index + 1}</td>
+              <td className="py-3 px-4 text-sm">
+                {doc.documentNo?.trim() || PLACEHOLDER}
+              </td>
               <td className="py-3 px-4">
                 <p className="font-medium">{doc.name}</p>
               </td>
               <td className="py-3 px-4 text-sm">
-                {doc._count?.versions != null && doc._count.versions > 0
-                  ? doc._count.versions
-                  : doc._count?.versions === 0
-                    ? "0"
-                    : PLACEHOLDER}
+                {doc.revisionLabel?.trim() ||
+                  getRevisionLabelFromVersionCount(doc._count?.versions ?? 1)}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
                 {getLevelDisplayName(doc.level, locale)}

@@ -1,4 +1,10 @@
-import { IsOptional, IsUUID, IsDateString, ValidateIf } from "class-validator";
+import {
+  IsOptional,
+  IsUUID,
+  IsDateString,
+  ValidateIf,
+  IsString,
+} from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateIsoMetadataDto {
@@ -44,4 +50,21 @@ export class UpdateIsoMetadataDto {
   @ValidateIf((_, v) => v != null && v !== "")
   @IsDateString()
   receiptDate?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Business document number (No.). For example: "BPVN-QESM-001", "BPVN-QEP-001", "BPVN-DCC-SMP-001".',
+  })
+  @IsOptional()
+  @IsString()
+  documentNo?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Revision label: A/0 (original), A/1..A/10, then B/0..B/10, etc.",
+    example: "A/0",
+  })
+  @IsOptional()
+  @IsString()
+  revisionLabel?: string | null;
 }

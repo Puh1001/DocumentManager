@@ -49,7 +49,12 @@
     "selectDepartment": "选择部门",
     "level": "级别",
     "selectLevel": "选择级别",
-    "loadingLevels": "加载级别中..."
+    "loadingLevels": "加载级别中...",
+    "metadataSectionTitle": "必填：文档编号、版本、编制人、审核人、批准人、批准日期",
+    "documentNameLabel": "文档名称",
+    "documentNamePlaceholder": "列表中显示的名称（默认：不含扩展名的文件名）",
+    "documentNameHint": "可选。留空则使用文件名。",
+    "documentNameRule": "标题格式：仅中文+越南语。示例：8S评分考核管理制度Quy định đánh giá chấm điểm 8S"
   },
   "pagination": {
     "showing": "显示第 {from} 到 {to} 条，共 {total} 条文档"
@@ -94,7 +99,15 @@
     "nameLabel": "文档名称",
     "namePlaceholder": "输入文档名称",
     "nameRequired": "文档名称不能为空。",
+    "nameTitleRuleHint": "标题格式：中文+越南语，例如：8S评分考核管理制度Quy định đánh giá chấm điểm 8S",
     "fileNameHint": "文件名将自动设置为：{fileName}",
+    "documentNoLabel": "编号 (No.)",
+    "documentNoPlaceholder": "如 BPVN-QESM-001、BPVN-DCC-QEP-001、BPVN-DCC-SMP-001",
+    "documentNoRequired": "文档编号不能为空。",
+    "documentNoHint": "级别1：仅 BPVN-QESM-001。级别2：BPVN-<部门>-QEP-001。级别3：BPVN-<部门>-SOP-001 或 BPVN-<部门>-SMP-001。",
+    "revisionLabelLabel": "版本（修订）",
+    "revisionLabelPlaceholder": "A/0（原版）、A/1..A/10，然后 B/0..",
+    "revisionLabelHint": "原版 = A/0，第一次修订 = A/1；超过10次后使用 B/0 等。",
     "preparer": "编制人",
     "reviewer": "审核人",
     "approver": "批准人",

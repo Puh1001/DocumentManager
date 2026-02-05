@@ -214,6 +214,12 @@ model Document {
   // ISO document level (required)
   levelId String @map("level_id")
 
+  // Business document number (No.) entered by user
+  documentNo String? @map("document_no")
+
+  // Revision label: A/0 (original), A/1..A/10, then B/0..B/10, etc.
+  revisionLabel String? @map("revision_label")
+
   // ISO metadata (auto-populated by system)
   preparerId   String?    @map("preparer_id") // Auto-set to uploader
   reviewerId   String?    @map("reviewer_id")
@@ -252,6 +258,8 @@ model Document {
   @@index([fileType])
   @@index([uploadedBy])
   @@index([deletionExpiresAt])
+  @@index([documentNo])
+  @@index([revisionLabel])
   @@map("documents")
 }
 

@@ -41,7 +41,13 @@ export const ErrorCodes = {
     LEVEL_REQUIRED: "document.upload.level_required",
     INVALID_LEVEL: "document.upload.invalid_level",
     FOLDER_ACCESS_DENIED: "document.upload.folder_access_denied",
+    INVALID_DOCUMENT_NO: "document.metadata.invalid_document_no",
+    PREPARER_REQUIRED: "document.upload.preparer_required",
+    REVIEWER_REQUIRED: "document.upload.reviewer_required",
+    APPROVER_REQUIRED: "document.upload.approver_required",
+    APPROVAL_DATE_REQUIRED: "document.upload.approval_date_required",
     INVALID_FILENAME: "document.rename.invalid_filename",
+    INVALID_REVISION_LABEL: "document.metadata.invalid_revision_label",
   },
   VERSION: {
     NOT_FOUND: "version.not_found",

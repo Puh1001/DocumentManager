@@ -45,6 +45,10 @@ export interface DocumentFolder {
 
 export interface Document {
   id: string;
+  /** Business document number (No.), e.g. BPVN-QESM-001, BPVN-DCC-SMP-001. */
+  documentNo?: string | null;
+  /** Revision label: A/0 (original), A/1..A/10, B/0..B/10, etc. */
+  revisionLabel?: string | null;
   name: string;
   fileName: string;
   fileType: string;

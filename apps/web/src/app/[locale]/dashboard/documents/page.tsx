@@ -18,7 +18,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DocumentList } from "@/components/documents/document-list";
 import { DocumentToolbar } from "@/components/documents/document-toolbar";
 import { UploadProgress } from "@/components/documents/upload-progress";
-import { FolderPickerDialog } from "@/components/documents/folder-picker-dialog";
+import {
+  FolderPickerDialog,
+  type UploadMetadata,
+} from "@/components/documents/folder-picker-dialog";
 import { Card } from "@/components/ui/card";
 import { useFolderSync } from "@/hooks/use-folder-sync";
 import { useDocumentLevels } from "@/hooks/use-document-levels";
@@ -295,10 +298,14 @@ export default function DocumentsPage() {
     [loadAllDocuments, currentPage]
   );
 
-  const handleFolderSelected = (folderId: string, levelId: string) => {
+  const handleFolderSelected = (
+    folderId: string,
+    levelId: string,
+    metadata?: UploadMetadata
+  ) => {
     if (!levelId?.trim()) return;
     if (pendingUploadFile) {
-      performUpload(pendingUploadFile, folderId, levelId);
+      performUpload(pendingUploadFile, folderId, levelId, metadata);
       setPendingUploadFile(null);
     }
   };
@@ -324,7 +331,8 @@ export default function DocumentsPage() {
   const performUpload = async (
     file: File,
     folderId: string,
-    levelId: string
+    levelId: string,
+    metadata?: UploadMetadata
   ) => {
     if (!levelId?.trim()) return;
     setUploading(true);
@@ -332,6 +340,15 @@ export default function DocumentsPage() {
     setUploadProgress({ percentage: 0, speed: 0, eta: 0 });
 
     const body: Record<string, string> = { folderId, levelId };
+    if (metadata) {
+      if (metadata.name) body.name = metadata.name;
+      if (metadata.documentNo) body.documentNo = metadata.documentNo;
+      if (metadata.revisionLabel) body.revisionLabel = metadata.revisionLabel;
+      if (metadata.preparerId) body.preparerId = metadata.preparerId;
+      if (metadata.reviewerId) body.reviewerId = metadata.reviewerId;
+      if (metadata.approverId) body.approverId = metadata.approverId;
+      if (metadata.approvalDate) body.approvalDate = metadata.approvalDate;
+    }
 
     const { promise, abort } = api.uploadWithProgress(
       "/storage/documents/upload",
@@ -547,6 +564,8 @@ export default function DocumentsPage() {
             : undefined
         }
         documentsOnly
+        showUploadMetadata
+        initialFileName={pendingUploadFile?.name}
       />
 
       {/* Upload Progress Dialog */}

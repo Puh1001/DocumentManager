@@ -9,6 +9,7 @@ import * as path from "path";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
 import { fixFileNameEncoding } from "@/common/utils/encoding.util";
+import { isValidRevisionLabel } from "@iso-docs/shared";
 import { DocumentLevelService } from "./document-level.service";
 import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
 
@@ -232,6 +233,7 @@ export class DocumentService {
   }
 
   /** Options for access control: when provided, folder must belong to user's department unless userCanUploadToAnyFolder. */
+  /** isoMetadata: optional preparer/reviewer/approver/approvalDate; when omitted, no auto-fill. */
   async upload(
     folderId: string,
     file: Express.Multer.File,
@@ -242,6 +244,14 @@ export class DocumentService {
     options?: {
       userDepartmentIds?: string[];
       userCanUploadToAnyFolder?: boolean;
+    },
+    isoMetadata?: {
+      preparerId?: string;
+      reviewerId?: string;
+      approverId?: string;
+      approvalDate?: string;
+      documentNo?: string;
+      revisionLabel?: string;
     }
   ) {
     if (!folderId) {
@@ -314,6 +324,100 @@ export class DocumentService {
       );
     }
 
+    // ISO upload: require user-provided ISO metadata (no auto-fill)
+    if (isUnderIsoDocuments) {
+      const preparerId = isoMetadata?.preparerId?.trim();
+      const reviewerId = isoMetadata?.reviewerId?.trim();
+      const approverId = isoMetadata?.approverId?.trim();
+      const approvalDate = isoMetadata?.approvalDate?.trim();
+
+      if (!preparerId) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.PREPARER_REQUIRED,
+          "preparerId is required"
+        );
+      }
+      if (!reviewerId) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.REVIEWER_REQUIRED,
+          "reviewerId is required"
+        );
+      }
+      if (!approverId) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.APPROVER_REQUIRED,
+          "approverId is required"
+        );
+      }
+      if (!approvalDate) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.APPROVAL_DATE_REQUIRED,
+          "approvalDate is required"
+        );
+      }
+      const parsed = new Date(approvalDate);
+      if (Number.isNaN(parsed.getTime())) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.APPROVAL_DATE_REQUIRED,
+          "approvalDate is invalid"
+        );
+      }
+
+      // Validate documentNo format if provided
+      const rawNo = isoMetadata?.documentNo?.trim() ?? "";
+      let documentNo: string | null = null;
+      if (rawNo) {
+        const value = rawNo.toUpperCase();
+        let valid = true;
+
+        if (level.code === "LEVEL1") {
+          valid = value === "BPVN-QESM-001";
+        } else if (level.code === "LEVEL2") {
+          const level2Regex = /^BPVN-(?:[A-Z0-9]+-)?QEP-\d{3}$/;
+          valid = level2Regex.test(value);
+        } else if (level.code === "LEVEL3") {
+          const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
+          valid = level3Regex.test(value);
+        }
+
+        if (!valid) {
+          throw CustomException.badRequest(
+            ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
+            "Invalid documentNo for document level"
+          );
+        }
+
+        if (level.code === "LEVEL1") {
+          const where: Prisma.DocumentWhereInput = {};
+          (where as Record<string, unknown>).documentNo = value;
+          const existing = await (
+            this.prisma as PrismaClientLike
+          ).document.findFirst({ where });
+          if (existing) {
+            throw CustomException.badRequest(
+              ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
+              "documentNo must be unique for LEVEL1"
+            );
+          }
+        }
+
+        documentNo = value;
+      }
+
+      if (isoMetadata) {
+        isoMetadata.documentNo = documentNo ?? undefined;
+      }
+
+      // Validate revisionLabel if provided (A/0..A/10, B/0..B/10, etc.)
+      const rawRev = isoMetadata?.revisionLabel?.trim() ?? "";
+      if (rawRev && !isValidRevisionLabel(rawRev)) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.INVALID_REVISION_LABEL,
+          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)"
+        );
+      }
+    }
+
     // Ưu tiên dùng fileName từ body (gửi riêng như text field, UTF-8 thô)
     // Fallback về file.originalname nếu không có (đã được fix bởi interceptor)
     // Điều này tránh vấn đề encoding khi Multer parse filename từ Content-Disposition header
@@ -340,6 +444,26 @@ export class DocumentService {
     const SEVENTY_TWO_HOURS_MS = 72 * 60 * 60 * 1000;
     const deletionExpiresAt = new Date(now.getTime() + SEVENTY_TWO_HOURS_MS);
 
+    // Optional ISO metadata: user-provided at upload; no auto-fill when omitted
+    const preparerId = isoMetadata?.preparerId?.trim() || null;
+    const reviewerId = isoMetadata?.reviewerId?.trim() || null;
+    const approverId = isoMetadata?.approverId?.trim() || null;
+    const approvalDate =
+      isoMetadata?.approvalDate?.trim() != null &&
+      isoMetadata.approvalDate.trim() !== ""
+        ? new Date(isoMetadata.approvalDate)
+        : null;
+    const documentNo =
+      isoMetadata?.documentNo?.trim() != null &&
+      isoMetadata.documentNo.trim() !== ""
+        ? isoMetadata.documentNo.trim().toUpperCase()
+        : null;
+    const revisionLabel =
+      isoMetadata?.revisionLabel?.trim() != null &&
+      isoMetadata.revisionLabel.trim() !== ""
+        ? isoMetadata.revisionLabel.trim().toUpperCase()
+        : null;
+
     // Create document entry
     // Use normalized fileName and documentName for database storage
     const document = await (this.prisma as PrismaClientLike).document.create({
@@ -355,7 +479,15 @@ export class DocumentService {
         fileModifiedAt: now,
         folderId,
         levelId,
-        preparerId: userId,
+        preparerId,
+        reviewerId,
+        approverId,
+        approvalDate,
+        // documentNo is part of the Prisma model but may not yet be present in generated types
+        ...(documentNo ? ({ documentNo } as Record<string, unknown>) : {}),
+        ...(revisionLabel
+          ? ({ revisionLabel } as Record<string, unknown>)
+          : {}),
         receiptDate: now,
         // Deletion tracking fields
         uploadedBy: userId,
@@ -550,14 +682,17 @@ export class DocumentService {
       );
     }
 
-    if (dto.levelId !== undefined) {
-      const level = await this.documentLevelService.findById(dto.levelId);
+    let levelCode: string | undefined;
+    const effectiveLevelId = dto.levelId ?? document.levelId;
+    if (effectiveLevelId) {
+      const level = await this.documentLevelService.findById(effectiveLevelId);
       if (!level || !level.isActive) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_LEVEL,
           "Invalid or inactive document level"
         );
       }
+      levelCode = level.code;
     }
 
     const userIds = [dto.preparerId, dto.reviewerId, dto.approverId].filter(
@@ -611,6 +746,74 @@ export class DocumentService {
         dto.receiptDate == null || dto.receiptDate === ""
           ? null
           : new Date(dto.receiptDate);
+    }
+
+    if (dto.documentNo !== undefined) {
+      const raw = (dto.documentNo ?? "").trim();
+      if (!raw) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
+          "documentNo is required for ISO documents"
+        );
+      }
+
+      const value = raw.toUpperCase();
+      let valid = true;
+
+      if (levelCode === "LEVEL1") {
+        // Only one document, fixed code
+        valid = value === "BPVN-QESM-001";
+      } else if (levelCode === "LEVEL2") {
+        // BPVN-QEP-001 or BPVN-<DEPT>-QEP-001 (department segment optional)
+        const level2Regex = /^BPVN-(?:[A-Z0-9]+-)?QEP-\d{3}$/;
+        valid = level2Regex.test(value);
+      } else if (levelCode === "LEVEL3") {
+        // BPVN-<DEPT>-(SOP|SMP)-001
+        const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
+        valid = level3Regex.test(value);
+      }
+
+      if (!valid) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
+          "Invalid documentNo for document level"
+        );
+      }
+
+      // Ensure uniqueness for LEVEL1 fixed code
+      if (levelCode === "LEVEL1") {
+        const where: Prisma.DocumentWhereInput = {
+          id: { not: id },
+        };
+        // documentNo is part of the Prisma model but may not yet be in generated types
+        (where as Record<string, unknown>).documentNo = value;
+
+        const existing = await (
+          this.prisma as PrismaClientLike
+        ).document.findFirst({ where });
+        if (existing) {
+          throw CustomException.badRequest(
+            ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
+            "documentNo must be unique for LEVEL1"
+          );
+        }
+      }
+
+      (data as Record<string, unknown>).documentNo = value;
+    }
+
+    if (dto.revisionLabel !== undefined) {
+      const raw =
+        dto.revisionLabel == null || dto.revisionLabel === ""
+          ? null
+          : (dto.revisionLabel as string).trim();
+      if (raw !== null && raw !== "" && !isValidRevisionLabel(raw)) {
+        throw CustomException.badRequest(
+          ErrorCodes.DOCUMENT.INVALID_REVISION_LABEL,
+          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)"
+        );
+      }
+      (data as Record<string, unknown>).revisionLabel = raw || null;
     }
 
     if (Object.keys(data).length === 0) {

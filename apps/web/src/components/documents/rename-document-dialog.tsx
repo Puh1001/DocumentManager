@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ export function RenameDocumentDialog({
   currentFileName,
   onRenamed,
 }: RenameDocumentDialogProps) {
+  const t = useTranslations("documents.editMetadata");
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [fileName, setFileName] = useState("");
@@ -144,6 +146,9 @@ export function RenameDocumentDialog({
             <p className="text-xs text-muted-foreground">
               Filename will be automatically set to: {name.trim() || "..."}
               {getExtension(currentFileName)}
+            </p>
+            <p className="text-xs text-muted-foreground italic">
+              {t("nameTitleRuleHint")}
             </p>
           </div>
         </div>

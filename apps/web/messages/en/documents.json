@@ -49,7 +49,12 @@
     "selectDepartment": "Select department",
     "level": "Level",
     "selectLevel": "Select level",
-    "loadingLevels": "Loading levels..."
+    "loadingLevels": "Loading levels...",
+    "metadataSectionTitle": "Required: No., version, preparer, reviewer, approver, approval date",
+    "documentNameLabel": "Document name",
+    "documentNamePlaceholder": "Name shown in list (default: filename without extension)",
+    "documentNameHint": "Optional. Leave blank to use the file name.",
+    "documentNameRule": "Title format: Chinese + Vietnamese only. Example: 8S评分考核管理制度Quy định đánh giá chấm điểm 8S"
   },
   "pagination": {
     "showing": "Showing {from} to {to} of {total} documents"
@@ -94,7 +99,15 @@
     "nameLabel": "Document Name",
     "namePlaceholder": "Enter document name",
     "nameRequired": "Document name cannot be empty.",
+    "nameTitleRuleHint": "Title format: Chinese + Vietnamese, e.g. 8S评分考核管理制度Quy định đánh giá chấm điểm 8S",
     "fileNameHint": "Filename will be automatically set to: {fileName}",
+    "documentNoLabel": "No.",
+    "documentNoPlaceholder": "e.g. BPVN-QESM-001, BPVN-DCC-QEP-001, BPVN-DCC-SMP-001",
+    "documentNoRequired": "Document No. is required.",
+    "documentNoHint": "Level 1: BPVN-QESM-001 only. Level 2: BPVN-<Dept>-QEP-001. Level 3: BPVN-<Dept>-SOP-001 or BPVN-<Dept>-SMP-001.",
+    "revisionLabelLabel": "Version (revision)",
+    "revisionLabelPlaceholder": "A/0 (original), A/1..A/10, then B/0..",
+    "revisionLabelHint": "Original = A/0, first revision = A/1; after 10 revisions use B/0, etc.",
     "preparer": "Preparer",
     "reviewer": "Reviewer",
     "approver": "Approver",

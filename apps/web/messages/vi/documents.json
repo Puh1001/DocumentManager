@@ -49,7 +49,12 @@
     "selectDepartment": "Chọn phòng ban",
     "level": "Cấp độ",
     "selectLevel": "Chọn cấp độ",
-    "loadingLevels": "Đang tải cấp độ..."
+    "loadingLevels": "Đang tải cấp độ...",
+    "metadataSectionTitle": "Bắt buộc: Số hiệu (No.), Phiên bản, Người soạn, Người rà soát, Người phê duyệt, Ngày phê duyệt",
+    "documentNameLabel": "Tên tài liệu",
+    "documentNamePlaceholder": "Tên hiển thị trong danh sách (mặc định: tên file không phần mở rộng)",
+    "documentNameHint": "Tùy chọn. Để trống sẽ dùng tên file.",
+    "documentNameRule": "Định dạng tiêu đề: Chỉ Tiếng Trung + Tiếng Việt. Ví dụ: 8S评分考核管理制度Quy định đánh giá chấm điểm 8S"
   },
   "pagination": {
     "showing": "Hiển thị {from} đến {to} trong tổng số {total} tài liệu"
@@ -94,7 +99,15 @@
     "nameLabel": "Tên tài liệu",
     "namePlaceholder": "Nhập tên tài liệu",
     "nameRequired": "Tên tài liệu không được để trống.",
+    "nameTitleRuleHint": "Quy định tên: Tiếng Trung + Tiếng Việt, VD: 8S评分考核管理制度Quy định đánh giá chấm điểm 8S",
     "fileNameHint": "Tên file sẽ được tự động đặt là: {fileName}",
+    "documentNoLabel": "Số hiệu (No.)",
+    "documentNoPlaceholder": "VD: BPVN-QESM-001, BPVN-DCC-QEP-001, BPVN-DCC-SMP-001",
+    "documentNoRequired": "Số hiệu tài liệu (No.) không được để trống.",
+    "documentNoHint": "Cấp 1: chỉ BPVN-QESM-001. Cấp 2: BPVN-<Phòng ban>-QEP-001. Cấp 3: BPVN-<Phòng ban>-SOP-001 hoặc BPVN-<Phòng ban>-SMP-001.",
+    "revisionLabelLabel": "Phiên bản (bản sửa đổi)",
+    "revisionLabelPlaceholder": "A/0 (bản gốc), A/1..A/10, sau đó B/0..",
+    "revisionLabelHint": "Bản gốc = A/0, sửa đổi lần 1 = A/1; sau 10 lần chuyển sang B/0, v.v.",
     "preparer": "Người soạn",
     "reviewer": "Người rà soát",
     "approver": "Người phê duyệt",

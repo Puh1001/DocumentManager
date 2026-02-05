@@ -452,6 +452,12 @@ describe("DocumentController", () => {
         {
           userDepartmentIds: undefined,
           userCanUploadToAnyFolder: true,
+        },
+        {
+          preparerId: undefined,
+          reviewerId: undefined,
+          approverId: undefined,
+          approvalDate: undefined,
         }
       );
     });
@@ -478,6 +484,12 @@ describe("DocumentController", () => {
         {
           userDepartmentIds: undefined,
           userCanUploadToAnyFolder: true,
+        },
+        {
+          preparerId: undefined,
+          reviewerId: undefined,
+          approverId: undefined,
+          approvalDate: undefined,
         }
       );
     });
