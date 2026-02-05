@@ -21,7 +21,11 @@ RUN npm ci
 COPY apps/web ./apps/web
 COPY packages/shared ./packages/shared
 
-# Build
+# Build shared package first (Web depends on @iso-docs/shared dist/)
+WORKDIR /app/packages/shared
+RUN npm run build
+
+# Build web
 WORKDIR /app/apps/web
 RUN npm run build
 

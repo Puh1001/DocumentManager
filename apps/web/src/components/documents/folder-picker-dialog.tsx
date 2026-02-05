@@ -20,6 +20,8 @@ import { findDocumentsFolderNode } from "./folder-picker-utils";
 import { REVISION_LABEL_OPTIONS } from "@iso-docs/shared";
 
 export interface UploadMetadata {
+  /** Display name for the document (optional; when omitted, backend uses file basename). */
+  name?: string;
   documentNo?: string;
   revisionLabel?: string;
   preparerId?: string;
@@ -51,6 +53,13 @@ interface FolderPickerDialogProps {
   documentsOnly?: boolean;
   /** When true, show optional fields: preparer, reviewer, approver, approval date (user input at upload). */
   showUploadMetadata?: boolean;
+  /** When provided (e.g. selected file name), used to pre-fill the document name field. */
+  initialFileName?: string;
+}
+
+function basenameWithoutExt(fileName: string): string {
+  const lastDot = fileName.lastIndexOf(".");
+  return lastDot > 0 ? fileName.slice(0, lastDot) : fileName;
 }
 
 export function FolderPickerDialog({
@@ -60,6 +69,7 @@ export function FolderPickerDialog({
   departmentId,
   documentsOnly = false,
   showUploadMetadata = false,
+  initialFileName,
 }: FolderPickerDialogProps) {
   const t = useTranslations("documents");
   const tCommon = useTranslations("common");
@@ -67,6 +77,7 @@ export function FolderPickerDialog({
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedLevelId, setSelectedLevelId] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
   const [documentNo, setDocumentNo] = useState<string>("");
   const [revisionLabel, setRevisionLabel] = useState<string>("A/0");
   const [preparerId, setPreparerId] = useState<string | null>(null);
@@ -112,9 +123,13 @@ export function FolderPickerDialog({
   useEffect(() => {
     if (open) {
       loadFolders();
+      setDisplayName(
+        initialFileName ? basenameWithoutExt(initialFileName) : ""
+      );
     } else {
       setSelectedFolderId(null);
       setSelectedLevelId("");
+      setDisplayName("");
       setDocumentNo("");
       setRevisionLabel("A/0");
       setPreparerId(null);
@@ -123,7 +138,7 @@ export function FolderPickerDialog({
       setApprovalDate(null);
       lastAutoSelectFoldersLength.current = 0;
     }
-  }, [open, loadFolders]);
+  }, [open, loadFolders, initialFileName]);
 
   useEffect(() => {
     if (!open || !showUploadMetadata) return;
@@ -162,6 +177,7 @@ export function FolderPickerDialog({
     if (selectedFolderId && selectedLevelId) {
       const metadata: UploadMetadata | undefined = showUploadMetadata
         ? {
+            name: displayName.trim() || undefined,
             documentNo: documentNo.trim() || undefined,
             revisionLabel: revisionLabel?.trim() || "A/0",
             preparerId: preparerId ?? undefined,
@@ -169,7 +185,9 @@ export function FolderPickerDialog({
             approverId: approverId ?? undefined,
             approvalDate: approvalDate ? approvalDate.toISOString() : undefined,
           }
-        : undefined;
+        : displayName.trim()
+          ? { name: displayName.trim() }
+          : undefined;
       onSelect(selectedFolderId, selectedLevelId, metadata);
       onOpenChange(false);
       setSelectedFolderId(null);
@@ -190,6 +208,25 @@ export function FolderPickerDialog({
         {/* Single scrollable body: form + folder tree so footer always visible */}
         <div className="flex-1 min-h-0 overflow-y-auto py-2">
           <div className="space-y-4">
+            {initialFileName && (
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  {t("upload.documentNameLabel")}
+                </label>
+                <input
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder={t("upload.documentNamePlaceholder")}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("upload.documentNameHint")}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1 font-medium">
+                  {t("upload.documentNameRule")}
+                </p>
+              </div>
+            )}
             <LevelSelector
               value={selectedLevelId}
               onChange={setSelectedLevelId}

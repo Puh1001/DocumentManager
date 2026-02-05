@@ -341,6 +341,7 @@ export default function DocumentsPage() {
 
     const body: Record<string, string> = { folderId, levelId };
     if (metadata) {
+      if (metadata.name) body.name = metadata.name;
       if (metadata.documentNo) body.documentNo = metadata.documentNo;
       if (metadata.revisionLabel) body.revisionLabel = metadata.revisionLabel;
       if (metadata.preparerId) body.preparerId = metadata.preparerId;
@@ -564,6 +565,7 @@ export default function DocumentsPage() {
         }
         documentsOnly
         showUploadMetadata
+        initialFileName={pendingUploadFile?.name}
       />
 
       {/* Upload Progress Dialog */}

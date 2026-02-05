@@ -49,7 +49,9 @@ export function IsoMetadataEditDialog({
   document: doc,
   onSaved,
 }: IsoMetadataEditDialogProps) {
-  const t = useTranslations("documents.editMetadata");
+  const t = useTranslations("documents");
+  const tEdit = (key: string, values?: Record<string, string | number>) =>
+    t(`editMetadata.${key}`, values);
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [levelId, setLevelId] = useState("");
@@ -101,8 +103,8 @@ export function IsoMetadataEditDialog({
     }
     if (!nextDocumentNo) {
       toast({
-        title: t("errorTitle"),
-        description: t("documentNoRequired"),
+        title: tEdit("errorTitle"),
+        description: tEdit("documentNoRequired"),
         variant: "destructive",
       });
       return;
@@ -136,7 +138,7 @@ export function IsoMetadataEditDialog({
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update";
       toast({
-        title: t("errorTitle"),
+        title: tEdit("errorTitle"),
         description: message,
         variant: "destructive",
       });
@@ -152,50 +154,52 @@ export function IsoMetadataEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] w-[min(28rem,calc(100vw-2rem))] overflow-auto">
         <DialogHeader>
-          <DialogTitle className="pr-8">{t("title")}</DialogTitle>
+          <DialogTitle className="pr-8">{tEdit("title")}</DialogTitle>
           <DialogDescription className="break-words">
-            {t("description", { name: name?.trim() || doc.name })}
+            {tEdit("description", { name: name?.trim() || doc.name })}
           </DialogDescription>
         </DialogHeader>
         <div className="grid min-w-0 gap-4 py-4">
           <div className="space-y-2 min-w-0">
             <Label htmlFor="doc-name" className="text-sm font-medium">
-              {t("nameLabel")}
+              {tEdit("nameLabel")}
             </Label>
             <Input
               id="doc-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t("namePlaceholder")}
+              placeholder={tEdit("namePlaceholder")}
               disabled={submitting}
               className="min-w-0"
             />
             <p className="text-xs text-muted-foreground break-words min-w-0">
-              {t("fileNameHint", { fileName: `${name.trim() || "..."}${ext}` })}
+              {tEdit("fileNameHint", {
+                fileName: `${name.trim() || "..."}${ext}`,
+              })}
             </p>
             <p className="text-xs text-muted-foreground break-words min-w-0 italic">
-              {t("nameTitleRuleHint")}
+              {tEdit("nameTitleRuleHint")}
             </p>
           </div>
           <div className="space-y-2 min-w-0">
             <Label htmlFor="doc-no" className="text-sm font-medium">
-              {t("documentNoLabel")}
+              {tEdit("documentNoLabel")}
             </Label>
             <Input
               id="doc-no"
               value={documentNo}
               onChange={(e) => setDocumentNo(e.target.value)}
-              placeholder={t("documentNoPlaceholder")}
+              placeholder={tEdit("documentNoPlaceholder")}
               disabled={submitting}
               className="min-w-0 uppercase"
             />
             <p className="text-xs text-muted-foreground">
-              {t("documentNoHint")}
+              {tEdit("documentNoHint")}
             </p>
           </div>
           <div className="space-y-2 min-w-0">
             <Label htmlFor="revision-label" className="text-sm font-medium">
-              {t("revisionLabelLabel")}
+              {tEdit("revisionLabelLabel")}
             </Label>
             <select
               id="revision-label"
@@ -211,7 +215,7 @@ export function IsoMetadataEditDialog({
               ))}
             </select>
             <p className="text-xs text-muted-foreground">
-              {t("revisionLabelHint")}
+              {tEdit("revisionLabelHint")}
             </p>
           </div>
           <LevelSelector
@@ -221,23 +225,23 @@ export function IsoMetadataEditDialog({
             className="col-span-1"
           />
           <UserPicker
-            label={t("reviewer")}
+            label={tEdit("reviewer")}
             value={reviewerId}
             onChange={setReviewerId}
-            placeholder={t("none")}
+            placeholder={tEdit("none")}
             users={users}
             usersLoading={usersLoading}
           />
           <UserPicker
-            label={t("approver")}
+            label={tEdit("approver")}
             value={approverId}
             onChange={setApproverId}
-            placeholder={t("none")}
+            placeholder={tEdit("none")}
             users={users}
             usersLoading={usersLoading}
           />
           <DatePickerField
-            label={t("approvalDate")}
+            label={tEdit("approvalDate")}
             value={approvalDate}
             onChange={setApprovalDate}
           />
@@ -248,10 +252,10 @@ export function IsoMetadataEditDialog({
             onClick={() => onOpenChange(false)}
             disabled={submitting}
           >
-            {t("cancel")}
+            {tEdit("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={submitting}>
-            {submitting ? t("saving") : t("save")}
+            {submitting ? tEdit("saving") : tEdit("save")}
           </Button>
         </DialogFooter>
       </DialogContent>
