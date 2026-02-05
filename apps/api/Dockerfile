@@ -25,7 +25,12 @@ COPY packages/shared ./packages/shared
 WORKDIR /app/apps/api
 RUN npx prisma generate
 
-# Build
+# Build shared package first (API depends on @iso-docs/shared dist/)
+WORKDIR /app/packages/shared
+RUN npm run build
+
+# Build API
+WORKDIR /app/apps/api
 RUN npm run build
 
 # Production stage
@@ -37,6 +42,9 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+# So @iso-docs/shared (workspace symlink) resolves at runtime
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 
 WORKDIR /app/apps/api
 

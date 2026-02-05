@@ -53,7 +53,7 @@ export class UpdateIsoMetadataDto {
 
   @ApiPropertyOptional({
     description:
-      'Business document number (No.). For example: "BPVN-QESM-001", "BPVN-QEP-001", "BPVN-DCC-SMP-001".',
+      "Business document number (No.). Level 1: BPVN-QESM-001. Level 2: BPVN-QEP-001. Level 3: BPVN-DCC-SMP-001. Level 4: BPVN-DCC-PR-001.",
   })
   @IsOptional()
   @IsString()

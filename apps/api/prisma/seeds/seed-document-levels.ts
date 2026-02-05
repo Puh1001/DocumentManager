@@ -27,6 +27,14 @@ const LEVELS = [
     nameZh: "级别3",
     sortOrder: 3,
   },
+  {
+    code: "LEVEL4",
+    name: "Level 4",
+    nameEn: "Level 4",
+    nameVi: "Cấp 4",
+    nameZh: "级别4",
+    sortOrder: 4,
+  },
 ];
 
 async function main() {
