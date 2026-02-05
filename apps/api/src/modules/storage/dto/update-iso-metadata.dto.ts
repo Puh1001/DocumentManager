@@ -15,23 +15,23 @@ export class UpdateIsoMetadataDto {
   @IsUUID()
   levelId?: string;
 
-  @ApiPropertyOptional({ description: "Preparer user ID" })
+  @ApiPropertyOptional({ description: "Preparer full name" })
   @IsOptional()
   @ValidateIf((_, v) => v != null && v !== "")
-  @IsUUID()
-  preparerId?: string | null;
+  @IsString()
+  preparerName?: string | null;
 
-  @ApiPropertyOptional({ description: "Reviewer user ID" })
+  @ApiPropertyOptional({ description: "Reviewer full name" })
   @IsOptional()
   @ValidateIf((_, v) => v != null && v !== "")
-  @IsUUID()
-  reviewerId?: string | null;
+  @IsString()
+  reviewerName?: string | null;
 
-  @ApiPropertyOptional({ description: "Approver user ID" })
+  @ApiPropertyOptional({ description: "Approver full name" })
   @IsOptional()
   @ValidateIf((_, v) => v != null && v !== "")
-  @IsUUID()
-  approverId?: string | null;
+  @IsString()
+  approverName?: string | null;
 
   @ApiPropertyOptional({
     description: "Approval date (ISO 8601)",

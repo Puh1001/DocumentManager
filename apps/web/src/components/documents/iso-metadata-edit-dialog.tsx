@@ -14,11 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { documentApi, userApi, type User } from "@/lib/api";
+import { documentApi } from "@/lib/api";
 import type { Document } from "@/lib/types/document.types";
 import { REVISION_LABEL_OPTIONS } from "@iso-docs/shared";
 import { LevelSelector } from "./level-selector";
-import { UserPicker } from "./user-picker";
 import { DatePickerField } from "./date-picker-field";
 
 interface IsoMetadataEditDialogProps {
@@ -57,24 +56,10 @@ export function IsoMetadataEditDialog({
   const [levelId, setLevelId] = useState("");
   const [documentNo, setDocumentNo] = useState("");
   const [revisionLabel, setRevisionLabel] = useState("");
-  const [reviewerId, setReviewerId] = useState<string | null>(null);
-  const [approverId, setApproverId] = useState<string | null>(null);
+  const [reviewerName, setReviewerName] = useState<string>("");
+  const [approverName, setApproverName] = useState<string>("");
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setUsersLoading(true);
-    userApi
-      .getForAssignees({ limit: 100, isActive: true })
-      .then((res) => {
-        setUsers(res.data ?? []);
-      })
-      .catch(() => setUsers([]))
-      .finally(() => setUsersLoading(false));
-  }, [open]);
 
   useEffect(() => {
     if (open && doc) {
@@ -82,8 +67,9 @@ export function IsoMetadataEditDialog({
       setLevelId(doc.level?.id ?? "");
       setDocumentNo(doc.documentNo ?? "");
       setRevisionLabel(doc.revisionLabel ?? "A/0");
-      setReviewerId(doc.reviewer?.id ?? null);
-      setApproverId(doc.approver?.id ?? null);
+      // Use name from document if available, otherwise use fullName from user relation
+      setReviewerName(doc.reviewerName ?? doc.reviewer?.fullName ?? "");
+      setApproverName(doc.approverName ?? doc.approver?.fullName ?? "");
       setApprovalDate(parseDate(doc.approvalDate));
     }
   }, [open, doc]);
@@ -124,8 +110,8 @@ export function IsoMetadataEditDialog({
         levelId: levelId || undefined,
         documentNo: nextDocumentNo || null,
         revisionLabel: revisionLabel?.trim() || null,
-        reviewerId: reviewerId ?? undefined,
-        approverId: approverId ?? undefined,
+        reviewerName: reviewerName.trim() || null,
+        approverName: approverName.trim() || null,
         approvalDate: approvalDate ? approvalDate.toISOString() : null,
       };
       await documentApi.updateIsoMetadata(doc.id, payload);
@@ -224,22 +210,38 @@ export function IsoMetadataEditDialog({
             required={false}
             className="col-span-1"
           />
-          <UserPicker
-            label={tEdit("reviewer")}
-            value={reviewerId}
-            onChange={setReviewerId}
-            placeholder={tEdit("none")}
-            users={users}
-            usersLoading={usersLoading}
-          />
-          <UserPicker
-            label={tEdit("approver")}
-            value={approverId}
-            onChange={setApproverId}
-            placeholder={tEdit("none")}
-            users={users}
-            usersLoading={usersLoading}
-          />
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="reviewer-name" className="text-sm font-medium">
+              {tEdit("reviewer")}
+            </Label>
+            <Input
+              id="reviewer-name"
+              value={reviewerName}
+              onChange={(e) => setReviewerName(e.target.value)}
+              placeholder={tEdit("reviewerPlaceholder")}
+              disabled={submitting}
+              className="min-w-0"
+            />
+            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+              {tEdit("fullNameRequired")}
+            </p>
+          </div>
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="approver-name" className="text-sm font-medium">
+              {tEdit("approver")}
+            </Label>
+            <Input
+              id="approver-name"
+              value={approverName}
+              onChange={(e) => setApproverName(e.target.value)}
+              placeholder={tEdit("approverPlaceholder")}
+              disabled={submitting}
+              className="min-w-0"
+            />
+            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+              {tEdit("fullNameRequired")}
+            </p>
+          </div>
           <DatePickerField
             label={tEdit("approvalDate")}
             value={approvalDate}

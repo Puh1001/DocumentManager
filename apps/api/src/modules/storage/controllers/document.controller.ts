@@ -213,17 +213,17 @@ export class DocumentController {
           description:
             "Original filename (UTF-8, sent as text field to avoid encoding issues)",
         },
-        preparerId: {
+        preparerName: {
           type: "string",
-          description: "Optional preparer user ID",
+          description: "Preparer full name (required for ISO documents)",
         },
-        reviewerId: {
+        reviewerName: {
           type: "string",
-          description: "Optional reviewer user ID",
+          description: "Reviewer full name (required for ISO documents)",
         },
-        approverId: {
+        approverName: {
           type: "string",
-          description: "Optional approver user ID",
+          description: "Approver full name (required for ISO documents)",
         },
         approvalDate: {
           type: "string",
@@ -244,9 +244,9 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest,
     @Body("fileName") fileName?: string,
     @Body("levelId") levelId?: string,
-    @Body("preparerId") preparerId?: string,
-    @Body("reviewerId") reviewerId?: string,
-    @Body("approverId") approverId?: string,
+    @Body("preparerName") preparerName?: string,
+    @Body("reviewerName") reviewerName?: string,
+    @Body("approverName") approverName?: string,
     @Body("approvalDate") approvalDate?: string,
     @Body("documentNo") documentNo?: string,
     @Body("revisionLabel") revisionLabel?: string
@@ -288,9 +288,9 @@ export class DocumentController {
         userCanUploadToAnyFolder: canUploadToAnyFolder,
       },
       {
-        preparerId: preparerId?.trim() || undefined,
-        reviewerId: reviewerId?.trim() || undefined,
-        approverId: approverId?.trim() || undefined,
+        preparerName: preparerName?.trim() || undefined,
+        reviewerName: reviewerName?.trim() || undefined,
+        approverName: approverName?.trim() || undefined,
         approvalDate: approvalDate?.trim() || undefined,
         documentNo: documentNo?.trim() || undefined,
         revisionLabel: revisionLabel?.trim() || undefined,

@@ -246,9 +246,9 @@ export class DocumentService {
       userCanUploadToAnyFolder?: boolean;
     },
     isoMetadata?: {
-      preparerId?: string;
-      reviewerId?: string;
-      approverId?: string;
+      preparerName?: string;
+      reviewerName?: string;
+      approverName?: string;
       approvalDate?: string;
       documentNo?: string;
       revisionLabel?: string;
@@ -326,27 +326,27 @@ export class DocumentService {
 
     // ISO upload: require user-provided ISO metadata (no auto-fill)
     if (isUnderIsoDocuments) {
-      const preparerId = isoMetadata?.preparerId?.trim();
-      const reviewerId = isoMetadata?.reviewerId?.trim();
-      const approverId = isoMetadata?.approverId?.trim();
+      const preparerName = isoMetadata?.preparerName?.trim();
+      const reviewerName = isoMetadata?.reviewerName?.trim();
+      const approverName = isoMetadata?.approverName?.trim();
       const approvalDate = isoMetadata?.approvalDate?.trim();
 
-      if (!preparerId) {
+      if (!preparerName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.PREPARER_REQUIRED,
-          "preparerId is required"
+          "preparerName is required"
         );
       }
-      if (!reviewerId) {
+      if (!reviewerName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.REVIEWER_REQUIRED,
-          "reviewerId is required"
+          "reviewerName is required"
         );
       }
-      if (!approverId) {
+      if (!approverName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.APPROVER_REQUIRED,
-          "approverId is required"
+          "approverName is required"
         );
       }
       if (!approvalDate) {
@@ -445,9 +445,9 @@ export class DocumentService {
     const deletionExpiresAt = new Date(now.getTime() + SEVENTY_TWO_HOURS_MS);
 
     // Optional ISO metadata: user-provided at upload; no auto-fill when omitted
-    const preparerId = isoMetadata?.preparerId?.trim() || null;
-    const reviewerId = isoMetadata?.reviewerId?.trim() || null;
-    const approverId = isoMetadata?.approverId?.trim() || null;
+    const preparerName = isoMetadata?.preparerName?.trim() || null;
+    const reviewerName = isoMetadata?.reviewerName?.trim() || null;
+    const approverName = isoMetadata?.approverName?.trim() || null;
     const approvalDate =
       isoMetadata?.approvalDate?.trim() != null &&
       isoMetadata.approvalDate.trim() !== ""
@@ -479,9 +479,9 @@ export class DocumentService {
         fileModifiedAt: now,
         folderId,
         levelId,
-        preparerId,
-        reviewerId,
-        approverId,
+        preparerName,
+        reviewerName,
+        approverName,
         approvalDate,
         // documentNo is part of the Prisma model but may not yet be present in generated types
         ...(documentNo ? ({ documentNo } as Record<string, unknown>) : {}),
@@ -663,7 +663,7 @@ export class DocumentService {
 
   /**
    * Update ISO metadata fields (level, preparer, reviewer, approver, dates).
-   * Validates level and user IDs exist before updating.
+   * Validates level exists before updating.
    */
   async updateIsoMetadata(
     id: string,
@@ -695,45 +695,27 @@ export class DocumentService {
       levelCode = level.code;
     }
 
-    const userIds = [dto.preparerId, dto.reviewerId, dto.approverId].filter(
-      (v): v is string => v != null && v !== ""
-    );
-    if (userIds.length > 0) {
-      const users = await (this.prisma as PrismaClientLike).user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true },
-      });
-      const foundIds = new Set(users.map((u) => u.id));
-      const missing = userIds.filter((uid) => !foundIds.has(uid));
-      if (missing.length > 0) {
-        throw CustomException.badRequest(
-          ErrorCodes.USER.NOT_FOUND,
-          `User(s) not found: ${missing.join(", ")}`
-        );
-      }
-    }
-
     const data: Prisma.DocumentUpdateInput = {};
     if (dto.levelId !== undefined) {
       data.level = { connect: { id: dto.levelId } };
     }
-    if (dto.preparerId !== undefined) {
-      data.preparer =
-        dto.preparerId != null && dto.preparerId !== ""
-          ? { connect: { id: dto.preparerId } }
-          : { disconnect: true };
+    if (dto.preparerName !== undefined) {
+      data.preparerName =
+        dto.preparerName != null && dto.preparerName !== ""
+          ? dto.preparerName.trim()
+          : null;
     }
-    if (dto.reviewerId !== undefined) {
-      data.reviewer =
-        dto.reviewerId != null && dto.reviewerId !== ""
-          ? { connect: { id: dto.reviewerId } }
-          : { disconnect: true };
+    if (dto.reviewerName !== undefined) {
+      data.reviewerName =
+        dto.reviewerName != null && dto.reviewerName !== ""
+          ? dto.reviewerName.trim()
+          : null;
     }
-    if (dto.approverId !== undefined) {
-      data.approver =
-        dto.approverId != null && dto.approverId !== ""
-          ? { connect: { id: dto.approverId } }
-          : { disconnect: true };
+    if (dto.approverName !== undefined) {
+      data.approverName =
+        dto.approverName != null && dto.approverName !== ""
+          ? dto.approverName.trim()
+          : null;
     }
     if (dto.approvalDate !== undefined) {
       data.approvalDate =

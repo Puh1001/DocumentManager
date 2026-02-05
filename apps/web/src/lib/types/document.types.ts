@@ -63,6 +63,9 @@ export interface Document {
   preparer?: DocumentUser | null;
   reviewer?: DocumentUser | null;
   approver?: DocumentUser | null;
+  preparerName?: string | null;
+  reviewerName?: string | null;
+  approverName?: string | null;
   approvalDate?: string | null;
   receiptDate?: string | null;
 }

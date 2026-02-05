@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { api, userApi, type User } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { FolderTree } from "./folder-tree";
 import { LevelSelector } from "./level-selector";
-import { UserPicker } from "./user-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DatePickerField } from "./date-picker-field";
 import { findDocumentsFolderNode } from "./folder-picker-utils";
 import { REVISION_LABEL_OPTIONS } from "@iso-docs/shared";
@@ -24,9 +25,9 @@ export interface UploadMetadata {
   name?: string;
   documentNo?: string;
   revisionLabel?: string;
-  preparerId?: string;
-  reviewerId?: string;
-  approverId?: string;
+  preparerName?: string;
+  reviewerName?: string;
+  approverName?: string;
   approvalDate?: string;
 }
 
@@ -80,12 +81,10 @@ export function FolderPickerDialog({
   const [displayName, setDisplayName] = useState<string>("");
   const [documentNo, setDocumentNo] = useState<string>("");
   const [revisionLabel, setRevisionLabel] = useState<string>("A/0");
-  const [preparerId, setPreparerId] = useState<string | null>(null);
-  const [reviewerId, setReviewerId] = useState<string | null>(null);
-  const [approverId, setApproverId] = useState<string | null>(null);
+  const [preparerName, setPreparerName] = useState<string>("");
+  const [reviewerName, setReviewerName] = useState<string>("");
+  const [approverName, setApproverName] = useState<string>("");
   const [approvalDate, setApprovalDate] = useState<Date | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const lastAutoSelectFoldersLength = useRef<number>(0);
 
@@ -132,23 +131,13 @@ export function FolderPickerDialog({
       setDisplayName("");
       setDocumentNo("");
       setRevisionLabel("A/0");
-      setPreparerId(null);
-      setReviewerId(null);
-      setApproverId(null);
+      setPreparerName("");
+      setReviewerName("");
+      setApproverName("");
       setApprovalDate(null);
       lastAutoSelectFoldersLength.current = 0;
     }
   }, [open, loadFolders, initialFileName]);
-
-  useEffect(() => {
-    if (!open || !showUploadMetadata) return;
-    setUsersLoading(true);
-    userApi
-      .getForAssignees({ limit: 100, isActive: true })
-      .then((res) => setUsers(res.data ?? []))
-      .catch(() => setUsers([]))
-      .finally(() => setUsersLoading(false));
-  }, [open, showUploadMetadata]);
 
   // Auto-select the single Documents folder when documentsOnly and we have exactly one node (run once per folders snapshot)
   useEffect(() => {
@@ -165,7 +154,11 @@ export function FolderPickerDialog({
   }, [documentsOnly, folders]);
 
   const metadataComplete = Boolean(
-    documentNo.trim() && preparerId && reviewerId && approverId && approvalDate
+    documentNo.trim() &&
+    preparerName.trim() &&
+    reviewerName.trim() &&
+    approverName.trim() &&
+    approvalDate
   );
   const canConfirm = Boolean(
     selectedFolderId &&
@@ -180,9 +173,9 @@ export function FolderPickerDialog({
             name: displayName.trim() || undefined,
             documentNo: documentNo.trim() || undefined,
             revisionLabel: revisionLabel?.trim() || "A/0",
-            preparerId: preparerId ?? undefined,
-            reviewerId: reviewerId ?? undefined,
-            approverId: approverId ?? undefined,
+            preparerName: preparerName.trim() || undefined,
+            reviewerName: reviewerName.trim() || undefined,
+            approverName: approverName.trim() || undefined,
             approvalDate: approvalDate ? approvalDate.toISOString() : undefined,
           }
         : displayName.trim()
@@ -273,27 +266,48 @@ export function FolderPickerDialog({
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <UserPicker
-                    label={tMeta("preparer")}
-                    value={preparerId}
-                    onChange={setPreparerId}
-                    users={users}
-                    usersLoading={usersLoading}
-                  />
-                  <UserPicker
-                    label={tMeta("reviewer")}
-                    value={reviewerId}
-                    onChange={setReviewerId}
-                    users={users}
-                    usersLoading={usersLoading}
-                  />
-                  <UserPicker
-                    label={tMeta("approver")}
-                    value={approverId}
-                    onChange={setApproverId}
-                    users={users}
-                    usersLoading={usersLoading}
-                  />
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground">
+                      {tMeta("preparer")}
+                    </Label>
+                    <Input
+                      value={preparerName}
+                      onChange={(e) => setPreparerName(e.target.value)}
+                      placeholder={tMeta("preparerPlaceholder")}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+                      {tMeta("fullNameRequired")}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground">
+                      {tMeta("reviewer")}
+                    </Label>
+                    <Input
+                      value={reviewerName}
+                      onChange={(e) => setReviewerName(e.target.value)}
+                      placeholder={tMeta("reviewerPlaceholder")}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+                      {tMeta("fullNameRequired")}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground">
+                      {tMeta("approver")}
+                    </Label>
+                    <Input
+                      value={approverName}
+                      onChange={(e) => setApproverName(e.target.value)}
+                      placeholder={tMeta("approverPlaceholder")}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+                      {tMeta("fullNameRequired")}
+                    </p>
+                  </div>
                   <DatePickerField
                     label={tMeta("approvalDate")}
                     value={approvalDate}

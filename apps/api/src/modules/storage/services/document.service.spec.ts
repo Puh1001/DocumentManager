@@ -485,7 +485,7 @@ describe("DocumentService", () => {
 
       const dto = {
         levelId: "level-1",
-        preparerId: "user-1",
+        preparerName: "User One",
         approvalDate: "2026-01-30T00:00:00.000Z",
       };
       const result = await service.updateIsoMetadata("doc-1", dto, "user-0");
@@ -495,7 +495,7 @@ describe("DocumentService", () => {
         where: { id: "doc-1" },
         data: expect.objectContaining({
           level: { connect: { id: "level-1" } },
-          preparer: { connect: { id: "user-1" } },
+          preparerName: "User One",
           approvalDate: new Date("2026-01-30T00:00:00.000Z"),
         }),
       });
@@ -551,9 +551,9 @@ describe("DocumentService", () => {
         "level-1",
         undefined,
         {
-          preparerId: "user-1",
-          reviewerId: "user-2",
-          approverId: "user-3",
+          preparerName: "User One",
+          reviewerName: "User Two",
+          approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
         }
       );
@@ -607,9 +607,9 @@ describe("DocumentService", () => {
         "level-1",
         undefined,
         {
-          preparerId: "user-1",
-          reviewerId: "user-2",
-          approverId: "user-3",
+          preparerName: "User One",
+          reviewerName: "User Two",
+          approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
         }
       );
@@ -746,9 +746,9 @@ describe("DocumentService", () => {
           userCanUploadToAnyFolder: false,
         },
         {
-          preparerId: "user-1",
-          reviewerId: "user-2",
-          approverId: "user-3",
+          preparerName: "User One",
+          reviewerName: "User Two",
+          approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
         }
       );
@@ -817,9 +817,9 @@ describe("DocumentService", () => {
         "level-1",
         undefined,
         {
-          preparerId: "user-1",
-          reviewerId: "user-2",
-          approverId: "user-3",
+          preparerName: "User One",
+          reviewerName: "User Two",
+          approverName: "User Three",
           approvalDate: "2026-01-30T00:00:00.000Z",
         }
       );

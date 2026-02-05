@@ -999,9 +999,9 @@ export interface RenameDocumentDto {
 
 export interface UpdateIsoMetadataDto {
   levelId?: string;
-  preparerId?: string | null;
-  reviewerId?: string | null;
-  approverId?: string | null;
+  preparerName?: string | null;
+  reviewerName?: string | null;
+  approverName?: string | null;
   approvalDate?: string | null;
   receiptDate?: string | null;
   documentNo?: string | null;

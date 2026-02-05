@@ -41,25 +41,25 @@ export class UploadDocumentDto {
   fileName?: string;
 
   @ApiPropertyOptional({
-    description: "Preparer user ID (optional; no auto-fill when omitted)",
+    description: "Preparer full name (required for ISO documents)",
   })
   @IsOptional()
-  @IsUUID()
-  preparerId?: string;
+  @IsString()
+  preparerName?: string;
 
   @ApiPropertyOptional({
-    description: "Reviewer user ID (optional)",
+    description: "Reviewer full name (required for ISO documents)",
   })
   @IsOptional()
-  @IsUUID()
-  reviewerId?: string;
+  @IsString()
+  reviewerName?: string;
 
   @ApiPropertyOptional({
-    description: "Approver user ID (optional)",
+    description: "Approver full name (required for ISO documents)",
   })
   @IsOptional()
-  @IsUUID()
-  approverId?: string;
+  @IsString()
+  approverName?: string;
 
   @ApiPropertyOptional({
     description: "Approval date ISO 8601 (optional)",
@@ -78,7 +78,7 @@ export class UploadDocumentDto {
 
   @ApiPropertyOptional({
     description:
-      'Revision label: A/0 (original), A/1..A/10, then B/0..B/10, etc.',
+      "Revision label: A/0 (original), A/1..A/10, then B/0..B/10, etc.",
     example: "A/0",
   })
   @IsOptional()
