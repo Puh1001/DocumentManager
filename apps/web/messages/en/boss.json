@@ -7,7 +7,8 @@
     "maintenance": "Maintenance",
     "documents": "ISO Document",
     "departments": "Department List",
-    "kpiStatus": "KPI Status"
+    "kpiStatus": "KPI Status",
+    "isoOverview": "ISO Overview"
   },
   "actions": {
     "back": "Back"
@@ -133,5 +134,15 @@
   "document": {
     "print": "Print",
     "download": "Download"
+  },
+  "isoOverview": {
+    "title": "ISO Documents Overview",
+    "description": "View all ISO documents across departments",
+    "totalDocuments": "Total documents",
+    "noDocuments": "No ISO documents",
+    "noDocumentsHint": "Try changing filters or ensure documents exist.",
+    "errorLoad": "Failed to load documents",
+    "refresh": "Refresh",
+    "paginationSummary": "{from}–{to} of {total}"
   }
 }

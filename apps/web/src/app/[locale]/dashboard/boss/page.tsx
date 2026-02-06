@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useBossNavigation } from "@/components/boss/use-boss-navigation";
 import { Breadcrumb } from "@/components/boss/breadcrumb";
 import { DepartmentGrid } from "@/components/boss/department-grid";
 import { DepartmentKpiStatus } from "@/components/boss/department-kpi-status";
+import { BossIsoOverviewTab } from "@/components/boss/boss-iso-overview-tab";
 import { ViewSelector } from "@/components/boss/view-selector";
 import { KpiList } from "@/components/boss/kpi-list";
 import { MaintenanceList } from "@/components/boss/maintenance-list";
@@ -25,10 +26,29 @@ export default function BossPage() {
   const router = useRouter();
   const locale = useLocale();
   const navigation = useBossNavigation();
+  const searchParams = useSearchParams();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showKpiStatus, setShowKpiStatus] = useState(false);
+  type HomeTab = "departments" | "kpiStatus" | "isoOverview";
+  const [homeTab, setHomeTab] = useState<HomeTab>("departments");
+  const [isoOverviewDocumentId, setIsoOverviewDocumentId] = useState<
+    string | null
+  >(null);
+
+  // Open tab from URL when redirect from /boss/iso-documents
+  useEffect(() => {
+    if (!navigation.state.selectedDepartment && searchParams) {
+      const tab = searchParams.get("tab");
+      if (
+        tab === "isoOverview" ||
+        tab === "kpiStatus" ||
+        tab === "departments"
+      ) {
+        setHomeTab(tab);
+      }
+    }
+  }, [navigation.state.selectedDepartment, searchParams]);
 
   // Check if user has boss role
   useEffect(() => {
@@ -130,14 +150,14 @@ export default function BossPage() {
             </p>
           </div>
 
-          {/* Toggle between grid and KPI status */}
-          <div className="flex items-center gap-4 mb-4">
+          {/* Tabs: Departments | KPI Status | ISO Overview */}
+          <div className="flex flex-wrap items-center gap-4 mb-4">
             <button
-              onClick={() => setShowKpiStatus(false)}
+              onClick={() => setHomeTab("departments")}
               className={`
-                px-4 py-2 text-sm font-cyber rounded transition-colors
+                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
                 ${
-                  !showKpiStatus
+                  homeTab === "departments"
                     ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
                     : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
                 }
@@ -146,11 +166,11 @@ export default function BossPage() {
               {t("viewType.departments")}
             </button>
             <button
-              onClick={() => setShowKpiStatus(true)}
+              onClick={() => setHomeTab("kpiStatus")}
               className={`
-                px-4 py-2 text-sm font-cyber rounded transition-colors
+                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
                 ${
-                  showKpiStatus
+                  homeTab === "kpiStatus"
                     ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
                     : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
                 }
@@ -158,14 +178,28 @@ export default function BossPage() {
             >
               {t("viewType.kpiStatus")}
             </button>
+            <button
+              onClick={() => setHomeTab("isoOverview")}
+              className={`
+                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
+                ${
+                  homeTab === "isoOverview"
+                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
+                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
+                }
+              `}
+            >
+              {t("viewType.isoOverview")}
+            </button>
           </div>
 
-          {showKpiStatus ? (
+          {homeTab === "kpiStatus" && (
             <DepartmentKpiStatus
               departments={visibleDepartments}
               onSelectDepartment={handleSelectDepartment}
             />
-          ) : (
+          )}
+          {homeTab === "departments" && (
             <DepartmentGrid
               departments={visibleDepartments}
               onSelectDepartment={handleSelectDepartment}
@@ -173,6 +207,18 @@ export default function BossPage() {
               error={error}
             />
           )}
+          {homeTab === "isoOverview" && isoOverviewDocumentId ? (
+            <DocumentDetail
+              documentId={isoOverviewDocumentId}
+              onBack={() => setIsoOverviewDocumentId(null)}
+            />
+          ) : homeTab === "isoOverview" ? (
+            <BossIsoOverviewTab
+              departments={visibleDepartments}
+              locale={locale}
+              onSelectDocument={setIsoOverviewDocumentId}
+            />
+          ) : null}
         </div>
       </div>
     );

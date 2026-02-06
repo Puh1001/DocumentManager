@@ -7,7 +7,8 @@
     "maintenance": "Bảo trì",
     "documents": "Tài liệu ISO",
     "departments": "Danh sách phòng ban",
-    "kpiStatus": "Trạng thái KPI"
+    "kpiStatus": "Trạng thái KPI",
+    "isoOverview": "Tổng quan ISO"
   },
   "actions": {
     "back": "Quay lại"
@@ -133,5 +134,15 @@
   "document": {
     "print": "In",
     "download": "Tải xuống"
+  },
+  "isoOverview": {
+    "title": "Tổng quan tài liệu ISO",
+    "description": "Xem tất cả tài liệu ISO theo phòng ban",
+    "totalDocuments": "Tổng tài liệu",
+    "noDocuments": "Không có tài liệu ISO",
+    "noDocumentsHint": "Thử đổi bộ lọc hoặc kiểm tra đã có tài liệu.",
+    "errorLoad": "Không thể tải tài liệu",
+    "refresh": "Làm mới",
+    "paginationSummary": "{from}–{to} / {total}"
   }
 }

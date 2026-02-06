@@ -7,7 +7,8 @@
     "maintenance": "维护",
     "documents": "ISO文档",
     "departments": "部门列表",
-    "kpiStatus": "KPI状态"
+    "kpiStatus": "KPI状态",
+    "isoOverview": "ISO 总览"
   },
   "actions": {
     "back": "返回"
@@ -133,5 +134,15 @@
   "document": {
     "print": "打印",
     "download": "下载"
+  },
+  "isoOverview": {
+    "title": "ISO 文档总览",
+    "description": "查看各部门的 ISO 文档",
+    "totalDocuments": "文档总数",
+    "noDocuments": "暂无 ISO 文档",
+    "noDocumentsHint": "请尝试更改筛选条件或确认是否有文档。",
+    "errorLoad": "加载文档失败",
+    "refresh": "刷新",
+    "paginationSummary": "第 {from}–{to} 条，共 {total} 条"
   }
 }
