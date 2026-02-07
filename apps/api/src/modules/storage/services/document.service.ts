@@ -396,13 +396,13 @@ export class DocumentService {
         if (level.code === "LEVEL1") {
           valid = value === "BPVN-QESM-001";
         } else if (level.code === "LEVEL2") {
-          const level2Regex = /^BPVN-(?:[A-Z0-9]+-)?QEP-\d{3}$/;
+          const level2Regex = /^BPVN-(?:[A-Z0-9-]+-)?QEP-\d{3}$/;
           valid = level2Regex.test(value);
         } else if (level.code === "LEVEL3") {
-          const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
+          const level3Regex = /^BPVN-[A-Z0-9-]+-(SOP|SMP)-\d{3}$/;
           valid = level3Regex.test(value);
         } else if (level.code === "LEVEL4") {
-          const level4Regex = /^BPVN-[A-Z0-9]+-PR-\d{3}$/;
+          const level4Regex = /^BPVN-[A-Z0-9-]+-PR-\d{3}$/;
           valid = level4Regex.test(value);
         }
 
@@ -800,16 +800,16 @@ export class DocumentService {
         // Only one document, fixed code
         valid = value === "BPVN-QESM-001";
       } else if (levelCode === "LEVEL2") {
-        // BPVN-QEP-001 or BPVN-<DEPT>-QEP-001 (department segment optional)
-        const level2Regex = /^BPVN-(?:[A-Z0-9]+-)?QEP-\d{3}$/;
+        // BPVN-QEP-001 or BPVN-<DEPT>-QEP-001 (department segment optional; dept may contain hyphen e.g. V-TECH)
+        const level2Regex = /^BPVN-(?:[A-Z0-9-]+-)?QEP-\d{3}$/;
         valid = level2Regex.test(value);
       } else if (levelCode === "LEVEL3") {
-        // BPVN-<DEPT>-(SOP|SMP)-001
-        const level3Regex = /^BPVN-[A-Z0-9]+-(SOP|SMP)-\d{3}$/;
+        // BPVN-<DEPT>-(SOP|SMP)-001 (dept may contain hyphen e.g. V-TECH)
+        const level3Regex = /^BPVN-[A-Z0-9-]+-(SOP|SMP)-\d{3}$/;
         valid = level3Regex.test(value);
       } else if (levelCode === "LEVEL4") {
-        // BPVN-<DEPT>-PR-001
-        const level4Regex = /^BPVN-[A-Z0-9]+-PR-\d{3}$/;
+        // BPVN-<DEPT>-PR-001 (dept may contain hyphen e.g. V-TECH)
+        const level4Regex = /^BPVN-[A-Z0-9-]+-PR-\d{3}$/;
         valid = level4Regex.test(value);
       }
 
