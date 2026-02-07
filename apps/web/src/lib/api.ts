@@ -368,7 +368,9 @@ class ApiClient {
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (value != null && value !== "") {
+          formData.append(key, value);
+        }
       });
     }
 
@@ -438,7 +440,9 @@ class ApiClient {
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (value != null && value !== "") {
+          formData.append(key, value);
+        }
       });
     }
 

@@ -162,7 +162,7 @@ export function BossIsoOverviewTab({
             type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="cyber-button h-10 px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="cyber-button h-10 px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("refresh")}
@@ -220,7 +220,7 @@ export function BossIsoOverviewTab({
                     key={doc.id}
                     type="button"
                     onClick={handleClick}
-                    className="flex items-center gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all duration-200 cursor-pointer group cyber-corner w-full text-left"
+                    className="flex items-center gap-4 p-4 border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-colors duration-200 cursor-pointer group cyber-corner w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#141428]"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
                     <div className="flex-shrink-0 p-2 rounded bg-cyan-500/10 text-cyan-400">
@@ -284,7 +284,7 @@ export function BossIsoOverviewTab({
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="cyber-button p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="cyber-button p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

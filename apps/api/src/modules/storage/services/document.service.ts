@@ -407,9 +407,20 @@ export class DocumentService {
         }
 
         if (!valid) {
+          const levelLabel = level.code ? ` (selected: ${level.code})` : "";
+          const hint =
+            level.code === "LEVEL1"
+              ? " Expected: BPVN-QESM-001"
+              : level.code === "LEVEL2"
+                ? " Expected: BPVN-(Dept)-QEP-001"
+                : level.code === "LEVEL3"
+                  ? " Expected: BPVN-(Dept)-SOP/SMP-001 (e.g. BPVN-WK-SOP-007)"
+                  : level.code === "LEVEL4"
+                    ? " Expected: BPVN-(Dept)-PR-001"
+                    : " Check Level selection and format.";
           throw CustomException.badRequest(
             ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-            "Invalid documentNo for document level"
+            `Invalid documentNo for document level${levelLabel}.${hint}`
           );
         }
 
@@ -803,9 +814,20 @@ export class DocumentService {
       }
 
       if (!valid) {
+        const levelLabel = levelCode ? ` (selected: ${levelCode})` : "";
+        const hint =
+          levelCode === "LEVEL1"
+            ? " Expected: BPVN-QESM-001"
+            : levelCode === "LEVEL2"
+              ? " Expected: BPVN-(Dept)-QEP-001"
+              : levelCode === "LEVEL3"
+                ? " Expected: BPVN-(Dept)-SOP/SMP-001 (e.g. BPVN-WK-SOP-007)"
+                : levelCode === "LEVEL4"
+                  ? " Expected: BPVN-(Dept)-PR-001"
+                  : " Check Level selection and format.";
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-          "Invalid documentNo for document level"
+          `Invalid documentNo for document level${levelLabel}.${hint}`
         );
       }
 

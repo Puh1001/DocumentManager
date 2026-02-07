@@ -150,48 +150,37 @@ export default function BossPage() {
             </p>
           </div>
 
-          {/* Tabs: Departments | KPI Status | ISO Overview */}
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <button
-              onClick={() => setHomeTab("departments")}
-              className={`
-                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
-                ${
-                  homeTab === "departments"
-                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
-                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
-                }
-              `}
-            >
-              {t("viewType.departments")}
-            </button>
-            <button
-              onClick={() => setHomeTab("kpiStatus")}
-              className={`
-                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
-                ${
-                  homeTab === "kpiStatus"
-                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
-                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
-                }
-              `}
-            >
-              {t("viewType.kpiStatus")}
-            </button>
-            <button
-              onClick={() => setHomeTab("isoOverview")}
-              className={`
-                px-4 py-2 text-sm font-cyber rounded transition-colors cursor-pointer
-                ${
-                  homeTab === "isoOverview"
-                    ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
-                    : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/70 hover:bg-cyan-500/20"
-                }
-              `}
-            >
-              {t("viewType.isoOverview")}
-            </button>
-          </div>
+          {/* Tabs: Departments | KPI Status | ISO Overview (segment bar, no layout-shift hover) */}
+          <nav
+            className="boss-home-tabs flex flex-wrap items-center gap-1 p-1 rounded-lg bg-cyan-500/5 border border-cyan-500/20 w-fit"
+            aria-label="Main tabs: Department list, KPI Status, ISO Overview"
+          >
+            {(
+              [
+                ["departments", t("viewType.departments")],
+                ["kpiStatus", t("viewType.kpiStatus")],
+                ["isoOverview", t("viewType.isoOverview")],
+              ] as const
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setHomeTab(tab)}
+                aria-current={homeTab === tab ? "true" : undefined}
+                className={`
+                  px-4 py-2 text-sm font-cyber rounded-md transition-colors duration-200 cursor-pointer
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]
+                  ${
+                    homeTab === tab
+                      ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow shadow-sm"
+                      : "border border-transparent text-cyan-400/70 hover:bg-cyan-500/15 hover:text-cyan-300/90"
+                  }
+                `}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
 
           {homeTab === "kpiStatus" && (
             <DepartmentKpiStatus
@@ -305,11 +294,11 @@ export default function BossPage() {
     <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
       <div className="space-y-8 p-6">
         <div className="relative">
-          <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-mono tracking-wider">
+          <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
             {t("title")}
           </h1>
           <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-500 to-transparent"></div>
-          <p className="text-cyan-400/80 mt-4 text-lg font-mono">
+          <p className="text-cyan-400/80 mt-4 text-lg font-cyber">
             {t("description")}
           </p>
         </div>

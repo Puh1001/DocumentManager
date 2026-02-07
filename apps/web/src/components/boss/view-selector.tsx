@@ -3,7 +3,13 @@
 import { useTranslations, useLocale } from "next-intl";
 import { type Department, getDepartmentName } from "@/lib/api";
 import { type ViewType } from "./use-boss-navigation";
-import { ArrowLeft, BarChart2, Wrench, FileText, Building2 } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart2,
+  Wrench,
+  FileText,
+  Building2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ViewSelectorProps {
@@ -56,8 +62,9 @@ export function ViewSelector({
       {/* Header with back button and department name */}
       <div className="flex items-center gap-4">
         <button
+          type="button"
           onClick={onBack}
-          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2"
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
         >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
@@ -71,8 +78,12 @@ export function ViewSelector({
               {getDepartmentName(department, locale)}
             </h2>
             <div className="flex items-center gap-2 mt-1 text-sm text-cyan-200">
-              <span className="text-xs font-cyber text-cyan-300/80 uppercase">ID</span>
-              <span className="font-cyber font-semibold">{department.code}</span>
+              <span className="text-xs font-cyber text-cyan-300/80 uppercase">
+                ID
+              </span>
+              <span className="font-cyber font-semibold">
+                {department.code}
+              </span>
             </div>
           </div>
         </div>
@@ -86,12 +97,20 @@ export function ViewSelector({
           return (
             <div
               key={view.type}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectView(view.type)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectView(view.type);
+                }
+              }}
               className={cn(
                 "cyber-card cyber-hologram cursor-pointer transition-all duration-300 group",
-                "hover:scale-105 active:scale-95",
+                "hover:border-cyan-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]",
                 "cyber-corner relative overflow-hidden"
               )}
-              onClick={() => onSelectView(view.type)}
               style={{ animationDelay: `${index * 0.15}s` }}
             >
               <div className="p-8 relative z-10">

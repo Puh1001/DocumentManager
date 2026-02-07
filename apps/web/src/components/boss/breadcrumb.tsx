@@ -49,8 +49,9 @@ export function Breadcrumb({ state, onNavigate }: BreadcrumbProps) {
   return (
     <nav className="flex items-center space-x-3 text-sm font-cyber mb-6">
       <button
+        type="button"
         onClick={() => onNavigate("home")}
-        className="cyber-button px-3 py-1.5 text-xs flex items-center gap-2 text-cyan-300 hover:text-cyan-200"
+        className="cyber-button px-3 py-1.5 text-xs flex items-center gap-2 text-cyan-300 hover:text-cyan-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
       >
         <Home className="h-3.5 w-3.5" />
         <span>{items[0].label}</span>
@@ -60,8 +61,9 @@ export function Breadcrumb({ state, onNavigate }: BreadcrumbProps) {
           <ChevronRight className="h-4 w-4 text-cyan-400/70" />
           {item.onClick ? (
             <button
+              type="button"
               onClick={item.onClick}
-              className="cyber-button px-3 py-1.5 text-xs text-cyan-300 hover:text-cyan-200 transition-colors"
+              className="cyber-button px-3 py-1.5 text-xs text-cyan-300 hover:text-cyan-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
             >
               {item.label}
             </button>

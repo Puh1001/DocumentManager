@@ -348,9 +348,11 @@ export function DepartmentKpiStatus({
               (f) => (
                 <button
                   key={f}
+                  type="button"
                   onClick={() => setFilter(f)}
                   className={`
-                  px-3 py-1.5 text-xs font-cyber rounded transition-colors
+                  px-3 py-1.5 text-xs font-cyber rounded transition-colors duration-200 cursor-pointer
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]
                   ${
                     filter === f
                       ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow"
@@ -435,8 +437,16 @@ export function DepartmentKpiStatus({
             return (
               <div
                 key={status.department.id}
-                className="cyber-card cyber-corner p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:border-cyan-500/40"
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectDepartment(status.department)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectDepartment(status.department);
+                  }
+                }}
+                className="cyber-card cyber-corner p-6 cursor-pointer transition-all duration-300 hover:border-cyan-500/50 hover:shadow-[0_0_24px_rgba(77,208,225,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="space-y-4">

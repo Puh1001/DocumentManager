@@ -13,6 +13,10 @@
   "actions": {
     "back": "Back"
   },
+  "theme": {
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  },
   "detail": "Detail",
   "inactive": "Inactive",
   "viewDescriptions": {

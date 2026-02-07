@@ -69,7 +69,7 @@ export function DepartmentGrid({
         <button
           key={dept.id}
           type="button"
-          className="group flex items-center gap-3 px-1 py-1 text-left transition hover:text-cyan-100 focus-visible:outline-none"
+          className="group flex items-center gap-3 px-1 py-1 text-left transition-colors duration-200 hover:text-cyan-100 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a] rounded-md"
           onClick={() => onSelectDepartment(dept)}
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
