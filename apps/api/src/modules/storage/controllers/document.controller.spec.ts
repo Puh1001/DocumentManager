@@ -651,13 +651,14 @@ describe("DocumentController", () => {
   });
 
   describe("downloadVersion", () => {
-    it("should download specific version", async () => {
+    it("should download specific version when user has download permission", async () => {
       const buffer = Buffer.from("version content");
       const mockResponse = {
         setHeader: jest.fn(),
         send: jest.fn(),
       } as jest.Mocked<Partial<Response>>;
 
+      documentService.findById = jest.fn().mockResolvedValue(mockDocument);
       versionService.downloadVersion = jest.fn().mockResolvedValue({
         buffer,
         fileName: "test-document.pdf",
@@ -667,9 +668,11 @@ describe("DocumentController", () => {
       await controller.downloadVersion(
         "doc-1",
         1,
-        mockResponse as unknown as Response
+        mockResponse as unknown as Response,
+        mockRequest
       );
 
+      expect(documentService.findById).toHaveBeenCalledWith("doc-1");
       expect(versionService.downloadVersion).toHaveBeenCalledWith("doc-1", 1);
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         "Content-Disposition",

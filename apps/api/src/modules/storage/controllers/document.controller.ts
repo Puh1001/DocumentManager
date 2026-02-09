@@ -65,17 +65,7 @@ export class DocumentController {
     @Query() query: QueryDocumentsDto,
     @Request() req: AuthenticatedRequest
   ) {
-    const roles = req.user?.roles ?? [];
-    const canSeeAll = roles.some((r) => ["admin", "dcc", "boss"].includes(r));
-    let departmentIdsForFilter: string[] | undefined;
-    if (!canSeeAll && req.user?.id) {
-      try {
-        const depts = await this.usersService.getUserDepartments(req.user.id);
-        departmentIdsForFilter = depts.map((d) => d.id);
-      } catch {
-        departmentIdsForFilter = [];
-      }
-    }
+    // All users see all documents; download/print restricted to admin and DCC
     return this.documentService.findAll({
       status:
         query.status === "ACTIVE" ||
@@ -84,7 +74,7 @@ export class DocumentController {
           ? query.status
           : undefined,
       departmentId: query.departmentId,
-      departmentIdsForFilter,
+      departmentIdsForFilter: undefined,
       level: query.level,
       page: query.page,
       limit: query.limit,
@@ -104,7 +94,7 @@ export class DocumentController {
   @ApiOperation({ summary: "Get document by ID" })
   async findOne(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
     const document = await this.documentService.findById(id);
-    await this.ensureDocumentDepartmentAccess(document, req);
+    // All users can view any document; download/print restricted to admin and DCC
 
     // Create audit log for document view
     if (req.user?.id) {
@@ -139,34 +129,14 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     const document = await this.documentService.findById(id);
-    await this.ensureDocumentDepartmentAccess(document, req);
+    // All users can view any document
 
     const roles = req.user?.roles ?? [];
-    const levelCode = document.level?.code;
-
-    // Everyone can view
     const canView = true;
-
-    // Download/Print permissions based on level
-    let canDownload = false;
-    let canPrint = false;
-
-    if (levelCode === "LEVEL4") {
-      // Level 4: everyone can download/print
-      canDownload = true;
-      canPrint = true;
-    } else if (
-      levelCode === "LEVEL1" ||
-      levelCode === "LEVEL2" ||
-      levelCode === "LEVEL3"
-    ) {
-      // ISO documents (Level 1-3): only DCC and admin
-      const hasPermission = roles.some((r) => ["admin", "dcc"].includes(r));
-      canDownload = hasPermission;
-      canPrint = hasPermission;
-    }
-
-    // Edit permission: always false for now (not implemented)
+    // Only DCC and admin can download/print (all documents)
+    const canDownloadPrint = roles.some((r) => ["admin", "dcc"].includes(r));
+    const canDownload = canDownloadPrint;
+    const canPrint = canDownloadPrint;
     const canEdit = false;
 
     return {
@@ -185,7 +155,7 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     const document = await this.documentService.findById(id);
-    await this.ensureDocumentDepartmentAccess(document, req);
+    // All users can stream/view any document
     const stream = await this.documentService.getStream(id);
 
     // Create audit log for document view (stream)
@@ -232,7 +202,6 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     const document = await this.documentService.findById(id);
-    await this.ensureDocumentDepartmentAccess(document, req);
     await this.ensureDownloadPermission(document, req);
     const { buffer, fileName, mimeType } =
       await this.documentService.download(id);
@@ -474,8 +443,11 @@ export class DocumentController {
   async downloadVersion(
     @Param("id") id: string,
     @Param("version") version: number,
-    @Res() res: Response
+    @Res() res: Response,
+    @Request() req: AuthenticatedRequest
   ) {
+    const document = await this.documentService.findById(id);
+    await this.ensureDownloadPermission(document, req);
     const { buffer, fileName } = await this.versionService.downloadVersion(
       id,
       version
@@ -527,27 +499,18 @@ export class DocumentController {
   }
 
   /**
-   * Check download permission based on document level:
-   * - ISO documents (Level 1-3): only DCC and admin can download
-   * - Level 4: everyone can download
+   * Only DCC and admin can download/print (all documents).
    */
   private async ensureDownloadPermission(
     document: { level?: { code: string } | null },
     req: AuthenticatedRequest
   ): Promise<void> {
-    const levelCode = document.level?.code;
-    if (!levelCode) return;
-
-    // Level 4: everyone can download
-    if (levelCode === "LEVEL4") return;
-
-    // ISO documents (Level 1-3): only DCC and admin can download
     const roles = req.user?.roles ?? [];
     const canDownload = roles.some((r) => ["admin", "dcc"].includes(r));
     if (!canDownload) {
       throw CustomException.forbidden(
         ErrorCodes.DOCUMENT.ACCESS_DENIED,
-        "Only DCC and Admin can download ISO documents (Level 1-3)"
+        "Only DCC and Admin can download and print documents"
       );
     }
   }
