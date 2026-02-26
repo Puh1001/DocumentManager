@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/boss/breadcrumb";
 import { DepartmentGrid } from "@/components/boss/department-grid";
 import { DepartmentKpiStatus } from "@/components/boss/department-kpi-status";
 import { BossIsoOverviewTab } from "@/components/boss/boss-iso-overview-tab";
+import { BossClientTab } from "@/components/boss/boss-client-tab";
 import { ViewSelector } from "@/components/boss/view-selector";
 import { KpiList } from "@/components/boss/kpi-list";
 import { MaintenanceList } from "@/components/boss/maintenance-list";
@@ -18,6 +19,8 @@ import { MaintenanceDetail } from "@/components/boss/maintenance-detail";
 import { DocumentDetail } from "@/components/boss/document-detail";
 import { departmentApi, type Department } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-handler";
+
+type HomeTab = "departments" | "kpiStatus" | "isoOverview" | "client";
 
 export default function BossPage() {
   const t = useTranslations("boss");
@@ -30,7 +33,6 @@ export default function BossPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type HomeTab = "departments" | "kpiStatus" | "isoOverview";
   const [homeTab, setHomeTab] = useState<HomeTab>("departments");
   const [isoOverviewDocumentId, setIsoOverviewDocumentId] = useState<
     string | null
@@ -43,7 +45,8 @@ export default function BossPage() {
       if (
         tab === "isoOverview" ||
         tab === "kpiStatus" ||
-        tab === "departments"
+        tab === "departments" ||
+        tab === "client"
       ) {
         setHomeTab(tab);
       }
@@ -139,27 +142,29 @@ export default function BossPage() {
   if (!navigation.state.selectedDepartment) {
     return (
       <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
-        <div className="space-y-8 p-6">
-          <div className="relative">
-            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+        <div className="space-y-8">
+          <div className="relative opacity-0 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-tight">
               {t("title")}
             </h1>
-            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
-            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+            <div className="absolute -bottom-1 left-0 h-0.5 w-24 bg-gradient-to-r from-cyan-400 to-transparent rounded-full" />
+            <p className="text-cyan-300/90 mt-3 text-base font-cyber">
               {t("description")}
             </p>
           </div>
 
-          {/* Tabs: Departments | KPI Status | ISO Overview (segment bar, no layout-shift hover) */}
+          {/* Tabs: minimal segment bar, transition 200ms */}
           <nav
-            className="boss-home-tabs flex flex-wrap items-center gap-1 p-1 rounded-lg bg-cyan-500/5 border border-cyan-500/20 w-fit"
-            aria-label="Main tabs: Department list, KPI Status, ISO Overview"
+            className="boss-home-tabs flex flex-wrap items-center gap-1 p-1 rounded-lg bg-cyan-500/5 border border-cyan-500/20 w-fit opacity-0 animate-slide-up transition-colors duration-200"
+            style={{ animationDelay: "80ms" }}
+            aria-label="Main tabs: Department list, KPI Status, ISO Overview, Client Files"
           >
             {(
               [
                 ["departments", t("viewType.departments")],
                 ["kpiStatus", t("viewType.kpiStatus")],
                 ["isoOverview", t("viewType.isoOverview")],
+                ["client", t("viewType.client")],
               ] as const
             ).map(([tab, label]) => (
               <button
@@ -172,7 +177,7 @@ export default function BossPage() {
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]
                   ${
                     homeTab === tab
-                      ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 cyber-text-glow shadow-sm"
+                      ? "bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 shadow-sm"
                       : "border border-transparent text-cyan-400/70 hover:bg-cyan-500/15 hover:text-cyan-300/90"
                   }
                 `}
@@ -183,18 +188,22 @@ export default function BossPage() {
           </nav>
 
           {homeTab === "kpiStatus" && (
-            <DepartmentKpiStatus
-              departments={visibleDepartments}
-              onSelectDepartment={handleSelectDepartment}
-            />
+            <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+              <DepartmentKpiStatus
+                departments={visibleDepartments}
+                onSelectDepartment={handleSelectDepartment}
+              />
+            </div>
           )}
           {homeTab === "departments" && (
-            <DepartmentGrid
-              departments={visibleDepartments}
-              onSelectDepartment={handleSelectDepartment}
-              loading={loading}
-              error={error}
-            />
+            <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+              <DepartmentGrid
+                departments={visibleDepartments}
+                onSelectDepartment={handleSelectDepartment}
+                loading={loading}
+                error={error}
+              />
+            </div>
           )}
           {homeTab === "isoOverview" && isoOverviewDocumentId ? (
             <DocumentDetail
@@ -202,11 +211,17 @@ export default function BossPage() {
               onBack={() => setIsoOverviewDocumentId(null)}
             />
           ) : homeTab === "isoOverview" ? (
-            <BossIsoOverviewTab
-              departments={visibleDepartments}
-              locale={locale}
-              onSelectDocument={setIsoOverviewDocumentId}
-            />
+            <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+              <BossIsoOverviewTab
+                departments={visibleDepartments}
+                locale={locale}
+                onSelectDocument={setIsoOverviewDocumentId}
+              />
+            </div>
+          ) : homeTab === "client" ? (
+            <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+              <BossClientTab />
+            </div>
           ) : null}
         </div>
       </div>
@@ -217,24 +232,28 @@ export default function BossPage() {
   if (!navigation.state.viewType) {
     return (
       <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
-        <div className="space-y-8 p-6">
-          <div className="relative">
-            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+        <div className="space-y-8">
+          <div className="relative opacity-0 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-tight">
               {t("title")}
             </h1>
-            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
-            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+            <div className="absolute -bottom-1 left-0 h-0.5 w-24 bg-gradient-to-r from-cyan-400 to-transparent rounded-full" />
+            <p className="text-cyan-300/90 mt-3 text-base font-cyber">
               {t("description")}
             </p>
           </div>
 
-          <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+          <div className="opacity-0 animate-slide-up" style={{ animationDelay: "60ms" }}>
+            <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+          </div>
 
-          <ViewSelector
+          <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+            <ViewSelector
             department={navigation.state.selectedDepartment}
             onSelectView={handleSelectView}
             onBack={handleBack}
           />
+          </div>
         </div>
       </div>
     );
@@ -244,18 +263,20 @@ export default function BossPage() {
   if (navigation.state.selectedItemId) {
     return (
       <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
-        <div className="space-y-8 p-6">
-          <div className="relative">
-            <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+        <div className="space-y-8">
+          <div className="relative opacity-0 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-tight">
               {t("title")}
             </h1>
-            <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-400 to-transparent"></div>
-            <p className="text-cyan-300/90 mt-4 text-lg font-cyber">
+            <div className="absolute -bottom-1 left-0 h-0.5 w-24 bg-gradient-to-r from-cyan-400 to-transparent rounded-full" />
+            <p className="text-cyan-300/90 mt-3 text-base font-cyber">
               {t("description")}
             </p>
           </div>
 
-          <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+          <div className="opacity-0 animate-slide-up" style={{ animationDelay: "60ms" }}>
+            <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+          </div>
 
           {navigation.state.viewType === "kpi" && (
             <KpiDetail
@@ -292,18 +313,20 @@ export default function BossPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] cyber-bg cyber-grid cyber-scanline">
-      <div className="space-y-8 p-6">
-        <div className="relative">
-          <h1 className="text-5xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-wider">
+      <div className="space-y-8">
+        <div className="relative opacity-0 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-bold cyber-neon-cyan mb-2 font-cyber tracking-tight">
             {t("title")}
           </h1>
-          <div className="absolute -bottom-1 left-0 h-1 w-32 bg-gradient-to-r from-cyan-500 to-transparent"></div>
-          <p className="text-cyan-400/80 mt-4 text-lg font-cyber">
+          <div className="absolute -bottom-1 left-0 h-0.5 w-24 bg-gradient-to-r from-cyan-500 to-transparent rounded-full" />
+          <p className="text-cyan-400/80 mt-3 text-base font-cyber">
             {t("description")}
           </p>
         </div>
 
-        <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+        <div className="opacity-0 animate-slide-up" style={{ animationDelay: "60ms" }}>
+          <Breadcrumb state={navigation.state} onNavigate={handleNavigate} />
+        </div>
 
         {navigation.state.viewType === "kpi" && (
           <KpiList

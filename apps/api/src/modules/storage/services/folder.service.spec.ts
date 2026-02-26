@@ -777,4 +777,87 @@ describe("FolderService", () => {
       });
     });
   });
+
+  describe("ensureClientFolder", () => {
+    const clientFolder = {
+      ...mockFolder,
+      id: "client-folder-id",
+      name: "Client",
+      path: "Client",
+      parentId: null,
+      departmentId: null,
+    };
+
+    it("should return existing folder id when Client folder already exists", async () => {
+      prismaService.folder.findUnique = jest.fn().mockResolvedValue(clientFolder);
+      prismaService.folder.create = jest.fn();
+
+      const result = await service.ensureClientFolder();
+
+      expect(result).toEqual({ clientFolderId: "client-folder-id" });
+      expect(prismaService.folder.findUnique).toHaveBeenCalledWith({
+        where: { path: "Client" },
+      });
+      expect(smbService.createDirectory).not.toHaveBeenCalled();
+      expect(prismaService.folder.create).not.toHaveBeenCalled();
+    });
+
+    it("should create Client folder on SMB and DB when missing", async () => {
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(clientFolder);
+      prismaService.folder.create = jest.fn().mockResolvedValue(clientFolder);
+
+      const result = await service.ensureClientFolder();
+
+      expect(result).toEqual({ clientFolderId: "client-folder-id" });
+      expect(smbService.createDirectory).toHaveBeenCalledWith("Client");
+      expect(prismaService.folder.create).toHaveBeenCalledWith({
+        data: {
+          name: "Client",
+          path: "Client",
+          parentId: null,
+          departmentId: null,
+        },
+      });
+    });
+
+    it("should return folder id when create throws P2002 (race condition)", async () => {
+      const p2002 = new Error("Unique constraint") as Error & { code: string };
+      p2002.code = "P2002";
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(clientFolder);
+      prismaService.folder.create = jest.fn().mockRejectedValue(p2002);
+
+      const result = await service.ensureClientFolder();
+
+      expect(result).toEqual({ clientFolderId: "client-folder-id" });
+      expect(smbService.createDirectory).toHaveBeenCalledWith("Client");
+      expect(prismaService.folder.findUnique).toHaveBeenCalledTimes(2);
+    });
+
+    it("should restore folder (clear deletedAt) when folder is soft-deleted", async () => {
+      const deletedClientFolder = {
+        ...clientFolder,
+        deletedAt: new Date(),
+      };
+      prismaService.folder.findUnique = jest
+        .fn()
+        .mockResolvedValueOnce(deletedClientFolder)
+        .mockResolvedValueOnce({ ...clientFolder, deletedAt: null });
+      prismaService.folder.update = jest.fn().mockResolvedValue(clientFolder);
+
+      const result = await service.ensureClientFolder();
+
+      expect(result).toEqual({ clientFolderId: "client-folder-id" });
+      expect(prismaService.folder.update).toHaveBeenCalledWith({
+        where: { id: "client-folder-id" },
+        data: { deletedAt: null },
+      });
+      expect(smbService.createDirectory).not.toHaveBeenCalled();
+    });
+  });
 });

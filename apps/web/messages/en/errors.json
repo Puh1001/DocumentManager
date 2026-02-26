@@ -47,6 +47,11 @@
       "folder_not_found": "Folder not found"
     }
   },
+  "client": {
+    "upload": {
+      "file_too_large": "File is too large. Maximum size is 100MB."
+    }
+  },
   "version": {
     "not_found": "Version not found",
     "document": {

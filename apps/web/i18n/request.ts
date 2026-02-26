@@ -27,6 +27,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     users,
     permissions,
     modules,
+    client,
   ] = await Promise.all([
     import(`../messages/${locale}/common.json`),
     import(`../messages/${locale}/auth.json`),
@@ -40,6 +41,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     import(`../messages/${locale}/users.json`),
     import(`../messages/${locale}/permissions.json`),
     import(`../messages/${locale}/modules.json`),
+    import(`../messages/${locale}/client.json`),
   ]);
 
   return {
@@ -57,6 +59,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       users: users.default,
       permissions: permissions.default,
       modules: modules.default,
+      client: client.default,
     },
   };
 });

@@ -95,6 +95,14 @@ module.exports = {
           '0%, 100%': { boxShadow: '0 0 5px rgba(0, 255, 255, 0.5), 0 0 10px rgba(0, 255, 255, 0.3)' },
           '50%': { boxShadow: '0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5)' },
         },
+        'fade-in': {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
+        'slide-up': {
+          from: { opacity: 0, transform: 'translateY(10px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -105,6 +113,15 @@ module.exports = {
         'neon-flicker': 'neon-flicker 3s infinite',
         'hologram': 'hologram 3s ease-in-out infinite',
         'border-glow': 'border-glow 2s ease-in-out infinite',
+        'fade-in': 'fade-in 0.25s ease-out forwards',
+        'slide-up': 'slide-up 0.3s ease-out forwards',
+      },
+      animationDelay: {
+        'stagger-1': '50ms',
+        'stagger-2': '100ms',
+        'stagger-3': '150ms',
+        'stagger-4': '200ms',
+        'stagger-5': '250ms',
       },
     },
   },

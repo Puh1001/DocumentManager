@@ -6,12 +6,19 @@
   "navigation": {
     "dashboard": "Dashboard",
     "documents": "ISO Document",
+    "document": "Document",
     "kpi": "KPI",
     "departments": "Departments",
+    "department": "Departments",
     "users": "Users",
+    "user": "Users",
     "permissions": "Permissions",
+    "permission": "Permissions",
     "settings": "Settings",
     "maintenance": "Maintenance",
+    "client": "Client Files",
+    "modules": "Modules",
+    "module": "Modules",
     "boss": "BPVN Management Board"
   },
   "actions": {

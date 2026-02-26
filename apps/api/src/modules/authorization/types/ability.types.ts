@@ -35,6 +35,10 @@ export interface Kpi {
   id: string;
 }
 
+export interface Client {
+  id: string;
+}
+
 export interface Permission {
   id: string;
 }
@@ -50,6 +54,7 @@ export type Subjects =
   | Maintenance
   | Department
   | Kpi
+  | Client
   | Permission
   | Module
   | "Document"
@@ -58,6 +63,7 @@ export type Subjects =
   | "Maintenance"
   | "Department"
   | "Kpi"
+  | "Client"
   | "Permission"
   | "Module"
   | "all";

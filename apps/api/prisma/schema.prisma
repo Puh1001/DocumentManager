@@ -211,8 +211,8 @@ model Document {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  // ISO document level (required)
-  levelId String @map("level_id")
+  // ISO document level (optional - required for ISO documents, null for client files)
+  levelId String? @map("level_id")
 
   // Business document number (No.) entered by user
   documentNo String? @map("document_no")
@@ -238,7 +238,7 @@ model Document {
 
   // Relations
   folder         Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  level          DocumentLevel        @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  level          DocumentLevel?       @relation(fields: [levelId], references: [id], onDelete: Restrict)
   preparer       User?                @relation("DocumentPreparer", fields: [preparerId], references: [id], onDelete: SetNull)
   reviewer       User?                @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
   approver       User?                @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)

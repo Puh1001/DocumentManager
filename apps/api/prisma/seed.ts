@@ -33,6 +33,11 @@ async function main() {
       displayName: "Permission Management",
       description: "Permission management module",
     },
+    {
+      name: "Client",
+      displayName: "Client Files",
+      description: "Client files upload and management",
+    },
   ];
 
   let createdModules = 0;

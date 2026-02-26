@@ -23,6 +23,10 @@ export interface User {
   id: string;
 }
 
+export interface Maintenance {
+  id: string;
+}
+
 export interface Department {
   id: string;
 }
@@ -31,7 +35,7 @@ export interface Kpi {
   id: string;
 }
 
-export interface Maintenance {
+export interface Client {
   id: string;
 }
 
@@ -47,17 +51,19 @@ export type Subjects =
   | Document
   | Folder
   | User
+  | Maintenance
   | Department
   | Kpi
-  | Maintenance
+  | Client
   | Permission
   | Module
   | "Document"
   | "Folder"
   | "User"
+  | "Maintenance"
   | "Department"
   | "Kpi"
-  | "Maintenance"
+  | "Client"
   | "Permission"
   | "Module"
   | "all";

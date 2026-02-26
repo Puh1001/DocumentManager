@@ -64,7 +64,7 @@ export function ViewSelector({
         <button
           type="button"
           onClick={onBack}
-          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
+          className="cyber-button px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
         >
           <ArrowLeft className="h-4 w-4" />
           {t("actions.back")}
@@ -89,7 +89,7 @@ export function ViewSelector({
         </div>
       </div>
 
-      {/* View buttons grid */}
+      {/* View cards: minimal, stagger animation, hover transition */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {views.map((view, index) => {
           const Icon = view.icon;
@@ -107,30 +107,28 @@ export function ViewSelector({
                 }
               }}
               className={cn(
-                "cyber-card cyber-hologram cursor-pointer transition-all duration-300 group",
+                "cyber-card cyber-corner cursor-pointer transition-[border-color,box-shadow] duration-200 group relative overflow-hidden rounded-xl",
                 "hover:border-cyan-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]",
-                "cyber-corner relative overflow-hidden"
+                "opacity-0 animate-slide-up"
               )}
-              style={{ animationDelay: `${index * 0.15}s` }}
+              style={{ animationDelay: `${index * 80}ms` }}
             >
               <div className="p-8 relative z-10">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div
                     className={cn(
-                      "p-4 rounded-lg bg-gradient-to-br",
-                      colors,
-                      "border-2 shadow-lg shadow-cyan-500/20"
+                      "p-4 rounded-xl bg-gradient-to-br border transition-colors duration-200",
+                      colors
                     )}
                   >
-                    <Icon className="h-10 w-10 text-white cyber-text-glow" />
+                    <Icon className="h-10 w-10 text-white" />
                   </div>
                   <div>
                     <h3
                       className={cn(
-                        "font-cyber font-bold text-xl mb-2",
+                        "font-cyber font-bold text-xl mb-2 transition-colors duration-200",
                         view.color === "cyan" && "cyber-neon-cyan",
-                        view.color === "magenta" &&
-                          "text-fuchsia-400 cyber-text-glow",
+                        view.color === "magenta" && "text-fuchsia-400",
                         view.color === "blue" && "cyber-neon-blue"
                       )}
                     >
@@ -143,13 +141,13 @@ export function ViewSelector({
                 </div>
                 <div
                   className={cn(
-                    "absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                    "absolute bottom-0 left-0 right-0 h-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-r",
                     view.color === "cyan" && "from-cyan-500 to-transparent",
                     view.color === "magenta" &&
                       "from-fuchsia-500 to-transparent",
                     view.color === "blue" && "from-blue-500 to-transparent"
                   )}
-                ></div>
+                />
               </div>
             </div>
           );

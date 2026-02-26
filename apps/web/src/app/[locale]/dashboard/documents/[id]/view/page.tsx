@@ -197,7 +197,7 @@ export default function DocumentViewPage() {
         )}
 
         {["xls", "xlsx"].includes(docData.fileType) && (
-          <XlsxViewer fileUrl={fileUrl} />
+          <XlsxViewer fileUrl={fileUrl} fileType={docData.fileType} />
         )}
 
         {["png", "jpg", "jpeg", "gif"].includes(docData.fileType) && (

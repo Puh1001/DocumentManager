@@ -1,0 +1,38 @@
+{
+  "title": "Tài liệu khách hàng",
+  "description": "Tải lên và xem tài liệu khách hàng (Word, Excel, PPT, PDF).",
+  "upload": "Tải lên",
+  "searchPlaceholder": "Tìm theo tên...",
+  "filterType": "Loại file",
+  "dateFrom": "Từ ngày",
+  "dateTo": "Đến ngày",
+  "table": {
+    "name": "Tên",
+    "type": "Loại",
+    "size": "Kích thước",
+    "uploadedBy": "Người tải",
+    "date": "Ngày",
+    "actions": "Thao tác"
+  },
+  "empty": "Chưa có tài liệu khách hàng.",
+  "uploadSuccess": "Đã tải file lên.",
+  "uploadError": "Tải lên thất bại",
+  "deleteSuccess": "Đã xóa file.",
+  "deleteError": "Xóa thất bại",
+  "deleteConfirmTitle": "Xóa file?",
+  "deleteConfirmMessage": "File sẽ bị xóa và không thể hoàn tác.",
+  "deleteConfirm": "Xóa",
+  "paginationSummary": "Hiển thị {from}–{to} / {total} file",
+  "unsupportedFileType": "Không hỗ trợ loại file: .{type}",
+  "viewFileAction": "Xem file {name}",
+  "pptViewer": {
+    "loading": "Đang tải...",
+    "loadError": "Không tải được bản trình bày.",
+    "slideLabel": "Slide {n}",
+    "prevSlide": "Slide trước (hoặc dùng ←)",
+    "nextSlide": "Slide sau (hoặc dùng →)",
+    "fullscreen": "Chế độ trình chiếu (toàn màn hình)",
+    "exitFullscreen": "Thoát toàn màn hình",
+    "download": "Tải xuống"
+  }
+}

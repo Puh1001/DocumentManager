@@ -16,7 +16,8 @@
     "seed:kpi": "ts-node prisma/seed-kpi-departments.ts",
     "cleanup:kpi-titles": "ts-node prisma/cleanup-kpi-titles.ts",
     "cleanup:kpi-metrics": "ts-node prisma/cleanup-kpi-metrics.ts",
-    "migrate:user-departments": "ts-node prisma/migrations/migrate-user-departments.ts"
+    "migrate:user-departments": "ts-node prisma/migrations/migrate-user-departments.ts",
+    "migrate:client-module": "ts-node prisma/migrations/add-client-module-and-permissions.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

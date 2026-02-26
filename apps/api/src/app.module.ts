@@ -10,6 +10,7 @@ import { DepartmentModule } from "./modules/department/department.module";
 import { HealthController } from "./health.controller";
 import { KpiModule } from "./modules/kpi/kpi.module";
 import { MaintenanceModule } from "./modules/maintenance/maintenance.module";
+import { ClientModule } from "./modules/client/client.module";
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { MaintenanceModule } from "./modules/maintenance/maintenance.module";
     DepartmentModule,
     KpiModule,
     MaintenanceModule,
+    ClientModule,
   ],
   controllers: [HealthController],
 })

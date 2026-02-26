@@ -47,6 +47,11 @@
       "folder_not_found": "未找到文件夹"
     }
   },
+  "client": {
+    "upload": {
+      "file_too_large": "文件过大。最大大小为100MB。"
+    }
+  },
   "version": {
     "not_found": "未找到版本",
     "document": {

@@ -65,22 +65,23 @@ export function DepartmentGrid({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {departments.map((dept) => (
+      {departments.map((dept, index) => (
         <button
           key={dept.id}
           type="button"
-          className="group flex items-center gap-3 px-1 py-1 text-left transition-colors duration-200 hover:text-cyan-100 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a] rounded-md"
+          className="cyber-card cyber-corner group flex items-center gap-3 p-4 text-left rounded-xl border border-cyan-500/30 hover:border-cyan-500/60 transition-[border-color,box-shadow] duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a] opacity-0 animate-slide-up"
+          style={{ animationDelay: `${Math.min(index * 40, 400)}ms` }}
           onClick={() => onSelectDepartment(dept)}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300 transition-colors duration-200 group-hover:bg-cyan-500/25">
             <Building2 className="h-5 w-5" />
           </span>
-          <div className="flex flex-col">
-            <span className="font-cyber font-semibold text-base leading-tight text-cyan-50 line-clamp-2">
+          <div className="flex flex-col min-w-0">
+            <span className="font-cyber font-semibold text-base leading-tight text-cyan-50 line-clamp-2 group-hover:text-cyan-100 transition-colors duration-200">
               {getDepartmentName(dept, locale)}
             </span>
             {!dept.isActive && (
-              <span className="text-xs font-cyber text-fuchsia-300">
+              <span className="text-xs font-cyber text-fuchsia-300 mt-0.5">
                 {t("inactive")}
               </span>
             )}

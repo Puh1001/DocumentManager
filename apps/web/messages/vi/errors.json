@@ -47,6 +47,11 @@
       "folder_not_found": "Không tìm thấy thư mục"
     }
   },
+  "client": {
+    "upload": {
+      "file_too_large": "File quá lớn. Kích thước tối đa là 100MB."
+    }
+  },
   "version": {
     "not_found": "Không tìm thấy phiên bản",
     "document": {

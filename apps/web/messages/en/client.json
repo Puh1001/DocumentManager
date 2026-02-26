@@ -1,0 +1,38 @@
+{
+  "title": "Client Files",
+  "description": "Upload and view client documents (Word, Excel, PPT, PDF).",
+  "upload": "Upload",
+  "searchPlaceholder": "Search by name...",
+  "filterType": "File type",
+  "dateFrom": "From date",
+  "dateTo": "To date",
+  "table": {
+    "name": "Name",
+    "type": "Type",
+    "size": "Size",
+    "uploadedBy": "Uploaded by",
+    "date": "Date",
+    "actions": "Actions"
+  },
+  "empty": "No client files yet.",
+  "uploadSuccess": "File uploaded.",
+  "uploadError": "Upload failed",
+  "deleteSuccess": "File deleted.",
+  "deleteError": "Delete failed",
+  "deleteConfirmTitle": "Delete file?",
+  "deleteConfirmMessage": "This file will be removed. This action cannot be undone.",
+  "deleteConfirm": "Delete",
+  "paginationSummary": "Showing {from}–{to} of {total} files",
+  "unsupportedFileType": "Unsupported file type: .{type}",
+  "viewFileAction": "View file {name}",
+  "pptViewer": {
+    "loading": "Loading...",
+    "loadError": "Failed to load presentation.",
+    "slideLabel": "Slide {n}",
+    "prevSlide": "Previous slide (also use ←)",
+    "nextSlide": "Next slide (also use →)",
+    "fullscreen": "Presentation mode (fullscreen)",
+    "exitFullscreen": "Exit fullscreen",
+    "download": "Download"
+  }
+}

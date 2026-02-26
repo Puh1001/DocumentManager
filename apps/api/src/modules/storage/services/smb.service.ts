@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import * as fs from "fs";
 import * as path from "path";
 import { Readable } from "stream";
+import { CustomException } from "@/common/errors/custom-exception";
+import { ErrorCodes } from "@/common/errors/error-codes";
 
 interface FileInfo {
   name: string;
@@ -248,10 +250,32 @@ export class SmbService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Read file as Stream
+   * Validates file exists and is readable before creating stream
    */
   async readFileStream(relativePath: string): Promise<Readable> {
     const fullPath = this.getFullPath(relativePath);
-    return fs.createReadStream(fullPath);
+
+    try {
+      await fs.promises.access(fullPath, fs.constants.F_OK | fs.constants.R_OK);
+    } catch (error) {
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === "ENOENT") {
+        throw CustomException.notFound(
+          ErrorCodes.DOCUMENT.NOT_FOUND,
+          `File not found: ${relativePath}`,
+        );
+      }
+      throw CustomException.internalServerError(
+        ErrorCodes.DOCUMENT.NOT_FOUND,
+        `Cannot read file: ${nodeError.message}`,
+      );
+    }
+
+    const stream = fs.createReadStream(fullPath);
+    stream.on("error", (err) => {
+      this.logger.error(`Stream error for ${relativePath}:`, err.message);
+    });
+    return stream;
   }
 
   /**

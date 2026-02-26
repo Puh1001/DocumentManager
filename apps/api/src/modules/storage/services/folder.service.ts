@@ -508,12 +508,12 @@ export class FolderService {
           },
         });
       } catch (error: unknown) {
-        // Handle race condition
+        // Handle race condition (same type-safe check as ensureClientFolder)
         const isUniqueConstraintError =
           error &&
           typeof error === "object" &&
           "code" in error &&
-          error.code === "P2002";
+          (error as { code: string }).code === "P2002";
 
         if (isUniqueConstraintError) {
           departmentRoot = await (
@@ -585,7 +585,7 @@ export class FolderService {
             error &&
             typeof error === "object" &&
             "code" in error &&
-            error.code === "P2002";
+            (error as { code: string }).code === "P2002";
 
           if (isUniqueConstraintError) {
             subfolder = await (
@@ -706,7 +706,7 @@ export class FolderService {
             error &&
             typeof error === "object" &&
             "code" in error &&
-            error.code === "P2002";
+            (error as { code: string }).code === "P2002";
 
           if (isUniqueConstraintError) {
             versionsFolder = await (
@@ -752,5 +752,63 @@ export class FolderService {
     }
 
     return result;
+  }
+
+  /**
+   * Ensure the global "Client" folder exists (for client file uploads).
+   * Idempotent: creates on SMB and DB if missing; returns existing folder id otherwise.
+   * Path: "Client"; departmentId = null (global, not department-scoped).
+   * Handles P2002 race condition when folder is created by another request.
+   */
+  async ensureClientFolder(): Promise<{ clientFolderId: string }> {
+    const folderPath = "Client";
+
+    let clientFolder = await (this.prisma as PrismaClientLike).folder.findUnique(
+      { where: { path: folderPath } }
+    );
+
+    if (!clientFolder) {
+      await this.smbService.createDirectory(folderPath);
+      try {
+        clientFolder = await (this.prisma as PrismaClientLike).folder.create({
+          data: {
+            name: "Client",
+            path: folderPath,
+            parentId: null,
+            departmentId: null,
+          },
+        });
+      } catch (error: unknown) {
+        const isUniqueConstraintError =
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          (error as { code: string }).code === "P2002";
+        if (isUniqueConstraintError) {
+          clientFolder = await (
+            this.prisma as PrismaClientLike
+          ).folder.findUnique({ where: { path: folderPath } });
+        } else {
+          throw error;
+        }
+      }
+    } else if (clientFolder.deletedAt) {
+      await (this.prisma as PrismaClientLike).folder.update({
+        where: { id: clientFolder.id },
+        data: { deletedAt: null },
+      });
+      clientFolder = await (
+        this.prisma as PrismaClientLike
+      ).folder.findUnique({ where: { path: folderPath } });
+    }
+
+    if (!clientFolder) {
+      throw CustomException.notFound(
+        ErrorCodes.FOLDER.NOT_FOUND,
+        `Failed to find or create Client folder: ${folderPath}`
+      );
+    }
+
+    return { clientFolderId: clientFolder.id };
   }
 }

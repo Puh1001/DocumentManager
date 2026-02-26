@@ -192,7 +192,7 @@ class ApiClient {
 
       // Create error object with errorCode if available
       const errorObj = new Error(
-        error.message || `HTTP ${response.status}`
+        error.message || `HTTP ${response.status}`,
       ) as ApiError;
       errorObj.errorCode = error.errorCode;
       errorObj.statusCode = error.statusCode || response.status;
@@ -232,7 +232,7 @@ class ApiClient {
   post<T>(
     endpoint: string,
     data?: unknown,
-    options?: RequestOptions
+    options?: RequestOptions,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
@@ -244,7 +244,7 @@ class ApiClient {
   patch<T>(
     endpoint: string,
     data?: unknown,
-    options?: RequestOptions
+    options?: RequestOptions,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
@@ -354,7 +354,7 @@ class ApiClient {
     endpoint: string,
     file: File,
     additionalData?: Record<string, string>,
-    retryCount = 0
+    retryCount = 0,
   ): Promise<T> {
     // Ensure we have a valid token before making the request
     await this.ensureValidToken();
@@ -398,7 +398,7 @@ class ApiClient {
           .json()
           .catch(() => ({ message: "Unauthorized" }));
         const errorObj = new Error(
-          errorData.message || "Unauthorized"
+          errorData.message || "Unauthorized",
         ) as ApiError;
         errorObj.errorCode = errorData.errorCode;
         errorObj.statusCode = 401;
@@ -430,7 +430,7 @@ class ApiClient {
       speed: number;
       eta: number;
     }) => void,
-    retryCount = 0
+    retryCount = 0,
   ): { promise: Promise<T>; abort: () => void } {
     const formData = new FormData();
     formData.append("file", file);
@@ -503,7 +503,7 @@ class ApiClient {
                 file,
                 additionalData,
                 onProgress,
-                1
+                1,
               );
               retryResult.promise.then(resolve).catch(reject);
             } catch (error) {
@@ -592,7 +592,7 @@ export const departmentApi = {
  */
 export function getDepartmentName(
   department: Department,
-  locale: string = "vi"
+  locale: string = "vi",
 ): string {
   if (locale === "en" && department.nameEn) {
     return department.nameEn;
@@ -726,7 +726,7 @@ export const userApi = {
       queryParams.append("isActive", params.isActive.toString());
     const query = queryParams.toString();
     return api.get<PaginatedUsersResponse>(
-      `/users/for-assignees${query ? `?${query}` : ""}`
+      `/users/for-assignees${query ? `?${query}` : ""}`,
     );
   },
   getById: (id: string) => api.get<User>(`/users/${id}`),
@@ -749,7 +749,7 @@ export const userApi = {
     }),
   removeDepartment: (userId: string, departmentId: string) =>
     api.delete<{ message: string }>(
-      `/users/${userId}/departments/${departmentId}`
+      `/users/${userId}/departments/${departmentId}`,
     ),
 };
 
@@ -896,7 +896,7 @@ export interface KpiAttachment {
 export const kpiAttachmentApi = {
   getAttachments: (kpiRecordId: string, month?: number) =>
     api.get<KpiAttachment[]>(
-      `/kpi/records/${kpiRecordId}/attachments${month != null && month >= 1 && month <= 12 ? `?month=${month}` : ""}`
+      `/kpi/records/${kpiRecordId}/attachments${month != null && month >= 1 && month <= 12 ? `?month=${month}` : ""}`,
     ),
   getAttachmentStreamUrl: (attachmentId: string) =>
     `/kpi/attachments/${attachmentId}/stream`,
@@ -907,7 +907,7 @@ export const kpiAttachmentApi = {
     file: File,
     folderId: string | undefined,
     description?: string,
-    month?: number
+    month?: number,
   ) =>
     api.upload<{
       id: string;
@@ -926,16 +926,16 @@ export const kpiAttachmentApi = {
     api.get<DeletionStatus>(`/kpi/attachments/${attachmentId}/deletion-status`),
   getDeletionRequest: (attachmentId: string) =>
     api.get<DeletionRequest | null>(
-      `/kpi/attachments/${attachmentId}/deletion-request`
+      `/kpi/attachments/${attachmentId}/deletion-request`,
     ),
   submitDeletionRequest: (
     attachmentId: string,
     reason: string,
-    replacementFileId?: string
+    replacementFileId?: string,
   ) =>
     api.post<DeletionRequest>(
       `/kpi/attachments/${attachmentId}/deletion-request`,
-      { reason, replacementFileId }
+      { reason, replacementFileId },
     ),
   deleteAttachment: (attachmentId: string) =>
     api.delete<{ success: boolean }>(`/kpi/attachments/${attachmentId}`),
@@ -1038,7 +1038,7 @@ export const deletionRequestApi = {
   submitDeletionRequest: (documentId: string, data: SubmitDeletionRequestDto) =>
     api.post<DeletionRequest>(
       `/storage/documents/${documentId}/deletion-requests`,
-      data
+      data,
     ),
 
   listPending: () => api.get<DeletionRequest[]>("/storage/deletion-requests"),
@@ -1048,4 +1048,62 @@ export const deletionRequestApi = {
 
   review: (id: string, data: ReviewDeletionRequestDto) =>
     api.post<DeletionRequest>(`/storage/deletion-requests/${id}/review`, data),
+};
+
+// Client files (dashboard Client page)
+export interface ClientFileItem {
+  id: string;
+  name: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string | null;
+  uploadedAt: string | null;
+  createdAt: string;
+}
+
+export interface ListClientFilesParams {
+  search?: string;
+  fileType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ListClientFilesResponse {
+  data: ClientFileItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const clientFilesApi = {
+  getList: (params?: ListClientFilesParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search != null && params.search !== "")
+      searchParams.set("search", params.search);
+    if (params?.fileType != null && params.fileType !== "")
+      searchParams.set("fileType", params.fileType);
+    if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+    if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+    if (params?.page != null) searchParams.set("page", String(params.page));
+    if (params?.limit != null) searchParams.set("limit", String(params.limit));
+    const query = searchParams.toString();
+    return api.get<ListClientFilesResponse>(
+      `/client/files${query ? `?${query}` : ""}`,
+    );
+  },
+
+  upload: (file: File) =>
+    api.upload<{
+      id: string;
+      name: string;
+      fileName: string;
+      fileType: string;
+    }>("/client/files/upload", file),
+
+  delete: (id: string) =>
+    api.delete<{ message: string }>(`/client/files/${id}`),
 };

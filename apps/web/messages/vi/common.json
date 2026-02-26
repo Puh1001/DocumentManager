@@ -6,12 +6,19 @@
   "navigation": {
     "dashboard": "Dashboard",
     "documents": "Tài liệu ISO",
+    "document": "Tài liệu",
     "kpi": "KPI",
     "departments": "Phòng ban",
+    "department": "Phòng ban",
     "users": "Người dùng",
+    "user": "Người dùng",
     "permissions": "Phân quyền",
+    "permission": "Phân quyền",
     "settings": "Cài đặt",
     "maintenance": "Bảo trì",
+    "client": "Tài liệu khách hàng",
+    "modules": "Module",
+    "module": "Module",
     "boss": "Ban quản trị BPVN"
   },
   "actions": {

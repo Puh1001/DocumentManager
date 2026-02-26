@@ -8,7 +8,8 @@
     "documents": "Tài liệu ISO",
     "departments": "Danh sách phòng ban",
     "kpiStatus": "Trạng thái KPI",
-    "isoOverview": "Tổng quan ISO"
+    "isoOverview": "Tổng quan ISO",
+    "client": "Tài liệu Khách hàng"
   },
   "actions": {
     "back": "Quay lại"

@@ -48,14 +48,14 @@ export default function BossLayout({
 
   return (
     <div className="min-h-screen cyber-bg boss-layout" data-boss-theme={bossTheme}>
-      {/* Cyberpunk header with logout */}
-      <header className="boss-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-cyan-500/20 bg-[#0a0a15]/95 backdrop-blur-md px-6">
+      {/* Minimal header: floating bar with soft transition */}
+      <header className="boss-header sticky top-4 z-40 mx-4 flex h-14 items-center justify-between rounded-xl border border-cyan-500/20 bg-[#0a0a15]/90 backdrop-blur-xl px-5 transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 cyber-border rounded-xl flex items-center justify-center bg-cyan-500/10">
-            <User className="w-5 h-5 text-cyan-300" />
+          <div className="w-9 h-9 cyber-border rounded-lg flex items-center justify-center bg-cyan-500/10 transition-colors duration-200">
+            <User className="w-4 h-4 text-cyan-300" />
           </div>
           <div>
-            <span className="font-cyber font-bold text-lg cyber-neon-cyan">
+            <span className="font-cyber font-bold text-base cyber-neon-cyan">
               {tCommon("app.name")}
             </span>
             <span className="block text-xs text-cyan-400/70 font-cyber">
@@ -64,13 +64,13 @@ export default function BossLayout({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setBossTheme(bossTheme === "dark" ? "light" : "dark")}
             title={bossTheme === "dark" ? tBoss("theme.switchToLight") : tBoss("theme.switchToDark")}
             aria-label={bossTheme === "dark" ? tBoss("theme.switchToLight") : tBoss("theme.switchToDark")}
-            className="cyber-button p-2 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
+            className="cyber-button p-2 rounded-lg cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
           >
             {bossTheme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -94,15 +94,15 @@ export default function BossLayout({
           <button
             onClick={logout}
             title={t("title")}
-            className="cyber-button p-2 rounded-lg"
+            className="cyber-button p-2 rounded-lg cursor-pointer transition-colors duration-200"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      {/* Full-screen content area */}
-      <main className="p-0">{children}</main>
+      {/* Content: padding so content is not under floating header */}
+      <main className="pt-6 pb-8 px-4 min-h-[calc(100vh-4rem)]">{children}</main>
     </div>
   );
 }

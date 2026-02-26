@@ -84,6 +84,14 @@ npm run db:push
 cd apps/api && npx ts-node prisma/seed.ts && cd ../..
 ```
 
+**Thêm Module Client mà không chạy lại full seed** (tránh ghi đè dữ liệu hiện có):
+
+```bash
+cd apps/api && npm run migrate:client-module && cd ../..
+```
+
+Script sẽ: tạo/upsert Module "Client", tạo các permission (view:Client, create:Client, …), gán quyền cho role admin và dcc nếu có. Idempotent – chạy nhiều lần an toàn.
+
 ## 🏃 Development Commands
 
 ### Chạy Development Mode

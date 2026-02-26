@@ -14,6 +14,7 @@ export const PERMISSION_SUBJECTS = {
   FOLDER: "Folder",
   USER: "User",
   KPI: "Kpi",
+  CLIENT: "Client",
   ALL: "all",
 } as const;
 

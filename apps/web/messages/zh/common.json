@@ -6,12 +6,19 @@
   "navigation": {
     "dashboard": "仪表板",
     "documents": "ISO文档",
+    "document": "文档",
     "kpi": "KPI",
     "departments": "部门",
+    "department": "部门",
     "users": "用户",
+    "user": "用户",
     "permissions": "权限",
+    "permission": "权限",
     "settings": "设置",
     "maintenance": "维护",
+    "client": "客户文件",
+    "modules": "模块",
+    "module": "模块",
     "boss": "BPVN 管理看板"
   },
   "actions": {

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService, Prisma } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { VersionService } from "./version.service";
@@ -26,11 +26,12 @@ export interface FindAllDocumentsFilters {
 
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly smbService: SmbService,
     private readonly versionService: VersionService,
-    private readonly documentLevelService: DocumentLevelService
+    private readonly documentLevelService: DocumentLevelService,
   ) {}
 
   async findById(id: string) {
@@ -59,7 +60,7 @@ export class DocumentService {
     if (!document) {
       throw CustomException.notFound(
         ErrorCodes.DOCUMENT.NOT_FOUND,
-        "Document not found"
+        "Document not found",
       );
     }
 
@@ -78,7 +79,7 @@ export class DocumentService {
       {
         where: { folderId, status: "ACTIVE" },
         orderBy: { name: "asc" },
-      }
+      },
     );
 
     // Apply encoding fix to all documents as defense-in-depth
@@ -220,7 +221,7 @@ export class DocumentService {
       }
     }
     const deduped = Array.from(seen.values()).sort((a, b) =>
-      (a.name ?? "").localeCompare(b.name ?? "")
+      (a.name ?? "").localeCompare(b.name ?? ""),
     );
 
     return {
@@ -254,33 +255,33 @@ export class DocumentService {
       storageLocation?: string;
       documentNo?: string;
       revisionLabel?: string;
-    }
+    },
   ) {
     if (!folderId) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.FOLDER_REQUIRED,
-        "folderId is required"
+        "folderId is required",
       );
     }
 
     if (!file) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.FILE_REQUIRED,
-        "file is required"
+        "file is required",
       );
     }
 
     if (!levelId || levelId.trim() === "") {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.LEVEL_REQUIRED,
-        "levelId is required"
+        "levelId is required",
       );
     }
     const level = await this.documentLevelService.findById(levelId);
     if (!level || !level.isActive) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.INVALID_LEVEL,
-        "Invalid or inactive document level"
+        "Invalid or inactive document level",
       );
     }
 
@@ -291,7 +292,7 @@ export class DocumentService {
     if (!folder) {
       throw CustomException.notFound(
         ErrorCodes.DOCUMENT.FOLDER_NOT_FOUND,
-        "Folder not found"
+        "Folder not found",
       );
     }
 
@@ -307,7 +308,7 @@ export class DocumentService {
       ) {
         throw CustomException.forbidden(
           ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
-          "Folder is not in your department"
+          "Folder is not in your department",
         );
       }
     }
@@ -322,7 +323,7 @@ export class DocumentService {
     if (!isUnderIsoDocuments && !isUnderKpi) {
       throw CustomException.forbidden(
         ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
-        "Upload only allowed to Documents (ISO_documents) or KPI folder"
+        "Upload only allowed to Documents (ISO_documents) or KPI folder",
       );
     }
 
@@ -338,51 +339,51 @@ export class DocumentService {
       if (!preparerName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.PREPARER_REQUIRED,
-          "preparerName is required"
+          "preparerName is required",
         );
       }
       if (!reviewerName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.REVIEWER_REQUIRED,
-          "reviewerName is required"
+          "reviewerName is required",
         );
       }
       if (!approverName) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.APPROVER_REQUIRED,
-          "approverName is required"
+          "approverName is required",
         );
       }
       if (!approvalDate) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.APPROVAL_DATE_REQUIRED,
-          "approvalDate is required"
+          "approvalDate is required",
         );
       }
       const parsed = new Date(approvalDate);
       if (Number.isNaN(parsed.getTime())) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.APPROVAL_DATE_REQUIRED,
-          "approvalDate is invalid"
+          "approvalDate is invalid",
         );
       }
       if (!receiptDateStr) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.RECEIPT_DATE_REQUIRED,
-          "receiptDate is required"
+          "receiptDate is required",
         );
       }
       const parsedReceiptDate = new Date(receiptDateStr);
       if (Number.isNaN(parsedReceiptDate.getTime())) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.RECEIPT_DATE_REQUIRED,
-          "receiptDate is invalid"
+          "receiptDate is invalid",
         );
       }
       if (!storageLocationStr) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.STORAGE_LOCATION_REQUIRED,
-          "storageLocation is required"
+          "storageLocation is required",
         );
       }
 
@@ -420,7 +421,7 @@ export class DocumentService {
                     : " Check Level selection and format.";
           throw CustomException.badRequest(
             ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-            `Invalid documentNo for document level${levelLabel}.${hint}`
+            `Invalid documentNo for document level${levelLabel}.${hint}`,
           );
         }
 
@@ -435,7 +436,7 @@ export class DocumentService {
           if (existing) {
             throw CustomException.badRequest(
               ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-              "documentNo must be unique for LEVEL1"
+              "documentNo must be unique for LEVEL1",
             );
           }
         }
@@ -452,7 +453,7 @@ export class DocumentService {
       if (rawRev && !isValidRevisionLabel(rawRev)) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_REVISION_LABEL,
-          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)"
+          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)",
         );
       }
     }
@@ -549,7 +550,7 @@ export class DocumentService {
       document.id,
       file.buffer,
       userId,
-      "Initial upload"
+      "Initial upload",
     );
 
     // Update file dates from current file (do not overwrite filePath: createVersion already set it to currentPath)
@@ -557,7 +558,7 @@ export class DocumentService {
       {
         where: { id: document.id },
         select: { filePath: true },
-      }
+      },
     );
     if (updated?.filePath) {
       try {
@@ -581,7 +582,7 @@ export class DocumentService {
     documentId: string,
     file: Express.Multer.File,
     userId: string,
-    comment?: string
+    comment?: string,
   ) {
     // Validate document exists (throws if not found)
     await this.findById(documentId);
@@ -596,7 +597,7 @@ export class DocumentService {
       documentId,
       file.buffer,
       userId,
-      comment
+      comment,
     );
 
     // Reset deletion tracking: update uploadedBy, uploadedAt, and deletionExpiresAt
@@ -643,11 +644,69 @@ export class DocumentService {
     });
   }
 
+  /**
+   * Permanently delete a document's physical files from SMB storage.
+   * Used by client file deletion to ensure both the current file and
+   * all version files are removed from the shared folder.
+   */
+  async deletePhysicalFilesFromStorage(id: string): Promise<void> {
+    const document = await (this.prisma as PrismaClientLike).document.findUnique(
+      {
+        where: { id },
+        include: { versions: true },
+      },
+    );
+
+    if (!document) {
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.NOT_FOUND,
+        "Document not found",
+      );
+    }
+
+    const paths = new Set<string>();
+    if (document.filePath && document.filePath.trim() !== "") {
+      paths.add(document.filePath);
+    }
+    for (const version of document.versions) {
+      if (version.filePath && version.filePath.trim() !== "") {
+        paths.add(version.filePath);
+      }
+    }
+
+    let lastError: unknown | null = null;
+
+    for (const relativePath of paths) {
+      try {
+        const exists = await this.smbService.exists(relativePath);
+        if (!exists) {
+          continue;
+        }
+        await this.smbService.deleteFile(relativePath);
+      } catch (error) {
+        const nodeError = error as NodeJS.ErrnoException;
+        if (nodeError.code === "ENOENT") {
+          // File was already removed; ignore
+          continue;
+        }
+        lastError = error;
+        this.logger.error(
+          `Failed to delete file from storage for document ${id}: ${relativePath}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+  }
+
   async rename(
     documentId: string,
     newName: string,
     newFileName: string,
-    userId: string
+    userId: string,
   ) {
     const document = await this.findById(documentId);
 
@@ -656,7 +715,7 @@ export class DocumentService {
     if (!ext) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.INVALID_FILENAME,
-        "Filename must include extension"
+        "Filename must include extension",
       );
     }
 
@@ -666,7 +725,7 @@ export class DocumentService {
     if (originalExt !== newExt) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.INVALID_FILENAME,
-        "Cannot change file extension"
+        "Cannot change file extension",
       );
     }
 
@@ -716,7 +775,7 @@ export class DocumentService {
   async updateIsoMetadata(
     id: string,
     dto: UpdateIsoMetadataDto,
-    userId: string
+    userId: string,
   ) {
     const document = await (
       this.prisma as PrismaClientLike
@@ -726,7 +785,7 @@ export class DocumentService {
     if (!document) {
       throw CustomException.notFound(
         ErrorCodes.DOCUMENT.NOT_FOUND,
-        "Document not found"
+        "Document not found",
       );
     }
 
@@ -737,7 +796,7 @@ export class DocumentService {
       if (!level || !level.isActive) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_LEVEL,
-          "Invalid or inactive document level"
+          "Invalid or inactive document level",
         );
       }
       levelCode = level.code;
@@ -789,7 +848,7 @@ export class DocumentService {
       if (!raw) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-          "documentNo is required for ISO documents"
+          "documentNo is required for ISO documents",
         );
       }
 
@@ -827,7 +886,7 @@ export class DocumentService {
                   : " Check Level selection and format.";
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-          `Invalid documentNo for document level${levelLabel}.${hint}`
+          `Invalid documentNo for document level${levelLabel}.${hint}`,
         );
       }
 
@@ -845,7 +904,7 @@ export class DocumentService {
         if (existing) {
           throw CustomException.badRequest(
             ErrorCodes.DOCUMENT.INVALID_DOCUMENT_NO,
-            "documentNo must be unique for LEVEL1"
+            "documentNo must be unique for LEVEL1",
           );
         }
       }
@@ -861,7 +920,7 @@ export class DocumentService {
       if (raw !== null && raw !== "" && !isValidRevisionLabel(raw)) {
         throw CustomException.badRequest(
           ErrorCodes.DOCUMENT.INVALID_REVISION_LABEL,
-          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)"
+          "Invalid revision label; use format Letter/0..10 (e.g. A/0, A/1, B/0)",
         );
       }
       (data as Record<string, unknown>).revisionLabel = raw || null;
@@ -892,7 +951,7 @@ export class DocumentService {
     } catch (error) {
       console.error(
         "Failed to create audit log for ISO metadata update:",
-        error
+        error,
       );
     }
 
@@ -917,7 +976,7 @@ export class DocumentService {
         where,
         include: { folder: true },
         take: 50,
-      }
+      },
     );
 
     // Apply encoding fix to all documents as defense-in-depth

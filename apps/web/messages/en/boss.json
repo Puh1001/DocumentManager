@@ -8,7 +8,8 @@
     "documents": "ISO Document",
     "departments": "Department List",
     "kpiStatus": "KPI Status",
-    "isoOverview": "ISO Overview"
+    "isoOverview": "ISO Overview",
+    "client": "Client Files"
   },
   "actions": {
     "back": "Back"

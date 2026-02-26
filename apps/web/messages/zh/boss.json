@@ -8,7 +8,8 @@
     "documents": "ISO文档",
     "departments": "部门列表",
     "kpiStatus": "KPI状态",
-    "isoOverview": "ISO 总览"
+    "isoOverview": "ISO 总览",
+    "client": "客户文件"
   },
   "actions": {
     "back": "返回"

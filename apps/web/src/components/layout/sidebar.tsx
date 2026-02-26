@@ -71,7 +71,7 @@ export function Sidebar() {
         show: true,
       },
     ],
-    [t]
+    [t],
   );
 
   // Get ability for permission checking
@@ -84,14 +84,14 @@ export function Sidebar() {
   // Show warning if ability loading failed
   if (abilityError) {
     console.warn(
-      "Sidebar: Failed to load abilities, showing limited navigation"
+      "Sidebar: Failed to load abilities, showing limited navigation",
     );
   }
 
   // Memoize path without locale for performance
   const pathWithoutLocale = useMemo(
     () => pathname.replace(`/${locale}`, "") || "/",
-    [pathname, locale]
+    [pathname, locale],
   );
 
   // Filter and map registered pages based on permissions
@@ -113,7 +113,7 @@ export function Sidebar() {
         // Validate module is a valid Subject before using
         if (!isValidSubject(page.module)) {
           console.warn(
-            `Sidebar: Invalid module name: ${page.module}. Skipping page.`
+            `Sidebar: Invalid module name: ${page.module}. Skipping page.`,
           );
           return null;
         }
@@ -126,21 +126,40 @@ export function Sidebar() {
           ability.can("manage", "all") ||
           ability.can("manage", module);
 
+        // Try to use translation key for navigation label, fallback to page.name
+        const moduleKey = page.module.toLowerCase();
+        const navKey = `navigation.${moduleKey}`;
+        let displayName = page.name;
+        try {
+          const translated = t(navKey);
+          // If translation exists and is not the key path itself, use it
+          // (next-intl returns the key path if translation is missing)
+          if (
+            translated &&
+            translated !== navKey &&
+            !translated.startsWith("navigation.")
+          ) {
+            displayName = translated;
+          }
+        } catch {
+          // Translation key doesn't exist, use page.name
+        }
+
         return {
-          name: page.name,
+          name: displayName,
           href: page.path,
           icon: getIcon(page.icon),
           show: canAccess,
         };
       })
       .filter((item): item is NavigationItem => item !== null && item.show);
-  }, [pages, ability, abilityLoading, abilityError]);
+  }, [pages, ability, abilityLoading, abilityError, t]);
 
   // Combine special pages and dynamic pages
   // Special pages come first, then dynamic pages (already sorted by order)
   const navigation = useMemo(
     () => [...specialPages, ...dynamicPages],
-    [specialPages, dynamicPages]
+    [specialPages, dynamicPages],
   );
 
   return (
@@ -184,13 +203,13 @@ export function Sidebar() {
                         "flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
                       <item.icon
                         className={cn(
                           "h-5 w-5 shrink-0 transition-transform duration-200",
-                          isActive && "scale-105"
+                          isActive && "scale-105",
                         )}
                       />
                       {item.name}

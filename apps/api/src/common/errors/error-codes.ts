@@ -91,6 +91,9 @@ export const ErrorCodes = {
     NAME_EXISTS: "module.create.name_exists",
     IN_USE: "module.delete.in_use",
   },
+  CLIENT: {
+    FILE_TOO_LARGE: "client.upload.file_too_large",
+  },
   NOT_FOUND: "not_found",
   INVALID_INPUT: "invalid_input",
 } as const;

@@ -1,0 +1,38 @@
+{
+  "title": "客户文件",
+  "description": "上传和查看客户文档（Word、Excel、PPT、PDF）。",
+  "upload": "上传",
+  "searchPlaceholder": "按名称搜索...",
+  "filterType": "文件类型",
+  "dateFrom": "开始日期",
+  "dateTo": "结束日期",
+  "table": {
+    "name": "名称",
+    "type": "类型",
+    "size": "大小",
+    "uploadedBy": "上传者",
+    "date": "日期",
+    "actions": "操作"
+  },
+  "empty": "暂无客户文件。",
+  "uploadSuccess": "文件已上传。",
+  "uploadError": "上传失败",
+  "deleteSuccess": "文件已删除。",
+  "deleteError": "删除失败",
+  "deleteConfirmTitle": "删除文件？",
+  "deleteConfirmMessage": "此文件将被删除且无法恢复。",
+  "deleteConfirm": "删除",
+  "paginationSummary": "显示第 {from}–{to} 条，共 {total} 条",
+  "unsupportedFileType": "不支持的文件类型：.{type}",
+  "viewFileAction": "查看文件 {name}",
+  "pptViewer": {
+    "loading": "加载中...",
+    "loadError": "无法加载演示文稿。",
+    "slideLabel": "幻灯片 {n}",
+    "prevSlide": "上一张 (或使用 ←)",
+    "nextSlide": "下一张 (或使用 →)",
+    "fullscreen": "演示模式 (全屏)",
+    "exitFullscreen": "退出全屏",
+    "download": "下载"
+  }
+}
