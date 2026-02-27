@@ -54,6 +54,7 @@ export function IsoMetadataEditDialog({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [levelId, setLevelId] = useState("");
+  const [preparerName, setPreparerName] = useState<string>("");
   const [documentNo, setDocumentNo] = useState("");
   const [revisionLabel, setRevisionLabel] = useState("");
   const [reviewerName, setReviewerName] = useState<string>("");
@@ -69,6 +70,8 @@ export function IsoMetadataEditDialog({
       setLevelId(doc.level?.id ?? "");
       setDocumentNo(doc.documentNo ?? "");
       setRevisionLabel(doc.revisionLabel ?? "A/0");
+       // Prefer explicit preparerName override, fall back to related user fullName
+      setPreparerName(doc.preparerName ?? doc.preparer?.fullName ?? "");
       // Use name from document if available, otherwise use fullName from user relation
       setReviewerName(doc.reviewerName ?? doc.reviewer?.fullName ?? "");
       setApproverName(doc.approverName ?? doc.approver?.fullName ?? "");
@@ -113,6 +116,7 @@ export function IsoMetadataEditDialog({
         levelId: levelId || undefined,
         documentNo: nextDocumentNo || null,
         revisionLabel: revisionLabel?.trim() || null,
+        preparerName: preparerName.trim() || null,
         reviewerName: reviewerName.trim() || null,
         approverName: approverName.trim() || null,
         approvalDate: approvalDate ? approvalDate.toISOString() : null,
@@ -215,6 +219,22 @@ export function IsoMetadataEditDialog({
             required={false}
             className="col-span-1"
           />
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="preparer-name" className="text-sm font-medium">
+              {tEdit("preparer")}
+            </Label>
+            <Input
+              id="preparer-name"
+              value={preparerName}
+              onChange={(e) => setPreparerName(e.target.value)}
+              placeholder={tEdit("preparerPlaceholder")}
+              disabled={submitting}
+              className="min-w-0"
+            />
+            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">
+              {tEdit("fullNameRequired")}
+            </p>
+          </div>
           <div className="space-y-2 min-w-0">
             <Label htmlFor="reviewer-name" className="text-sm font-medium">
               {tEdit("reviewer")}
