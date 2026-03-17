@@ -13,6 +13,7 @@
     "test:cov": "jest --coverage --passWithNoTests"
   },
   "dependencies": {
+    "@iso-docs/shared": "*",
     "@casl/ability": "^6.7.5",
     "@casl/react": "^5.0.0",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -45,7 +46,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@iso-docs/shared": "*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",

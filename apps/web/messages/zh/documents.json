@@ -29,6 +29,13 @@
     "selectDepartment": "选择部门",
     "none": "无（取消分配）"
   },
+  "changeDepartment": {
+    "title": "更改部门",
+    "description": "将「{document}」移至其他部门。当前：{current}",
+    "targetDepartment": "目标部门",
+    "selectDepartment": "选择部门",
+    "targetFolder": "目标文件夹"
+  },
   "filters": {
     "status": "状态",
     "level": "级别",
@@ -87,7 +94,8 @@
       "openToEdit": "打开编辑",
       "versionHistory": "版本历史",
       "editMetadata": "编辑元数据",
-      "rename": "重命名"
+      "rename": "重命名",
+      "changeDepartment": "更改部门"
     }
   },
   "editMetadata": {

@@ -12,6 +12,8 @@ import { fixFileNameEncoding } from "@/common/utils/encoding.util";
 import { isValidRevisionLabel } from "@iso-docs/shared";
 import { DocumentLevelService } from "./document-level.service";
 import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
+import { StoragePathBuilder } from "../utils/storage-path.util";
+import { getSafeExtension } from "@/common/utils/file.util";
 
 export interface FindAllDocumentsFilters {
   status?: "ACTIVE" | "ARCHIVED" | "DELETED";
@@ -765,6 +767,141 @@ export class DocumentService {
       console.error("Failed to create audit log for rename:", error);
     }
 
+    return this.findById(documentId);
+  }
+
+  /**
+   * Move document to a different folder (change department). DCC/admin only.
+   * Moves current file and all version files physically on SMB, updates DB.
+   */
+  async changeDepartment(
+    documentId: string,
+    targetFolderId: string,
+    userId: string,
+  ) {
+    const document = await (
+      this.prisma as PrismaClientLike
+    ).document.findUnique({
+      where: { id: documentId },
+      include: {
+        folder: { include: { department: true } },
+        versions: true,
+      },
+    });
+
+    if (!document) {
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.NOT_FOUND,
+        "Document not found",
+      );
+    }
+
+    if (document.folderId === targetFolderId) {
+      throw CustomException.badRequest(
+        ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
+        "Document is already in the target folder",
+      );
+    }
+
+    const targetFolder = await (
+      this.prisma as PrismaClientLike
+    ).folder.findUnique({
+      where: { id: targetFolderId },
+      include: { department: true },
+    });
+
+    if (!targetFolder) {
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.FOLDER_NOT_FOUND,
+        "Target folder not found",
+      );
+    }
+
+    const normalizedPath = (targetFolder.path ?? "").toLowerCase();
+    const isUnderIsoDocuments =
+      normalizedPath.includes("/iso_documents") ||
+      normalizedPath === "iso_documents";
+    if (!isUnderIsoDocuments) {
+      throw CustomException.forbidden(
+        ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
+        "Target folder must be under ISO_documents",
+      );
+    }
+
+    const oldSectionRoot = StoragePathBuilder.deriveSectionRootFromFolderPath(
+      document.folder.path,
+    );
+    const newSectionRoot = StoragePathBuilder.deriveSectionRootFromFolderPath(
+      targetFolder.path,
+    );
+
+    const ext = getSafeExtension(document.fileName);
+    const newCurrentPath = StoragePathBuilder.buildCurrentFilePath(
+      newSectionRoot,
+      document.id,
+      ext,
+    );
+
+    // Ensure versions directory exists in target
+    const versionsDir = `${newSectionRoot}/versions/${document.id}`;
+    await this.smbService.createDirectory(versionsDir);
+
+    // 1. Move current file
+    const oldCurrentPath = document.filePath;
+    if (oldCurrentPath) {
+      const exists = await this.smbService.exists(oldCurrentPath);
+      if (exists) {
+        await this.smbService.rename(oldCurrentPath, newCurrentPath);
+      }
+    }
+
+    // 2. Move version files
+    const versionUpdates: Array<{ id: string; newPath: string }> = [];
+    for (const ver of document.versions) {
+      if (!ver.filePath) continue;
+      const exists = await this.smbService.exists(ver.filePath);
+      if (!exists) continue;
+      const baseName = path.basename(ver.filePath);
+      const newVersionPath = `${versionsDir}/${baseName}`;
+      await this.smbService.rename(ver.filePath, newVersionPath);
+      versionUpdates.push({ id: ver.id, newPath: newVersionPath });
+    }
+
+    // 3. Update DB in transaction
+    await this.prisma.$transaction(async (tx) => {
+      await tx.document.update({
+        where: { id: documentId },
+        data: {
+          folderId: targetFolderId,
+          filePath: newCurrentPath,
+        },
+      });
+      for (const { id, newPath } of versionUpdates) {
+        await tx.documentVersion.update({
+          where: { id },
+          data: { filePath: newPath },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "UPDATE",
+          resourceType: "Document",
+          resourceId: documentId,
+          details: {
+            action: "changeDepartment",
+            oldFolderId: document.folderId,
+            newFolderId: targetFolderId,
+            oldDepartmentName: document.folder.department?.name,
+            newDepartmentName: targetFolder.department?.name,
+          },
+        },
+      });
+    });
+
+    this.logger.log(
+      `Document ${documentId} moved from ${oldSectionRoot} to ${newSectionRoot}`,
+    );
     return this.findById(documentId);
   }
 

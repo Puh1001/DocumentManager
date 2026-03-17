@@ -490,6 +490,9 @@ export default function DocumentsPage() {
               // Refresh document list after ISO metadata edit
               loadAllDocuments(currentPage);
             }}
+            canChangeDepartment={user?.roles?.some((r) =>
+              ["admin", "dcc"].includes(r)
+            )}
           />
 
           {/* Pagination */}

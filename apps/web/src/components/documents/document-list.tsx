@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { formatDateShort } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Eye, Download, History, ExternalLink, FileEdit } from "lucide-react";
+import { Eye, Download, History, ExternalLink, FileEdit, Building2 } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
 import { useDeletionStatus } from "@/hooks/use-deletion-status";
 import { Document as DocumentType } from "@/lib/types/ability.types";
@@ -13,6 +13,7 @@ import { DeletionStatusBadge } from "./deletion-status-badge";
 import { DeletionActions } from "./deletion-actions";
 import { DeletionErrorBoundary } from "./deletion-error-boundary";
 import { IsoMetadataEditDialog } from "./iso-metadata-edit-dialog";
+import { ChangeDepartmentDialog } from "./change-department-dialog";
 import { useState } from "react";
 
 const PLACEHOLDER = "—";
@@ -46,6 +47,8 @@ interface DocumentListProps {
   onDocumentClick?: (doc: Document) => void;
   onDocumentDeleted?: (documentId: string) => void;
   onDocumentMetadataUpdated?: (documentId: string) => void;
+  /** When true, show Change Department action (DCC/admin only) */
+  canChangeDepartment?: boolean;
 }
 
 export function DocumentList({
@@ -54,11 +57,15 @@ export function DocumentList({
   onDocumentClick,
   onDocumentDeleted,
   onDocumentMetadataUpdated,
+  canChangeDepartment = false,
 }: DocumentListProps) {
   const t = useTranslations("documents.list");
   const { ability } = useAbility();
   const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
   const [selectedDocumentForMetadata, setSelectedDocumentForMetadata] =
+    useState<Document | null>(null);
+  const [changeDeptDialogOpen, setChangeDeptDialogOpen] = useState(false);
+  const [selectedDocumentForDept, setSelectedDocumentForDept] =
     useState<Document | null>(null);
 
   if (documents.length === 0) {
@@ -248,6 +255,20 @@ export function DocumentList({
                       <FileEdit className="h-4 w-4" />
                     </Button>
                   )}
+                  {canChangeDepartment && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title={t("actions.changeDepartment")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDocumentForDept(doc);
+                        setChangeDeptDialogOpen(true);
+                      }}
+                    >
+                      <Building2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   {ability?.can("view", {
                     id: doc.id,
                     folderId: doc.folderId ?? doc.folder?.id ?? undefined,
@@ -280,6 +301,22 @@ export function DocumentList({
           if (selectedDocumentForMetadata) {
             onDocumentMetadataUpdated?.(selectedDocumentForMetadata.id);
             setSelectedDocumentForMetadata(null);
+          }
+        }}
+      />
+
+      {/* Change Department Dialog (DCC/admin only) */}
+      <ChangeDepartmentDialog
+        open={changeDeptDialogOpen}
+        onOpenChange={(open) => {
+          setChangeDeptDialogOpen(open);
+          if (!open) setSelectedDocumentForDept(null);
+        }}
+        document={selectedDocumentForDept}
+        onSuccess={() => {
+          if (selectedDocumentForDept) {
+            onDocumentMetadataUpdated?.(selectedDocumentForDept.id);
+            setSelectedDocumentForDept(null);
           }
         }}
       />

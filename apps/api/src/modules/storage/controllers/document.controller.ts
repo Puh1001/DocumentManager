@@ -35,6 +35,7 @@ import {
 import { DocumentDeletionService } from "../services/document-deletion.service";
 import { SubmitDeletionRequestDto } from "../dto/submit-deletion-request.dto";
 import { RenameDocumentDto } from "../dto/rename-document.dto";
+import { ChangeDocumentDepartmentDto } from "../dto/change-document-department.dto";
 import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
 import { CustomException } from "@/common/errors/custom-exception";
 import { ErrorCodes } from "@/common/errors/error-codes";
@@ -63,7 +64,7 @@ export class DocumentController {
   @ApiOperation({ summary: "List all documents with filters and pagination" })
   async findAll(
     @Query() query: QueryDocumentsDto,
-    @Request() req: AuthenticatedRequest
+    @Request() _req: AuthenticatedRequest
   ) {
     // All users see all documents; download/print restricted to admin and DCC
     return this.documentService.findAll({
@@ -128,7 +129,7 @@ export class DocumentController {
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest
   ) {
-    const document = await this.documentService.findById(id);
+    await this.documentService.findById(id);
     // All users can view any document
 
     const roles = req.user?.roles ?? [];
@@ -358,6 +359,32 @@ export class DocumentController {
     @Request() req: AuthenticatedRequest
   ) {
     return this.documentService.rename(id, dto.name, dto.fileName, req.user.id);
+  }
+
+  @Patch(":id/department")
+  @ApiOperation({
+    summary: "Change document department (DCC/admin only)",
+    description:
+      "Move document to a folder in another department. Only DCC and admin can perform this action.",
+  })
+  async changeDepartment(
+    @Param("id") id: string,
+    @Body() dto: ChangeDocumentDepartmentDto,
+    @Request() req: AuthenticatedRequest
+  ) {
+    const roles = req.user?.roles ?? [];
+    const canChange = roles.some((r) => ["admin", "dcc"].includes(r));
+    if (!canChange) {
+      throw CustomException.forbidden(
+        ErrorCodes.DOCUMENT.ACCESS_DENIED,
+        "Only DCC and Admin can change document department",
+      );
+    }
+    return this.documentService.changeDepartment(
+      id,
+      dto.folderId,
+      req.user!.id,
+    );
   }
 
   @Patch(":id/iso-metadata")

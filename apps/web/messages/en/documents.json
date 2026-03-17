@@ -29,6 +29,13 @@
     "selectDepartment": "Select a department",
     "none": "None (Unassign)"
   },
+  "changeDepartment": {
+    "title": "Change Department",
+    "description": "Move \"{document}\" to a different department. Current: {current}",
+    "targetDepartment": "Target department",
+    "selectDepartment": "Select department",
+    "targetFolder": "Target folder"
+  },
   "filters": {
     "status": "Status",
     "level": "Level",
@@ -87,7 +94,8 @@
       "openToEdit": "Open to Edit",
       "versionHistory": "Version History",
       "editMetadata": "Edit Metadata",
-      "rename": "Rename"
+      "rename": "Rename",
+      "changeDepartment": "Change Department"
     }
   },
   "editMetadata": {

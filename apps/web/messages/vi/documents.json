@@ -29,6 +29,13 @@
     "selectDepartment": "Chọn phòng ban",
     "none": "Không (Bỏ gắn)"
   },
+  "changeDepartment": {
+    "title": "Đổi phòng ban",
+    "description": "Chuyển \"{document}\" sang phòng ban khác. Hiện tại: {current}",
+    "targetDepartment": "Phòng ban đích",
+    "selectDepartment": "Chọn phòng ban",
+    "targetFolder": "Thư mục đích"
+  },
   "filters": {
     "status": "Trạng thái",
     "level": "Cấp độ",
@@ -87,7 +94,8 @@
       "openToEdit": "Mở để chỉnh sửa",
       "versionHistory": "Lịch sử phiên bản",
       "editMetadata": "Chỉnh sửa metadata",
-      "rename": "Đổi tên"
+      "rename": "Đổi tên",
+      "changeDepartment": "Đổi phòng ban"
     }
   },
   "editMetadata": {
