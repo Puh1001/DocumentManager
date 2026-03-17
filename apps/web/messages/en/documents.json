@@ -34,7 +34,7 @@
     "description": "Move \"{document}\" to a different department. Current: {current}",
     "targetDepartment": "Target department",
     "selectDepartment": "Select department",
-    "targetFolder": "Target folder"
+    "hint": "Document will be moved to the ISO_documents folder of the selected department."
   },
   "filters": {
     "status": "Status",

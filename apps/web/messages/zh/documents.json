@@ -34,7 +34,7 @@
     "description": "将「{document}」移至其他部门。当前：{current}",
     "targetDepartment": "目标部门",
     "selectDepartment": "选择部门",
-    "targetFolder": "目标文件夹"
+    "hint": "文档将移至所选部门的 ISO_documents 文件夹。"
   },
   "filters": {
     "status": "状态",

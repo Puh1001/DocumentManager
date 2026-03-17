@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { CustomException } from "@/common/errors/custom-exception";
 import { DocumentService, FindAllDocumentsFilters } from "./document.service";
 import { DocumentLevelService } from "./document-level.service";
+import { FolderService } from "./folder.service";
 import { PrismaService } from "@/common/prisma/prisma.service";
 import { SmbService } from "./smb.service";
 import { VersionService } from "./version.service";
@@ -96,6 +97,12 @@ describe("DocumentService", () => {
       findAll: jest.fn(),
     };
 
+    const mockFolderService = {
+      ensureDepartmentFolderStructure: jest.fn().mockResolvedValue({
+        documentsSectionRoot: "folder-2",
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentService,
@@ -103,6 +110,7 @@ describe("DocumentService", () => {
         { provide: SmbService, useValue: mockSmbService },
         { provide: VersionService, useValue: mockVersionService },
         { provide: DocumentLevelService, useValue: mockDocumentLevelService },
+        { provide: FolderService, useValue: mockFolderService },
       ],
     }).compile();
 

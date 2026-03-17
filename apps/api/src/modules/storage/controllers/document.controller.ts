@@ -382,7 +382,7 @@ export class DocumentController {
     }
     return this.documentService.changeDepartment(
       id,
-      dto.folderId,
+      dto.departmentId,
       req.user!.id,
     );
   }

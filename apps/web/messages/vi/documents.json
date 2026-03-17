@@ -34,7 +34,7 @@
     "description": "Chuyển \"{document}\" sang phòng ban khác. Hiện tại: {current}",
     "targetDepartment": "Phòng ban đích",
     "selectDepartment": "Chọn phòng ban",
-    "targetFolder": "Thư mục đích"
+    "hint": "Tài liệu sẽ được chuyển vào thư mục ISO_documents của phòng ban được chọn."
   },
   "filters": {
     "status": "Trạng thái",

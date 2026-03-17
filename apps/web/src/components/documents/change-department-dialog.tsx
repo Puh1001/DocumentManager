@@ -14,17 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FolderTree } from "./folder-tree";
-import { findDocumentsFolderNode } from "./folder-picker-utils";
 import { getErrorMessage } from "@/lib/error-handler";
-
-interface Folder {
-  id: string;
-  name: string;
-  path: string;
-  physicalLocation: string | null;
-  children: Folder[];
-}
 
 interface ChangeDepartmentDialogProps {
   open: boolean;
@@ -43,9 +33,6 @@ export function ChangeDepartmentDialog({
   const tCommon = useTranslations("common");
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,61 +46,21 @@ export function ChangeDepartmentDialog({
     }
   }, [tCommon]);
 
-  const loadFolders = useCallback(async (departmentId: string) => {
-    if (!departmentId) {
-      setFolders([]);
-      setSelectedFolderId(null);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      const tree = await api.get<Folder[]>(
-        `/storage/folders/tree?departmentId=${encodeURIComponent(departmentId)}`
-      );
-      const raw = tree || [];
-      const docNode = findDocumentsFolderNode(raw);
-      const result =
-        docNode != null
-          ? [{ ...docNode, name: t("upload.documentsFolder") }]
-          : [];
-      setFolders(result);
-      setSelectedFolderId(null);
-    } catch (err) {
-      console.error("Failed to load folders:", err);
-      setFolders([]);
-      setError(getErrorMessage(err, (key: string) => tCommon(key)));
-    } finally {
-      setLoading(false);
-    }
-  }, [t, tCommon]);
-
   useEffect(() => {
     if (open) {
       loadDepartments();
       setSelectedDepartmentId("");
-      setFolders([]);
-      setSelectedFolderId(null);
       setError(null);
     }
   }, [open, loadDepartments]);
 
-  useEffect(() => {
-    if (open && selectedDepartmentId) {
-      loadFolders(selectedDepartmentId);
-    } else if (open && !selectedDepartmentId) {
-      setFolders([]);
-      setSelectedFolderId(null);
-    }
-  }, [open, selectedDepartmentId, loadFolders]);
-
   const handleSubmit = async () => {
-    if (!document?.id || !selectedFolderId) return;
+    if (!document?.id || !selectedDepartmentId) return;
     try {
       setSubmitting(true);
       setError(null);
       await api.patch(`/storage/documents/${document.id}/department`, {
-        folderId: selectedFolderId,
+        departmentId: selectedDepartmentId,
       });
       onSuccess?.();
       onOpenChange(false);
@@ -125,11 +72,11 @@ export function ChangeDepartmentDialog({
     }
   };
 
-  const canSubmit = Boolean(document?.id && selectedFolderId);
+  const canSubmit = Boolean(document?.id && selectedDepartmentId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("changeDepartment.title")}</DialogTitle>
           <DialogDescription>
@@ -158,28 +105,10 @@ export function ChangeDepartmentDialog({
                 </option>
               ))}
             </select>
+            <p className="text-xs text-muted-foreground">
+              {t("changeDepartment.hint")}
+            </p>
           </div>
-
-          {selectedDepartmentId && (
-            <div className="space-y-2">
-              <Label>{t("changeDepartment.targetFolder")}</Label>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                </div>
-              ) : folders.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">
-                  {t("upload.noFolders")}
-                </p>
-              ) : (
-                <FolderTree
-                  folders={folders}
-                  selectedId={selectedFolderId}
-                  onSelect={setSelectedFolderId}
-                />
-              )}
-            </div>
-          )}
 
           {error && (
             <div className="text-sm text-destructive">{error}</div>

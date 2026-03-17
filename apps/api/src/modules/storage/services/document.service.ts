@@ -11,6 +11,7 @@ import { ErrorCodes } from "@/common/errors/error-codes";
 import { fixFileNameEncoding } from "@/common/utils/encoding.util";
 import { isValidRevisionLabel } from "@iso-docs/shared";
 import { DocumentLevelService } from "./document-level.service";
+import { FolderService } from "./folder.service";
 import { UpdateIsoMetadataDto } from "../dto/update-iso-metadata.dto";
 import { StoragePathBuilder } from "../utils/storage-path.util";
 import { getSafeExtension } from "@/common/utils/file.util";
@@ -34,6 +35,7 @@ export class DocumentService {
     private readonly smbService: SmbService,
     private readonly versionService: VersionService,
     private readonly documentLevelService: DocumentLevelService,
+    private readonly folderService: FolderService,
   ) {}
 
   async findById(id: string) {
@@ -771,12 +773,13 @@ export class DocumentService {
   }
 
   /**
-   * Move document to a different folder (change department). DCC/admin only.
+   * Move document to a different department. DCC/admin only.
+   * Target is always the department's ISO_documents folder.
    * Moves current file and all version files physically on SMB, updates DB.
    */
   async changeDepartment(
     documentId: string,
-    targetFolderId: string,
+    targetDepartmentId: string,
     userId: string,
   ) {
     const document = await (
@@ -796,10 +799,24 @@ export class DocumentService {
       );
     }
 
-    if (document.folderId === targetFolderId) {
+    const currentDepartmentId = document.folder?.departmentId;
+    if (currentDepartmentId === targetDepartmentId) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
-        "Document is already in the target folder",
+        "Document is already in the target department",
+      );
+    }
+
+    const { documentsSectionRoot } =
+      await this.folderService.ensureDepartmentFolderStructure(
+        targetDepartmentId,
+      );
+
+    const targetFolderId = documentsSectionRoot;
+    if (!targetFolderId) {
+      throw CustomException.notFound(
+        ErrorCodes.DOCUMENT.FOLDER_NOT_FOUND,
+        "ISO_documents folder not found for target department",
       );
     }
 
@@ -814,17 +831,6 @@ export class DocumentService {
       throw CustomException.notFound(
         ErrorCodes.DOCUMENT.FOLDER_NOT_FOUND,
         "Target folder not found",
-      );
-    }
-
-    const normalizedPath = (targetFolder.path ?? "").toLowerCase();
-    const isUnderIsoDocuments =
-      normalizedPath.includes("/iso_documents") ||
-      normalizedPath === "iso_documents";
-    if (!isUnderIsoDocuments) {
-      throw CustomException.forbidden(
-        ErrorCodes.DOCUMENT.FOLDER_ACCESS_DENIED,
-        "Target folder must be under ISO_documents",
       );
     }
 
