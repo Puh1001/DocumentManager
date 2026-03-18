@@ -433,7 +433,13 @@ class ApiClient {
     retryCount = 0,
   ): { promise: Promise<T>; abort: () => void } {
     const formData = new FormData();
-    formData.append("file", file);
+    // Use ASCII-only filename for multipart part to avoid busboy "Malformed part header"
+    // when file.name contains non-ASCII (Chinese, Vietnamese, etc.). Real filename sent via fileName field.
+    const ext = file.name.includes(".")
+      ? file.name.slice(file.name.lastIndexOf("."))
+      : ".bin";
+    const safeName = `document${ext}`;
+    formData.append("file", new File([file], safeName, { type: file.type }));
 
     // Gửi filename riêng như text field (UTF-8 thô, không qua Content-Disposition header)
     formData.append("fileName", file.name);
