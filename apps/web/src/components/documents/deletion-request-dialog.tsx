@@ -41,18 +41,49 @@ export function DeletionRequestDialog({
   const [submitting, setSubmitting] = useState(false);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
+  const [isoMetadata, setIsoMetadata] = useState<{
+    preparerName?: string | null;
+    reviewerName?: string | null;
+    approverName?: string | null;
+    approvalDate?: string | null;
+    receiptDate?: string | null;
+    storageLocation?: string | null;
+    documentNo?: string | null;
+    revisionLabel?: string | null;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch document info to get upload metadata when dialog opens
   useEffect(() => {
     if (open && documentId) {
       api
-        .get<{ folderId: string; levelId: string }>(
+        .get<{
+          folderId: string;
+          levelId: string;
+          preparerName?: string | null;
+          reviewerName?: string | null;
+          approverName?: string | null;
+          approvalDate?: string | null;
+          receiptDate?: string | null;
+          storageLocation?: string | null;
+          documentNo?: string | null;
+          revisionLabel?: string | null;
+        }>(
           `/storage/documents/${documentId}`,
         )
         .then((doc) => {
           setFolderId(doc.folderId);
           setLevelId(doc.levelId);
+          setIsoMetadata({
+            preparerName: doc.preparerName ?? null,
+            reviewerName: doc.reviewerName ?? null,
+            approverName: doc.approverName ?? null,
+            approvalDate: doc.approvalDate ?? null,
+            receiptDate: doc.receiptDate ?? null,
+            storageLocation: doc.storageLocation ?? null,
+            documentNo: doc.documentNo ?? null,
+            revisionLabel: doc.revisionLabel ?? null,
+          });
         })
         .catch((error) => {
           console.error('Failed to fetch document:', error);
@@ -68,6 +99,7 @@ export function DeletionRequestDialog({
       setReplacementFile(null);
       setFolderId(null);
       setLevelId(null);
+      setIsoMetadata(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -78,7 +110,7 @@ export function DeletionRequestDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!folderId || !levelId) {
+    if (!folderId || !levelId || !isoMetadata) {
       toast({
         title: 'Error',
         description: 'Please wait for document information to load',
@@ -87,12 +119,45 @@ export function DeletionRequestDialog({
       return;
     }
 
+    const hasRequiredIsoMetadata =
+      !!isoMetadata.preparerName?.trim() &&
+      !!isoMetadata.reviewerName?.trim() &&
+      !!isoMetadata.approverName?.trim() &&
+      !!isoMetadata.approvalDate?.trim() &&
+      !!isoMetadata.receiptDate?.trim() &&
+      !!isoMetadata.storageLocation?.trim();
+
+    if (!hasRequiredIsoMetadata) {
+      toast({
+        title: 'Missing metadata',
+        description:
+          'Document metadata is incomplete. Please update ISO metadata before uploading replacement file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploadingFile(true);
     try {
+      const uploadData = Object.fromEntries(
+        Object.entries({
+          folderId,
+          levelId,
+          preparerName: isoMetadata.preparerName,
+          reviewerName: isoMetadata.reviewerName,
+          approverName: isoMetadata.approverName,
+          approvalDate: isoMetadata.approvalDate,
+          receiptDate: isoMetadata.receiptDate,
+          storageLocation: isoMetadata.storageLocation,
+          documentNo: isoMetadata.documentNo,
+          revisionLabel: isoMetadata.revisionLabel,
+        }).filter(([, value]) => typeof value === 'string' && value.trim() !== ''),
+      ) as Record<string, string>;
+
       const uploadedDoc = await api.upload<{ id: string }>(
         '/storage/documents/upload',
         file,
-        { folderId, levelId },
+        uploadData,
       );
       setReplacementFileId(uploadedDoc.id);
       setReplacementFile(file);
@@ -238,7 +303,7 @@ export function DeletionRequestDialog({
                   ref={fileInputRef}
                   type="file"
                   onChange={handleFileSelect}
-                  disabled={uploadingFile || !folderId || !levelId}
+                  disabled={uploadingFile || !folderId || !levelId || !isoMetadata}
                   className="hidden"
                   id="replacement-file-upload"
                 />
@@ -247,7 +312,7 @@ export function DeletionRequestDialog({
                   variant="outline"
                   size="sm"
                   asChild
-                  disabled={uploadingFile || !folderId || !levelId}
+                  disabled={uploadingFile || !folderId || !levelId || !isoMetadata}
                 >
                   <label
                     htmlFor="replacement-file-upload"
