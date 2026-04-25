@@ -1,8 +1,8 @@
 ---
 name: threejs
-description: Build immersive 3D web experiences with Three.js - WebGL/WebGPU library for scenes, cameras, geometries, materials, lights, animations, loaders, post-processing, shaders (including node-based TSL), compute, physics, VR/XR, and advanced rendering. Use when creating 3D visualizations, games, interactive graphics, data viz, product configurators, architectural walkthroughs, or WebGL/WebGPU applications. Covers OrbitControls, GLTF/FBX loading, PBR materials, shadow mapping, post-processing effects (bloom, SSAO, SSR), custom shaders, instancing, LOD, animation systems, and WebXR.
+description: Build 3D web apps with Three.js (WebGL/WebGPU). Use for 3D scenes, animations, custom shaders, PBR materials, VR/XR experiences, games, data visualizations, product configurators.
 license: MIT
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Three.js Development
@@ -24,7 +24,8 @@ Use when working with:
 ## Progressive Learning Path
 
 ### Level 1: Getting Started
-Load `references/01-getting-started.md` - Scene setup, basic geometries, materials, lights, rendering loop
+- Load `references/00-fundamentals.md` - Fundamentals
+- Load `references/01-getting-started.md` - Scene setup, basic geometries, materials, lights, rendering loop
 
 ### Level 2: Common Tasks
 - **Asset Loading**: `references/02-loaders.md` - GLTF, FBX, OBJ, texture loaders
@@ -33,6 +34,8 @@ Load `references/01-getting-started.md` - Scene setup, basic geometries, materia
 - **Lights**: `references/05-lights.md` - Types, shadows, helpers
 - **Animations**: `references/06-animations.md` - Clips, mixer, keyframes
 - **Math**: `references/07-math.md` - Vectors, matrices, quaternions, curves
+- **Geometry**: `references/18-geometry.md` - Built-in shapes, BufferGeometry, custom geometry, instancing
+- **Materials**: `references/11-materials.md` - PBR, basic, phong, lambert, physical, toon, normal, depth, raw, shader materials, material properties
 
 ### Level 3: Interactive & Effects
 - **Interaction**: `references/08-interaction.md` - Raycasting, picking, transforms
@@ -48,6 +51,7 @@ Load `references/01-getting-started.md` - Scene setup, basic geometries, materia
 - **Physics**: `references/14-physics-vr.md` - Ammo, Rapier, Jolt, VR/XR
 - **Advanced Loaders**: `references/15-specialized-loaders.md` - SVG, VRML, domain-specific
 - **WebGPU**: `references/16-webgpu.md` - Modern backend, compute shaders
+- **Shaders**: `references/17-shader.md` - GLSL, ShaderMaterial, uniforms, custom effects
 
 ## Quick Start Pattern
 

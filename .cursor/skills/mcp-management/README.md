@@ -4,7 +4,7 @@ Intelligent management and execution of Model Context Protocol (MCP) servers.
 
 ## Overview
 
-This skill enables Claude to discover, analyze, and execute MCP server capabilities without polluting the main context window. Perfect for context-efficient MCP integration using subagent-based architecture.
+This skill enables Cursor to discover, analyze, and execute MCP server capabilities without polluting the main context window. Perfect for context-efficient MCP integration using subagent-based architecture.
 
 ## Features
 
@@ -19,13 +19,13 @@ This skill enables Claude to discover, analyze, and execute MCP server capabilit
 ### 1. Install Dependencies
 
 ```bash
-cd .claude/skills/mcp-management/scripts
+cd .cursor/skills/mcp-management/scripts
 npm install
 ```
 
 ### 2. Configure MCP Servers
 
-Create `.claude/.mcp.json`:
+Create `.cursor/mcp.json`:
 
 ```json
 {
@@ -42,23 +42,32 @@ Create `.claude/.mcp.json`:
 }
 ```
 
-See `.claude/.mcp.json.example` for more examples.
+See `.cursor/mcp.json.example` for more examples.
 
 ### 3. Test Connection
 
 ```bash
-cd .claude/skills/mcp-management/scripts
-npx ts-node cli.ts list-tools
+cd .cursor/skills/mcp-management/scripts
+npm run list-tools
+# Or directly:
+npx tsx cli.ts list-tools
 ```
+
+**Note**: The CLI automatically looks for config at `~/.cursor/.mcp.json`. You can run it from any directory.
 
 ## Usage Patterns
 
 ### Pattern 1: Discover Available Tools
 
 ```bash
-npx ts-node scripts/cli.ts list-tools
-npx ts-node scripts/cli.ts list-prompts
-npx ts-node scripts/cli.ts list-resources
+cd .cursor/skills/mcp-management/scripts
+npm run list-tools
+npm run list-prompts
+npm run list-resources
+# Or directly:
+npx tsx cli.ts list-tools
+npx tsx cli.ts list-prompts
+npx tsx cli.ts list-resources
 ```
 
 ### Pattern 2: LLM-Driven Tool Selection
@@ -68,12 +77,12 @@ The LLM reads `assets/tools.json` and intelligently selects tools. No separate a
 ### Pattern 3: Execute MCP Tools
 
 ```bash
-npx ts-node scripts/cli.ts call-tool memory add '{"key":"name","value":"Alice"}'
+npx tsx cli.ts call-tool memory add '{"key":"name","value":"Alice"}'
 ```
 
 ### Pattern 4: Use with Subagent
 
-In main Claude conversation:
+In main Cursor conversation:
 
 ```
 User: "I need to search the web and save results"
@@ -85,7 +94,7 @@ Main Agent: Uses recommended tools for implementation
 ## Architecture
 
 ```
-Main Agent (Claude)
+Main Agent (Cursor)
     ↓ (delegates MCP tasks)
 mcp-manager Subagent
     ↓ (uses skill)
@@ -123,7 +132,7 @@ mcp-management/
 ### mcp-client.ts
 
 Core client manager class:
-- Load config from `.claude/.mcp.json`
+- Load config from `.cursor/mcp.json`
 - Connect to multiple MCP servers
 - List/execute tools, prompts, resources
 - Lifecycle management
@@ -145,9 +154,9 @@ Command-line interface:
 Scripts check for variables in this order:
 
 1. `process.env` (runtime)
-2. `.claude/skills/mcp-management/.env`
-3. `.claude/skills/.env`
-4. `.claude/.env`
+2. `.cursor/skills/mcp-management/.env`
+3. `.cursor/skills/.env`
+4. `.cursor/.env`
 
 ### MCP Config Format
 
@@ -178,7 +187,7 @@ Install with `npx`:
 
 ## Integration with mcp-manager Agent
 
-The `mcp-manager` agent (`.claude/agents/mcp-manager.md`) uses this skill to:
+The `mcp-manager` agent (`.cursor/agents/mcp-manager.md`) uses this skill to:
 
 1. **Discover**: Connect to MCP servers, list capabilities
 2. **Analyze**: Filter relevant tools for tasks
@@ -191,7 +200,7 @@ This architecture keeps main context clean and enables efficient MCP integration
 
 ### "Config not found"
 
-Ensure `.claude/.mcp.json` exists and is valid JSON.
+Ensure `.cursor/mcp.json` exists and is valid JSON.
 
 ### "Server connection failed"
 
@@ -204,7 +213,8 @@ Check:
 
 List available tools first:
 ```bash
-npx ts-node scripts/cli.ts list-tools
+cd .cursor/skills/mcp-management/scripts
+npm run list-tools
 ```
 
 ## Resources

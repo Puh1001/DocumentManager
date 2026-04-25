@@ -3,31 +3,8 @@ description: Utilize tools of Model Context Protocol (MCP) servers
 argument-hint: [task]
 ---
 
-## Task
-<task>$ARGUMENTS</task>
-
-## Skills Activation
-- **MUST READ**: `../../.cursor/skills/mcp-management/`
-
-## Purpose
-Execute MCP operations to leverage external tools and services.
-
-## Workflow
-
-1. **Discover available MCP tools**:
-   - Check configured MCP servers.
-   - List available tools and their capabilities.
-
-2. **Execute the task**:
-   - Select appropriate MCP tool for the task.
-   - Execute with proper parameters.
-   - Handle response and errors.
-
-3. **Report results**:
-   - Summarize what was accomplished.
-   - Report any issues encountered.
-
-## Important Notes
-- Use MCP tools only when they provide value.
-- Fall back to native capabilities if MCP unavailable.
-- Document tool usage for future reference.
+**ONLY** use `mcp-manager` subagent to discover and execute tools.
+If the subagent got issues with the scripts of `mcp-management` skill, use `mcp-builder` skill to fix them.
+**DO NOT** create ANY new scripts.
+the subagent can only use MCP tools if any to achieve this task.
+If the subagent can't find any suitable tools, just report it back to the main agent to move on to the next step.

@@ -1,99 +1,78 @@
 # Cursor Rules
 
-This file provides guidance to **Cursor** AI when working with code in this repository.
+This file provides guidance to Cursor AI when working with code in this repository.
 
-## Role & Responsibilities
+## Project Overview
 
-Your role is to analyze user requirements, delegate tasks to appropriate workflows, and ensure cohesive delivery of features that meet specifications and architectural standards.
+ClaudeKit Skills is a collection of 35+ reusable Agent Skills for Claude Code, organized into 12 plugin categories for marketplace distribution. Skills use a progressive disclosure architecture (3-tier loading) achieving 85% context efficiency over flat designs.
 
-## Core Principles
+## Architecture
 
-You operate by the holy trinity of software engineering:
-- **YAGNI** (You Aren't Gonna Need It) - Avoid over-engineering
-- **KISS** (Keep It Simple, Stupid) - Prefer simple solutions
-- **DRY** (Don't Repeat Yourself) - Eliminate code duplication
+### Dual-Directory Pattern (Source + Distribution)
 
-## Workflows
-
-Reference workflows in `./.cursor/rules/`:
-- Primary workflow: `./.cursor/rules/primary-workflow.mdc`
-- Development rules: `./.cursor/rules/development-rules.mdc`
-- Orchestration protocols: `./.cursor/rules/orchestration-protocol.mdc`
-- Documentation management: `./.cursor/rules/documentation-management.mdc`
-
-## Slash Commands
-
-Use prompts from `./.cursor/prompts/` as slash commands:
-- `/ask` - Answer technical and architectural questions
-- `/bootstrap` - Bootstrap a new project step by step
-- `/brainstorm` - Brainstorm a feature
-- `/code` - Start coding & testing an existing plan
-- `/cook` - Implement a feature step by step
-- `/debug` - Debug and analyze issues
-- `/docs` - Update documentation
-- `/fix` - Fix bugs or issues
-- `/journal` - Write journal entries
-- `/plan` - Create implementation plan
-- `/review` - Code review
-- `/scout` - Search codebase for relevant files
-- `/test` - Run tests and validate code
-- `/use-mcp` - Utilize MCP tools
-- `/watzup` - Review recent changes
-
-## Agents Reference
-
-All agents are located at `./.cursor/agents/*`:
-- `planner` - Planning and architecture
-- `researcher` - Technology research
-- `tester` - Testing and validation
-- `code-reviewer` - Code quality review
-- `debugger` - Issue analysis
-- `docs-manager` - Documentation management
-- `git-manager` - Git operations
-- `ui-ux-designer` - Frontend design
-- `project-manager` - Project coordination
-- `scout` - Codebase exploration
-- And more...
-
-## Skills Reference
-
-All skills are located at `./.cursor/skills/*` - this is shared between all agents (Claude Code, Antigravity, Cursor).
-
-**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process. Key skills include:
-- `planning` - Strategic thinking and plan creation
-- `research` - Information gathering
-- `sequential-thinking` - Step-by-step reasoning
-- `debugging` - Issue analysis
-- `code-review` - Quality assessment
-- `frontend-development` - UI/UX implementation
-- `backend-development` - Server-side logic
-- `ai-multimodal` - Image/video analysis and generation
-
-## Documentation
-
-Keep all important docs in `./docs` folder:
 ```
-./docs
-├── project-overview-pdr.md
-├── code-standards.md
-├── codebase-summary.md
-├── design-guidelines.md
-├── deployment-guide.md
-├── system-architecture.md
-└── project-roadmap.md
+.claude/skills/{skill-name}/     ← SOURCE (actual skill files)
+plugins/{category}/skills/{name} ← SYMLINK → ../../../.claude/skills/{name}
 ```
 
-## Code Quality Guidelines
+Every skill lives in `.claude/skills/`. Plugin directories contain only symlinks. This is the single source of truth pattern.
 
-- Read and follow codebase structure and code standards in `./docs`
-- Prioritize functionality and readability over strict style enforcement
-- Use try-catch error handling & cover security standards
-- Run tests before push (DO NOT ignore failed tests)
-- Create clean, professional commit messages without AI references
+### Skill Structure
 
-## Important Notes
+```
+.claude/skills/skill-name/
+├── SKILL.md              # Entry point (<200 lines, YAML frontmatter required)
+├── references/           # Detailed docs loaded on-demand (<300 lines each)
+├── scripts/              # Executable code (Python/Node.js, optional)
+└── assets/               # Templates, images (optional)
+```
 
-**IMPORTANT:** Sacrifice grammar for the sake of concision when writing reports.
-**IMPORTANT:** In reports, list any unresolved questions at the end, if any.
-**IMPORTANT:** Follow the rules in `./docs/code-standards.md` during implementation.
-**IMPORTANT:** Do not create new enhanced files, update existing files directly.
+### Plugin Structure
+
+```
+plugins/category-name/
+├── .claude-plugin/plugin.json   # Manifest: name, description, version, skills array
+└── skills/
+    ├── skill-a → ../../../.claude/skills/skill-a  (symlink)
+    └── skill-b → ../../../.claude/skills/skill-b  (symlink)
+```
+
+### 12 Plugin Categories
+
+`ai-ml-tools`, `web-dev-tools`, `devops-tools`, `backend-tools`, `document-processing`, `debugging-tools`, `problem-solving-tools`, `platform-tools`, `meta-tools`, `media-tools`, `research-tools`, `specialized-tools`
+
+## Adding a New Skill
+
+1. Create skill in `.claude/skills/{name}/` with SKILL.md + references/
+2. Create symlink: `ln -s ../../../.claude/skills/{name} plugins/{category}/skills/{name}`
+3. Update `plugins/{category}/.claude-plugin/plugin.json` and add to `skills` array
+4. Update README.md catalog entry
+
+## Key Conventions
+
+- `SKILL.md`: max 200 lines, YAML frontmatter with `name` and `description` required
+- `references`: max 300 lines each, split by logical boundaries
+- Use kebab-case for all files and directories
+- Shared utilities: `.claude/skills/common/api_key_helper.py` for Gemini API keys
+- Python venv for scripts requiring packages: `~/.claude/skills/.venv/bin/python3`
+- Env var hierarchy: process env > skill `.env` > `skills/.env` > `.claude/.env` > root `.env`
+
+## Testing
+
+```bash
+# Validate skill structure
+~/.claude/skills/.venv/bin/python3 ~/.claude/skills/skill-creator/scripts/quick_validate.py .claude/skills/{name}
+
+# Run skill-specific tests
+cd .claude/skills/{name}/scripts && python -m pytest tests/ -v
+```
+
+## Marketplace
+
+```bash
+# Install from marketplace
+/plugin marketplace add mrgoonie/claudekit-skills
+/plugin install {category}@claudekit-skills
+```
+
+Root marketplace metadata: `.claude-plugin/marketplace.json`

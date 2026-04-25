@@ -1,18 +1,8 @@
 ---
-description: ⚡⚡ Run tests and validate code
-argument-hint: [test-scope]
+description: ⚡ Run tests locally and analyze the summary report.
 ---
 
-## Purpose
-Run tests and validate code quality.
+Use the `tester` subagent to run tests locally and analyze the summary report.
 
-## Variables
-TEST_SCOPE: $ARGUMENTS (optional)
-
-## Workflow:
-1. Run test suite: `npm test`, `yarn test`, etc.
-2. Generate coverage report if available
-3. Analyze results for failures
-4. Report: Tests run/passed/failed, coverage metrics, recommendations
-
-**IMPORTANT:** Never ignore failing tests.
+**IMPORTANT**: **Do not** start implementing.
+**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.

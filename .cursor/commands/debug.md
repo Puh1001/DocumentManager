@@ -1,20 +1,13 @@
 ---
-description: ⚡⚡ Debug and analyze issues
-argument-hint: [issue-description]
+description: ⚡⚡ Debugging technical issues and providing solutions.
+argument-hint: [issues]
 ---
+ 
+**Reported Issues**:
+ $ARGUMENTS
 
-## Purpose
-Debug and analyze issues.
+Use the `debugger` subagent to find the root cause of the issues, then analyze and explain the reports to the user.
 
-## Variables
-ISSUE: $ARGUMENTS
-
-## Skills Activation
-- **MUST READ**: `../../.cursor/skills/debugging.md`
-- **MUST READ**: `../../.cursor/skills/sequential-thinking.md`
-
-## Workflow:
-1. **Analyze**: Internalize concepts from `debugging.md` and `sequential-thinking.md`.
-2. **Reproduce**: Gather logs, identify the exact error.
-3. **Trace**: Use "5 Whys" and sequential thinking to find root cause.
-4. **Report**: Output a concise report: Problem Summary, Root Cause, Evidence, Fix Plan.
+**IMPORTANT**: **Do not** implement the fix automatically.
+**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
+**IMPORTANT:** Sacrifice grammar for the sake of concision when writing outputs.

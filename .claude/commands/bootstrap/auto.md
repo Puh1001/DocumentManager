@@ -96,7 +96,7 @@ Follow strictly these following steps:
 
 * Use `docs-manager` subagent to update the docs if needed.
   * Create/update `./docs/README.md` file (keep it concise and under 300 lines).
-  * Create/update `./docs/project-overview.-pdr.md` (Product Development Requirements) file.
+  * Create/update `./docs/project-overview-pdr.md` (Product Development Requirements) file.
   * Create/update `./docs/code-standards.md` file.
   * Create/update `./docs/system-architecture.md` file.
 * Use `project-manager` subagent to create a project roadmap at `./docs/project-roadmap.md` file.

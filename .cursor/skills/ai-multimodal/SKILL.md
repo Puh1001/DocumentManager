@@ -76,6 +76,10 @@ Process audio, images, videos, documents, and generate images using Google Gemin
 - **gemini-2.5-flash-lite**: Lightweight, segmentation support
 - **gemini-2.5-flash-image**: Image generation only
 
+### Gemini 2.0 Series
+- **gemini-2.0-flash**: Fast processing, object detection
+- **gemini-2.0-flash-lite**: Lightweight option
+
 ### Feature Requirements
 - **Segmentation**: Requires 2.5+ models
 - **Object Detection**: Requires 2.0+ models
@@ -98,9 +102,9 @@ Process audio, images, videos, documents, and generate images using Google Gemin
 The skill checks for `GEMINI_API_KEY` in this order:
 1. Process environment: `export GEMINI_API_KEY="your-key"`
 2. Project root: `.env`
-3. `.claude/.env`
-4. `.claude/skills/.env`
-5. `.claude/skills/ai-multimodal/.env`
+3. `.cursor/.env`
+4. `.cursor/skills/.env`
+5. `.cursor/skills/ai-multimodal/.env`
 
 **Get API key**: https://aistudio.google.com/apikey
 

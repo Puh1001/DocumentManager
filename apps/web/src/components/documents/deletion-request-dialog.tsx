@@ -40,15 +40,19 @@ export function DeletionRequestDialog({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [folderId, setFolderId] = useState<string | null>(null);
+  const [levelId, setLevelId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch document info to get folderId when dialog opens
+  // Fetch document info to get upload metadata when dialog opens
   useEffect(() => {
     if (open && documentId) {
       api
-        .get<{ folderId: string }>(`/storage/documents/${documentId}`)
+        .get<{ folderId: string; levelId: string }>(
+          `/storage/documents/${documentId}`,
+        )
         .then((doc) => {
           setFolderId(doc.folderId);
+          setLevelId(doc.levelId);
         })
         .catch((error) => {
           console.error('Failed to fetch document:', error);
@@ -63,6 +67,7 @@ export function DeletionRequestDialog({
       setReplacementFileId(null);
       setReplacementFile(null);
       setFolderId(null);
+      setLevelId(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -73,7 +78,7 @@ export function DeletionRequestDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!folderId) {
+    if (!folderId || !levelId) {
       toast({
         title: 'Error',
         description: 'Please wait for document information to load',
@@ -87,7 +92,7 @@ export function DeletionRequestDialog({
       const uploadedDoc = await api.upload<{ id: string }>(
         '/storage/documents/upload',
         file,
-        { folderId },
+        { folderId, levelId },
       );
       setReplacementFileId(uploadedDoc.id);
       setReplacementFile(file);
@@ -233,7 +238,7 @@ export function DeletionRequestDialog({
                   ref={fileInputRef}
                   type="file"
                   onChange={handleFileSelect}
-                  disabled={uploadingFile || !folderId}
+                  disabled={uploadingFile || !folderId || !levelId}
                   className="hidden"
                   id="replacement-file-upload"
                 />
@@ -242,7 +247,7 @@ export function DeletionRequestDialog({
                   variant="outline"
                   size="sm"
                   asChild
-                  disabled={uploadingFile || !folderId}
+                  disabled={uploadingFile || !folderId || !levelId}
                 >
                   <label
                     htmlFor="replacement-file-upload"

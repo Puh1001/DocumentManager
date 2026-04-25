@@ -83,6 +83,14 @@ def find_api_key() -> Optional[str]:
     return None
 
 
+def find_base_url() -> Optional[str]:
+    """Find custom Gemini base URL for proxy support.
+
+    Returns the base URL if GEMINI_BASE_URL is set, otherwise None.
+    """
+    return os.getenv('GEMINI_BASE_URL')
+
+
 def get_mime_type(file_path: str) -> str:
     """Determine MIME type from file extension."""
     ext = Path(file_path).suffix.lower()
@@ -293,7 +301,15 @@ def batch_process(
         print(f"Prompt: {prompt}")
         return []
 
-    client = genai.Client(api_key=api_key)
+    # Create client with optional custom base URL for proxy support
+    base_url = find_base_url()
+    if base_url:
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(base_url=base_url)
+        )
+    else:
+        client = genai.Client(api_key=api_key)
     results = []
 
     # For generation tasks without input files, process once
@@ -365,10 +381,10 @@ def save_results(results: List[Dict[str, Any]], output_file: str, format_output:
             print(f"Warning: Generation failed, saving error report to: {output_path}")
 
     if format_output == 'json':
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w') as f:
             json.dump(results, f, indent=2)
     elif format_output == 'csv':
-        with open(output_path, 'w', newline='', encoding='utf-8') as f:
+        with open(output_path, 'w', newline='') as f:
             fieldnames = ['file', 'status', 'response', 'error']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -380,7 +396,7 @@ def save_results(results: List[Dict[str, Any]], output_file: str, format_output:
                     'error': result.get('error', '')
                 })
     else:  # markdown
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w') as f:
             f.write("# Batch Processing Results\n\n")
             for i, result in enumerate(results, 1):
                 f.write(f"## {i}. {result.get('file', 'Unknown')}\n\n")

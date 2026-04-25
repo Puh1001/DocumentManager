@@ -39,9 +39,9 @@ def find_api_key() -> Optional[str]:
 
     Priority order (highest to lowest):
     1. process.env (runtime environment variables)
-    2. .claude/skills/ai-multimodal/.env (skill-specific config)
-    3. .claude/skills/.env (shared skills config)
-    4. .claude/.env (Claude global config)
+    2. .cursor/skills/ai-multimodal/.env (skill-specific config)
+    3. .cursor/skills/.env (shared skills config)
+    4. .cursor/.env (cursor global config)
     """
     # Priority 1: Already in process.env (highest)
     api_key = os.getenv('GEMINI_API_KEY')
@@ -52,9 +52,9 @@ def find_api_key() -> Optional[str]:
     if load_dotenv:
         # Determine base paths
         script_dir = Path(__file__).parent
-        skill_dir = script_dir.parent  # .claude/skills/ai-multimodal
-        skills_dir = skill_dir.parent   # .claude/skills
-        claude_dir = skills_dir.parent  # .claude
+        skill_dir = script_dir.parent  # .cursor/skills/ai-multimodal
+        skills_dir = skill_dir.parent   # .cursor/skills
+        cursor_dir = skills_dir.parent  # .cursor
 
         # Priority 2: Skill-specific .env
         env_file = skill_dir / '.env'
@@ -72,8 +72,8 @@ def find_api_key() -> Optional[str]:
             if api_key:
                 return api_key
 
-        # Priority 4: Claude global .env
-        env_file = claude_dir / '.env'
+        # Priority 4: cursor global .env
+        env_file = cursor_dir / '.env'
         if env_file.exists():
             load_dotenv(env_file)
             api_key = os.getenv('GEMINI_API_KEY')
@@ -81,6 +81,14 @@ def find_api_key() -> Optional[str]:
                 return api_key
 
     return None
+
+
+def find_base_url() -> Optional[str]:
+    """Find custom Gemini base URL for proxy support.
+
+    Returns the base URL if GEMINI_BASE_URL is set, otherwise None.
+    """
+    return os.getenv('GEMINI_BASE_URL')
 
 
 def get_mime_type(file_path: str) -> str:
@@ -231,11 +239,11 @@ def process_file(
                             output_dir = Path(file_path).parent
                             base_name = Path(file_path).stem
                         else:
-                            # Find project root (look for .git or .claude directory)
+                            # Find project root (look for .git or .cursor directory)
                             script_dir = Path(__file__).parent
                             project_root = script_dir
                             for parent in [script_dir] + list(script_dir.parents):
-                                if (parent / '.git').exists() or (parent / '.claude').exists():
+                                if (parent / '.git').exists() or (parent / '.cursor').exists():
                                     project_root = parent
                                     break
 
@@ -293,7 +301,15 @@ def batch_process(
         print(f"Prompt: {prompt}")
         return []
 
-    client = genai.Client(api_key=api_key)
+    # Create client with optional custom base URL for proxy support
+    base_url = find_base_url()
+    if base_url:
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(base_url=base_url)
+        )
+    else:
+        client = genai.Client(api_key=api_key)
     results = []
 
     # For generation tasks without input files, process once
@@ -365,10 +381,10 @@ def save_results(results: List[Dict[str, Any]], output_file: str, format_output:
             print(f"Warning: Generation failed, saving error report to: {output_path}")
 
     if format_output == 'json':
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w') as f:
             json.dump(results, f, indent=2)
     elif format_output == 'csv':
-        with open(output_path, 'w', newline='', encoding='utf-8') as f:
+        with open(output_path, 'w', newline='') as f:
             fieldnames = ['file', 'status', 'response', 'error']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -380,7 +396,7 @@ def save_results(results: List[Dict[str, Any]], output_file: str, format_output:
                     'error': result.get('error', '')
                 })
     else:  # markdown
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, 'w') as f:
             f.write("# Batch Processing Results\n\n")
             for i, result in enumerate(results, 1):
                 f.write(f"## {i}. {result.get('file', 'Unknown')}\n\n")

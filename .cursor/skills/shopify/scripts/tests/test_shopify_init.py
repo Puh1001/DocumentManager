@@ -75,8 +75,8 @@ ANOTHER_VALID=test
     def test_get_env_paths(self, tmp_path):
         """Test getting .env file paths."""
         # Create directory structure
-        claude_dir = tmp_path / ".claude"
-        skills_dir = claude_dir / "skills"
+        cursor_dir = tmp_path / ".cursor"
+        skills_dir = cursor_dir / "skills"
         skill_dir = skills_dir / "shopify"
 
         skill_dir.mkdir(parents=True)
@@ -84,20 +84,19 @@ ANOTHER_VALID=test
         # Create .env files
         (skill_dir / ".env").write_text("SKILL=1")
         (skills_dir / ".env").write_text("SKILLS=1")
-        (claude_dir / ".env").write_text("CLAUDE=1")
+        (cursor_dir / ".env").write_text("CURSOR=1")
 
         paths = EnvLoader.get_env_paths(skill_dir)
 
         assert len(paths) == 3
         assert skill_dir / ".env" in paths
         assert skills_dir / ".env" in paths
-        assert claude_dir / ".env" in paths
+        assert cursor_dir / ".env" in paths
 
     def test_load_config_priority(self, tmp_path, monkeypatch):
         """Test configuration loading priority."""
         skill_dir = tmp_path / "skill"
         skills_dir = tmp_path
-        claude_dir = tmp_path.parent
 
         skill_dir.mkdir(parents=True)
 

@@ -118,7 +118,7 @@ Follow strictly these following steps:
 * If user approves the changes, use `docs-manager` subagent to update the docs if needed.
   * Create/update `./docs/README.md` file (keep it concise, under 300 lines).
   * Create/update `./docs/codebase-summary.md` file.
-  * Create/update `./docs/project-overview.-pdr.md` (Product Development Requirements) file.
+  * Create/update `./docs/project-overview-pdr.md` (Product Development Requirements) file.
   * Create/update `./docs/code-standards.md` file.
   * Create/update `./docs/system-architecture.md` file.
 * Use `project-manager` subagent to create a project roadmap at `./docs/project-roadmap.md` file & project progress and task status in the given plan file.
