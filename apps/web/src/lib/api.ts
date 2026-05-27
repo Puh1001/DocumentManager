@@ -893,6 +893,22 @@ export interface KpiAttachment {
   deletionExpiresAt?: string | null;
 }
 
+export interface ClearKpiMonthResult {
+  month: number;
+  metricsCleared: boolean;
+  attachmentsDeleted: number;
+  attachmentsFailed: Array<{ attachmentId: string; reason: string }>;
+}
+
+export const kpiRecordApi = {
+  clearMonth: (recordId: string, month: number) =>
+    api.delete<ClearKpiMonthResult>(
+      `/kpi/records/${recordId}/months/${month}`,
+    ),
+  deleteRecord: (recordId: string) =>
+    api.delete<{ success?: boolean }>(`/kpi/records/${recordId}`),
+};
+
 export const kpiAttachmentApi = {
   getAttachments: (kpiRecordId: string, month?: number) =>
     api.get<KpiAttachment[]>(

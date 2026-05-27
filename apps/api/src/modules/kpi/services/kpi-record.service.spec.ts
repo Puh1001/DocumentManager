@@ -9,10 +9,14 @@ import {
   UserDepartmentResolver,
   UserWithDepartments,
 } from "./user-department.resolver";
+import { KpiAttachmentService } from "./kpi-attachment.service";
 
 describe("KpiRecordService", () => {
   let service: KpiRecordService;
   let prismaService: jest.Mocked<PrismaService>;
+  let kpiAttachmentService: jest.Mocked<
+    Pick<KpiAttachmentService, "deleteAttachmentsForRecordMonth">
+  >;
 
   const mockAdminUser: UserWithDepartments = {
     userId: "user-1",
@@ -82,6 +86,22 @@ describe("KpiRecordService", () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
+      kpiMetric: {
+        update: jest.fn(),
+      },
+      kpiAttachment: {
+        count: jest.fn(),
+      },
+      auditLog: {
+        create: jest.fn(),
+      },
+      $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+    };
+
+    const mockKpiAttachmentService = {
+      deleteAttachmentsForRecordMonth: jest
+        .fn()
+        .mockResolvedValue({ deletedCount: 0, failed: [] }),
     };
 
     const mockUserDepartmentResolver = {
@@ -98,11 +118,16 @@ describe("KpiRecordService", () => {
           provide: UserDepartmentResolver,
           useValue: mockUserDepartmentResolver,
         },
+        {
+          provide: KpiAttachmentService,
+          useValue: mockKpiAttachmentService,
+        },
       ],
     }).compile();
 
     service = module.get<KpiRecordService>(KpiRecordService);
     prismaService = module.get(PrismaService);
+    kpiAttachmentService = module.get(KpiAttachmentService);
 
     // Default: departments are in KPI scope
     prismaService.department.findUnique = jest
@@ -580,6 +605,59 @@ describe("KpiRecordService", () => {
         expect(error).toBeInstanceOf(CustomException);
         expect((error as CustomException).errorCode).toBe(
           ErrorCodes.KPI.ACCESS_DENIED_DIFFERENT_DEPARTMENT,
+        );
+      }
+    });
+  });
+
+  describe("clearMonth", () => {
+    it("should clear attachments and metric values for one month only", async () => {
+      prismaService.kpiRecord.findUnique = jest.fn().mockResolvedValue({
+        id: "kpi-record-1",
+        departmentId: "dept-1",
+        status: "COMPLETED",
+        metrics: [
+          { id: "metric-1", values: { m1: 10, m5: 20 } },
+          { id: "metric-2", values: { m5: 30 } },
+        ],
+      });
+      prismaService.kpiMetric.update = jest
+        .fn()
+        .mockImplementation(({ data }) => Promise.resolve({ values: data.values }));
+      prismaService.kpiAttachment.count = jest.fn().mockResolvedValue(1);
+      prismaService.auditLog.create = jest.fn().mockResolvedValue({});
+
+      kpiAttachmentService.deleteAttachmentsForRecordMonth.mockResolvedValue({
+        deletedCount: 2,
+        failed: [],
+      });
+
+      const result = await service.clearMonth("kpi-record-1", 5, mockAdminUser);
+
+      expect(result.month).toBe(5);
+      expect(result.attachmentsDeleted).toBe(2);
+      expect(kpiAttachmentService.deleteAttachmentsForRecordMonth).toHaveBeenCalledWith(
+        "kpi-record-1",
+        5,
+        mockAdminUser,
+      );
+      expect(prismaService.kpiMetric.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "metric-1" },
+          data: { values: { m1: 10, m5: null } },
+        }),
+      );
+      expect(prismaService.kpiRecord.delete).not.toHaveBeenCalled();
+    });
+
+    it("should reject invalid month", async () => {
+      try {
+        await service.clearMonth("kpi-record-1", 13, mockAdminUser);
+        fail("Expected CustomException");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CustomException);
+        expect((error as CustomException).errorCode).toBe(
+          ErrorCodes.INVALID_INPUT,
         );
       }
     });

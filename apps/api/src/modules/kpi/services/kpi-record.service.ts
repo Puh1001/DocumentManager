@@ -9,6 +9,11 @@ import {
   UserWithDepartments,
   UserDepartmentResolver,
 } from "./user-department.resolver";
+import { KpiAttachmentService } from "./kpi-attachment.service";
+import {
+  isValidKpiMonth,
+  kpiMonthToMetricKey,
+} from "../utils/kpi-month.util";
 
 // Departments not in KPI scope (exact match on Department.code)
 // These departments may exist for user/doc assignment but must not have KPI records.
@@ -37,6 +42,7 @@ export class KpiRecordService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userDepartmentResolver: UserDepartmentResolver,
+    private readonly kpiAttachmentService: KpiAttachmentService,
   ) {}
 
   async findAll(params: FindAllParams, user: UserWithDepartments) {
@@ -229,6 +235,110 @@ export class KpiRecordService {
         status: dto.status,
       },
     });
+  }
+
+  /**
+   * Clear one month's KPI data for a record: PDF attachments with that month + metric cell (m1–m12).
+   * Does not delete the KPI record or other months.
+   */
+  async clearMonth(id: string, month: number, user: UserWithDepartments) {
+    if (!isValidKpiMonth(month)) {
+      throw CustomException.badRequest(
+        ErrorCodes.INVALID_INPUT,
+        "Month must be an integer from 1 to 12",
+      );
+    }
+
+    const record = await this.prisma.kpiRecord.findUnique({
+      where: { id },
+      include: {
+        metrics: true,
+      },
+    });
+
+    if (!record) {
+      throw CustomException.notFound(
+        ErrorCodes.KPI.RECORD_NOT_FOUND,
+        "KPI record not found",
+      );
+    }
+
+    this.checkDepartmentAccess(record.departmentId, user);
+
+    if (user.isKpiViewerAll) {
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot clear KPI month data.",
+      );
+    }
+
+    const monthKey = kpiMonthToMetricKey(month);
+
+    const attachmentResult =
+      await this.kpiAttachmentService.deleteAttachmentsForRecordMonth(
+        id,
+        month,
+        user,
+      );
+
+    await this.prisma.$transaction(
+      record.metrics.map((metric) => {
+        const raw = metric.values;
+        const values =
+          raw && typeof raw === "object" && !Array.isArray(raw)
+            ? ({ ...(raw as Record<string, number | null>) } as Record<
+                string,
+                number | null
+              >)
+            : ({} as Record<string, number | null>);
+
+        if (!(monthKey in values) || values[monthKey] == null) {
+          return this.prisma.kpiMetric.update({
+            where: { id: metric.id },
+            data: { values },
+          });
+        }
+
+        values[monthKey] = null;
+        return this.prisma.kpiMetric.update({
+          where: { id: metric.id },
+          data: { values },
+        });
+      }),
+    );
+
+    const remainingAttachments = await this.prisma.kpiAttachment.count({
+      where: { kpiRecordId: id },
+    });
+
+    if (remainingAttachments === 0 && record.status === KpiStatus.COMPLETED) {
+      await this.prisma.kpiRecord.update({
+        where: { id },
+        data: { status: KpiStatus.PENDING },
+      });
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.userId,
+        action: "DELETE",
+        resourceType: "KpiRecord",
+        resourceId: id,
+        details: {
+          scope: "month",
+          month,
+          attachmentsDeleted: attachmentResult.deletedCount,
+          attachmentsFailed: attachmentResult.failed,
+        },
+      },
+    });
+
+    return {
+      month,
+      metricsCleared: true,
+      attachmentsDeleted: attachmentResult.deletedCount,
+      attachmentsFailed: attachmentResult.failed,
+    };
   }
 
   async remove(id: string, user: UserWithDepartments) {

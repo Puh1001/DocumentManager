@@ -46,7 +46,7 @@ import { toApiError } from "@/lib/types/api-error.types";
 import { KpiAttachmentUpload } from "@/components/boss/kpi-attachment-upload";
 import { KpiAttachmentList } from "@/components/boss/kpi-attachment-list";
 import { KpiAttachmentViewer } from "@/components/boss/kpi-attachment-viewer";
-import { kpiAttachmentApi, KpiAttachment } from "@/lib/api";
+import { kpiAttachmentApi, kpiRecordApi, KpiAttachment } from "@/lib/api";
 import { useCanAccess } from "@/hooks/use-can-access";
 
 export const pageMetadata: PageMetadata = {
@@ -1139,13 +1139,107 @@ export default function KpiPage() {
     handleAddNewTable(selectedDisplayType, selectedRowMode);
   };
 
-  const handleDeleteTable = async (recordId: string) => {
+  const handleClearMonthForRecord = async (recordId: string) => {
+    if (
+      selectedMonth == null ||
+      selectedMonth < 1 ||
+      selectedMonth > 12
+    ) {
+      toast({
+        title: "Chọn tháng",
+        description:
+          "Chọn một tháng cụ thể (1–12) trước khi xóa dữ liệu KPI theo tháng. Các tháng khác sẽ không bị ảnh hưởng.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const monthKey = MONTH_KEYS[selectedMonth - 1];
+    const monthLabel = tTable(`months.${monthKey}`);
+
+    if (
+      !confirm(
+        `Xóa dữ liệu KPI tháng ${monthLabel} cho biểu này?\n\n• Chỉ xóa PDF và số liệu của tháng ${selectedMonth}\n• Các tháng khác giữ nguyên\n• Không xóa cả biểu KPI cả năm`,
+      )
+    ) {
+      return;
+    }
+
     if (isDeleting === recordId) return;
 
     setIsDeleting(recordId);
     try {
-      await api.delete(`/kpi/records/${recordId}`);
+      const result = await kpiRecordApi.clearMonth(recordId, selectedMonth);
+
+      setRecords((prev) =>
+        prev.map((r) => {
+          if (r.id !== recordId) return r;
+          return {
+            ...r,
+            metrics: r.metrics.map((m) => ({
+              ...m,
+              values: {
+                ...m.values,
+                [monthKey]: null,
+              },
+            })),
+          };
+        }),
+      );
+
+      if (canViewAttachments) {
+        const attachments = await kpiAttachmentApi.getAttachments(
+          recordId,
+          selectedMonth,
+        );
+        setAttachmentsMap(
+          new Map(attachmentsMap.set(recordId, attachments)),
+        );
+      }
+
+      if (result.attachmentsFailed.length > 0) {
+        toast({
+          title: "Xóa một phần",
+          description: `Đã xóa ${result.attachmentsDeleted} file. ${result.attachmentsFailed.length} file không xóa được (hết hạn 72h hoặc không đủ quyền).`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Đã xóa",
+          description: `Đã xóa dữ liệu tháng ${monthLabel} cho biểu này.`,
+        });
+      }
+    } catch (err: unknown) {
+      handleKpiApiError(err, "xóa dữ liệu KPI theo tháng");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleDeleteEntireRecord = async (recordId: string) => {
+    if (
+      !confirm(
+        "Xóa CẢ BIỂU KPI cho cả 12 tháng?\n\nMọi file PDF và số liệu của biểu này sẽ bị xóa. Thao tác không thể hoàn tác.",
+      )
+    ) {
+      return;
+    }
+
+    if (isDeleting === recordId) return;
+
+    setIsDeleting(recordId);
+    try {
+      await kpiRecordApi.deleteRecord(recordId);
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
+      setAttachmentsMap((prev) => {
+        const next = new Map(prev);
+        next.delete(recordId);
+        return next;
+      });
+      toast({
+        title: "Đã xóa",
+        description: "Đã xóa toàn bộ biểu KPI (cả năm).",
+      });
     } catch (err: unknown) {
       handleKpiApiError(err, "xóa KPI");
     } finally {
@@ -1649,17 +1743,39 @@ export default function KpiPage() {
                         />
                       </div>
                       {isEditMode && records.length > 1 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteTable(record.id)}
-                          disabled={isDeleting === record.id}
-                          className="text-red-500"
-                        >
-                          {isDeleting === record.id
-                            ? "Đang xóa..."
-                            : "Xóa bảng"}
-                        </Button>
+                        <div className="flex flex-col items-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleClearMonthForRecord(record.id)}
+                            disabled={isDeleting === record.id}
+                            className="text-red-500"
+                            title={
+                              selectedMonth != null
+                                ? `Chỉ xóa dữ liệu tháng ${selectedMonth}`
+                                : "Chọn tháng ở thanh trên để xóa theo tháng"
+                            }
+                          >
+                            {isDeleting === record.id
+                              ? "Đang xóa..."
+                              : selectedMonth != null &&
+                                  selectedMonth >= 1 &&
+                                  selectedMonth <= 12
+                                ? `Xóa tháng ${selectedMonth}`
+                                : "Xóa theo tháng…"}
+                          </Button>
+                          {selectedMonth == null && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteEntireRecord(record.id)}
+                              disabled={isDeleting === record.id}
+                              className="text-red-400 text-xs h-7"
+                            >
+                              Xóa cả biểu (12 tháng)
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
 

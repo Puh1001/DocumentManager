@@ -805,6 +805,69 @@ export class KpiAttachmentService {
     }
   }
 
+  /**
+   * Delete all attachments for a KPI record scoped to one calendar month.
+   * Legacy attachments (month IS NULL) are not removed — they apply to every month view.
+   */
+  async deleteAttachmentsForRecordMonth(
+    kpiRecordId: string,
+    month: number,
+    user: UserWithDepartments
+  ): Promise<{
+    deletedCount: number;
+    failed: Array<{ attachmentId: string; reason: string }>;
+  }> {
+    const record = await (this.prisma as PrismaClientLike).kpiRecord.findUnique(
+      {
+        where: { id: kpiRecordId },
+        select: { id: true, departmentId: true },
+      }
+    );
+
+    if (!record) {
+      throw CustomException.notFound(
+        ErrorCodes.KPI.RECORD_NOT_FOUND,
+        "KPI record not found"
+      );
+    }
+
+    this.checkDepartmentAccess(record.departmentId, user);
+
+    if (user.isKpiViewerAll) {
+      throw CustomException.forbidden(
+        ErrorCodes.KPI.ACCESS_DENIED,
+        "kpi_viewer_all role is read-only. Cannot delete KPI attachments."
+      );
+    }
+
+    const attachments = await (
+      this.prisma as PrismaClientLike
+    ).kpiAttachment.findMany({
+      where: { kpiRecordId, month },
+      select: { id: true },
+    });
+
+    let deletedCount = 0;
+    const failed: Array<{ attachmentId: string; reason: string }> = [];
+
+    for (const { id } of attachments) {
+      try {
+        await this.deleteAttachment(id, user);
+        deletedCount += 1;
+      } catch (error: unknown) {
+        const reason =
+          error instanceof Error ? error.message : "Delete failed";
+        failed.push({ attachmentId: id, reason });
+        this.logger.warn(
+          `Failed to delete KPI attachment ${id} for record ${kpiRecordId} month ${month}`,
+          { reason }
+        );
+      }
+    }
+
+    return { deletedCount, failed };
+  }
+
   private async loadAttachmentWithRecord(
     attachmentId: string,
     user: UserWithDepartments

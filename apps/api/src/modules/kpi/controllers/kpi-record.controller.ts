@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -79,8 +80,26 @@ export class KpiRecordController {
     return this.kpiRecordService.update(id, dto, user);
   }
 
+  @Delete(":id/months/:month")
+  @CheckPolicies({ action: "delete", subject: "Kpi" })
+  @ApiOperation({
+    summary:
+      "Clear KPI data for one month only (attachments + metric values); other months unchanged",
+  })
+  async clearMonth(
+    @CurrentUserWithDepartment() user: UserWithDepartments,
+    @Param("id") id: string,
+    @Param("month", ParseIntPipe) month: number
+  ) {
+    return this.kpiRecordService.clearMonth(id, month, user);
+  }
+
   @Delete(":id")
-  @ApiOperation({ summary: "Delete KPI record" })
+  @CheckPolicies({ action: "delete", subject: "Kpi" })
+  @ApiOperation({
+    summary:
+      "Delete entire KPI record for all months (attachments and metrics cascade)",
+  })
   async remove(
     @CurrentUserWithDepartment() user: UserWithDepartments,
     @Param("id") id: string
