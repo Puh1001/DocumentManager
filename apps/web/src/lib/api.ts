@@ -653,7 +653,44 @@ export const maintenanceApi = {
   delete: (id: string) => api.delete(`/maintenance/${id}`),
 };
 
-// User types and API methods
+// Maintenance Attachment types and API methods
+export interface MaintenanceAttachment {
+  id: string;
+  documentId: string;
+  fileName: string;
+  uploadedBy: string;
+  createdAt: string;
+  description?: string | null;
+  deletionExpiresAt?: string | null;
+}
+
+export const maintenanceAttachmentApi = {
+  getAttachments: (noticeId: string) =>
+    api.get<MaintenanceAttachment[]>(`/maintenance/notices/${noticeId}/attachments`),
+  getAttachmentStreamUrl: (attachmentId: string) =>
+    `/maintenance/attachments/${attachmentId}/stream`,
+  downloadAttachment: (attachmentId: string) =>
+    api.fetchFileAsArrayBuffer(`/maintenance/attachments/${attachmentId}/download`),
+  uploadAttachment: (noticeId: string, file: File, description?: string) =>
+    api.upload<{ id: string; documentId: string; description?: string | null; createdAt: string }>(
+      `/maintenance/notices/${noticeId}/attachments`,
+      file,
+      {
+        ...(description && { description }),
+      },
+    ),
+  getDeletionStatus: (attachmentId: string) =>
+    api.get<DeletionStatus>(`/maintenance/attachments/${attachmentId}/deletion-status`),
+  getDeletionRequest: (attachmentId: string) =>
+    api.get<DeletionRequest | null>(`/maintenance/attachments/${attachmentId}/deletion-request`),
+  submitDeletionRequest: (attachmentId: string, reason: string, replacementFileId?: string) =>
+    api.post<DeletionRequest>(`/maintenance/attachments/${attachmentId}/deletion-request`, {
+      reason,
+      ...(replacementFileId && { replacementFileId }),
+    }),
+  deleteAttachment: (attachmentId: string) =>
+    api.delete<{ success: boolean }>(`/maintenance/attachments/${attachmentId}`),
+};
 export interface Role {
   id: string;
   name: string;

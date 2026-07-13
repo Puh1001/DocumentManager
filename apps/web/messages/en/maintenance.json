@@ -34,6 +34,19 @@
     "cancel": "Cancel"
   },
   "toast": {
-    "saved": "Maintenance notice added."
+    "saved": "Maintenance notice added.",
+    "attachmentUploaded": "File uploaded successfully.",
+    "attachmentDeleted": "File deleted successfully."
+  },
+  "attachments": {
+    "title": "Attachments",
+    "upload": "Upload file",
+    "delete": "Delete",
+    "view": "View",
+    "download": "Download",
+    "noFiles": "No attachments",
+    "uploadSuccess": "File uploaded",
+    "deleteConfirm": "Delete this file?",
+    "fileTypes": "PDF, PNG, JPG, GIF, WebP only"
   }
 }

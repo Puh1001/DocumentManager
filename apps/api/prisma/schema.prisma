@@ -24,15 +24,16 @@ model User {
   lastLoginAt  DateTime? @map("last_login_at")
 
   // Relations
-  roles              UserRole[]
-  sessions           Session[]
-  documentVersions   DocumentVersion[]
-  auditLogs          AuditLog[]
-  folderPermissions  FolderPermission[]   @relation("UserFolderPermissions")
-  docPermissions     DocumentPermission[] @relation("UserDocumentPermissions")
-  maintenanceNotices MaintenanceNotice[]  @relation("MaintenanceNoticeCreator")
-  departments        UserDepartment[] // NEW: Many-to-many relation with departments
-  kpiAttachments     KpiAttachment[]      @relation("UserKpiAttachments")
+  roles                  UserRole[]
+  sessions               Session[]
+  documentVersions       DocumentVersion[]
+  auditLogs              AuditLog[]
+  folderPermissions      FolderPermission[]      @relation("UserFolderPermissions")
+  docPermissions         DocumentPermission[]    @relation("UserDocumentPermissions")
+  maintenanceNotices     MaintenanceNotice[]     @relation("MaintenanceNoticeCreator")
+  maintenanceAttachments MaintenanceAttachment[] @relation("MaintenanceAttachmentCreator")
+  departments            UserDepartment[] // NEW: Many-to-many relation with departments
+  kpiAttachments         KpiAttachment[]         @relation("UserKpiAttachments")
 
   // Deletion tracking relations
   uploadedDocuments Document[]        @relation("UploadedDocuments")
@@ -140,17 +141,17 @@ model RolePermission {
 // =====================
 
 model Folder {
-  id               String    @id @default(uuid())
+  id               String              @id @default(uuid())
   name             String
-  path             String    @unique // SMB relative path
-  parentId         String?   @map("parent_id")
-  physicalLocation String?   @map("physical_location") // Vị trí lưu trữ bản cứng
-  departmentId     String?   @map("department_id") // Link to department
-  isInternal       Boolean   @default(false) @map("is_internal") // Internal/system folder (hidden from normal users)
+  path             String              @unique // SMB relative path
+  parentId         String?             @map("parent_id")
+  physicalLocation String?             @map("physical_location") // Vị trí lưu trữ bản cứng
+  departmentId     String?             @map("department_id") // Link to department
+  isInternal       Boolean             @default(false) @map("is_internal") // Internal/system folder (hidden from normal users)
   internalType     InternalFolderType? @map("internal_type") // VERSIONS, DELETE_FILES, etc.
-  deletedAt        DateTime? @map("deleted_at") // Soft delete timestamp
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime?           @map("deleted_at") // Soft delete timestamp
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   // Self-relation for hierarchy
   parent   Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
@@ -177,7 +178,7 @@ enum InternalFolderType {
 model DocumentLevel {
   id          String   @id @default(uuid())
   code        String   @unique // e.g. LEVEL1, LEVEL2
-  name        String   // Default display name
+  name        String // Default display name
   nameEn      String?  @map("name_en")
   nameVi      String?  @map("name_vi")
   nameZh      String?  @map("name_zh")
@@ -221,11 +222,11 @@ model Document {
   revisionLabel String? @map("revision_label")
 
   // ISO metadata (auto-populated by system)
-  preparerId   String?    @map("preparer_id") // Auto-set to uploader (legacy, kept for backward compatibility)
-  reviewerId   String?    @map("reviewer_id") // Legacy, kept for backward compatibility
-  approverId   String?    @map("approver_id") // Legacy, kept for backward compatibility
-  preparerName String?   @map("preparer_name") // Full name entered by user
-  reviewerName String?   @map("reviewer_name") // Full name entered by user
+  preparerId      String?   @map("preparer_id") // Auto-set to uploader (legacy, kept for backward compatibility)
+  reviewerId      String?   @map("reviewer_id") // Legacy, kept for backward compatibility
+  approverId      String?   @map("approver_id") // Legacy, kept for backward compatibility
+  preparerName    String?   @map("preparer_name") // Full name entered by user
+  reviewerName    String?   @map("reviewer_name") // Full name entered by user
   approverName    String?   @map("approver_name") // Full name entered by user
   approvalDate    DateTime? @map("approval_date")
   receiptDate     DateTime? @map("receipt_date")
@@ -237,14 +238,15 @@ model Document {
   deletionExpiresAt DateTime? @map("deletion_expires_at") // uploadedAt + 72h
 
   // Relations
-  folder         Folder               @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  level          DocumentLevel?       @relation(fields: [levelId], references: [id], onDelete: Restrict)
-  preparer       User?                @relation("DocumentPreparer", fields: [preparerId], references: [id], onDelete: SetNull)
-  reviewer       User?                @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
-  approver       User?                @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)
-  versions       DocumentVersion[]
-  permissions    DocumentPermission[]
-  kpiAttachments KpiAttachment[]      @relation("DocumentKpiAttachments")
+  folder                 Folder                  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  level                  DocumentLevel?          @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  preparer               User?                   @relation("DocumentPreparer", fields: [preparerId], references: [id], onDelete: SetNull)
+  reviewer               User?                   @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  approver               User?                   @relation("DocumentApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  versions               DocumentVersion[]
+  permissions            DocumentPermission[]
+  kpiAttachments         KpiAttachment[]         @relation("DocumentKpiAttachments")
+  maintenanceAttachments MaintenanceAttachment[] @relation("DocumentMaintenanceAttachments")
 
   // Deletion tracking relations
   uploadedByUser  User?             @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: SetNull)
@@ -548,8 +550,28 @@ model MaintenanceNotice {
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   creator    User        @relation("MaintenanceNoticeCreator", fields: [createdBy], references: [id])
 
+  attachments MaintenanceAttachment[]
+
   @@index([departmentId])
   @@index([startDate])
   @@index([createdBy])
   @@map("maintenance_notices")
+}
+
+model MaintenanceAttachment {
+  id                  String   @id @default(uuid())
+  maintenanceNoticeId String   @map("maintenance_notice_id")
+  documentId          String   @map("document_id")
+  description         String?
+  createdById         String   @map("created_by_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  maintenanceNotice MaintenanceNotice @relation(fields: [maintenanceNoticeId], references: [id], onDelete: Cascade)
+  document          Document          @relation("DocumentMaintenanceAttachments", fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy         User              @relation("MaintenanceAttachmentCreator", fields: [createdById], references: [id])
+
+  @@index([maintenanceNoticeId])
+  @@index([documentId])
+  @@index([createdById])
+  @@map("maintenance_attachments")
 }

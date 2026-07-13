@@ -34,6 +34,19 @@
     "cancel": "Hủy"
   },
   "toast": {
-    "saved": "Đã thêm thông báo bảo trì."
+    "saved": "Đã thêm thông báo bảo trì.",
+    "attachmentUploaded": "Tải file lên thành công.",
+    "attachmentDeleted": "Đã xóa file."
+  },
+  "attachments": {
+    "title": "File đính kèm",
+    "upload": "Tải file lên",
+    "delete": "Xóa",
+    "view": "Xem",
+    "download": "Tải xuống",
+    "noFiles": "Chưa có file đính kèm",
+    "uploadSuccess": "File đã tải lên",
+    "deleteConfirm": "Xóa file này?",
+    "fileTypes": "Chỉ chấp nhận PDF, PNG, JPG, GIF, WebP"
   }
 }
