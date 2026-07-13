@@ -44,8 +44,12 @@ export function KpiList({ departmentId, onSelectKpi, onBack }: KpiListProps) {
   const canDeleteAttachments = useCanAccess("delete", "Kpi");
 
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(() => new Date().getMonth() + 1);
+  const currentMonth = new Date().getMonth() + 1; // 1–12
+  // Default: current year, previous month (e.g. July → show June; January → show December of previous year)
+  const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const defaultPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const [selectedYear, setSelectedYear] = useState(defaultPrevYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(defaultPrevMonth);
 
   const loadRecords = useCallback(async () => {
     try {

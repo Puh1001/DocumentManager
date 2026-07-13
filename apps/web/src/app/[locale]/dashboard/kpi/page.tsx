@@ -213,11 +213,13 @@ export default function KpiPage() {
   const canDeleteAttachments = useCanAccess("delete", "Kpi");
   const canCreateAttachments = useCanAccess("create", "Kpi");
 
-  const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(
-    () => new Date().getMonth() + 1,
-  );
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const defaultPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const [selectedYear, setSelectedYear] = useState(defaultPrevYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(defaultPrevMonth);
 
   // Filter departments based on user access
   const departments = useMemo(() => {

@@ -57,6 +57,8 @@ interface DepartmentKpiStatus {
   completedKpis: number;
   completionRate: number;
   status: "completed" | "partial" | "incomplete";
+  kpiRecords?: KpiRecord[]; // Store actual KPI records for hover details
+  completedRecordIds?: Set<string>; // Store which records are completed
 }
 
 interface DepartmentKpiStatusProps {
@@ -116,6 +118,8 @@ function calculateDepartmentStatus(
     completedKpis,
     completionRate,
     status,
+    kpiRecords, // Store KPI records for hover details
+    completedRecordIds, // Store which records are completed
   };
 }
 
@@ -132,6 +136,10 @@ export function DepartmentKpiStatus({
   const [filter, setFilter] = useState<
     "all" | "completed" | "partial" | "incomplete"
   >("all");
+
+  // Hover state for department tooltip
+  const [hoveredDepartmentId, setHoveredDepartmentId] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -446,6 +454,14 @@ export function DepartmentKpiStatus({
                     onSelectDepartment(status.department);
                   }
                 }}
+                onMouseEnter={(e) => {
+                  setHoveredDepartmentId(status.department.id);
+                  setTooltipPos({ x: e.clientX, y: e.clientY });
+                }}
+                onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => setHoveredDepartmentId(null)}
+                onFocus={() => setHoveredDepartmentId(status.department.id)}
+                onBlur={() => setHoveredDepartmentId(null)}
                 className="cyber-card cyber-corner p-6 cursor-pointer transition-all duration-300 hover:border-cyan-500/50 hover:shadow-[0_0_24px_rgba(77,208,225,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f1a]"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
@@ -532,6 +548,90 @@ export function DepartmentKpiStatus({
           })}
         </div>
       )}
+
+      {/* Tooltip for incomplete KPIs */}
+      {hoveredDepartmentId && (
+        <DepartmentKpiTooltip
+          departmentId={hoveredDepartmentId}
+          statuses={statuses}
+          selectedMonth={selectedMonth}
+          mousePos={tooltipPos}
+        />
+      )}
+    </div>
+  );
+}
+
+// Tooltip component for showing incomplete KPI details
+interface DepartmentKpiTooltipProps {
+  departmentId: string;
+  statuses: DepartmentKpiStatus[];
+  selectedMonth: number;
+  mousePos: { x: number; y: number };
+}
+
+function DepartmentKpiTooltip({
+  departmentId,
+  statuses,
+  selectedMonth,
+  mousePos,
+}: DepartmentKpiTooltipProps) {
+  const t = useTranslations("boss");
+  const status = statuses.find((s) => s.department.id === departmentId);
+  if (!status || !status.kpiRecords || !status.completedRecordIds) {
+    return null;
+  }
+
+  const incompleteKpis = status.kpiRecords.filter(
+    (record) => !status.completedRecordIds?.has(record.id)
+  );
+
+  if (incompleteKpis.length === 0) {
+    return null;
+  }
+
+  // Get month label
+  const monthLabels = [
+    "jan", "feb", "mar", "apr", "may", "jun",
+    "jul", "aug", "sep", "oct", "nov", "dec",
+  ] as const;
+  const monthKey = monthLabels[selectedMonth - 1];
+
+  return (
+    <div
+      className="fixed z-50 max-w-md p-4 cyber-card cyber-corner border border-cyan-500/50 bg-gray-900/95 backdrop-blur-sm shadow-[0_0_24px_rgba(77,208,225,0.3)] pointer-events-none"
+      style={{
+        left: mousePos.x + 16,
+        top: mousePos.y + 16,
+        // Clamp to viewport so it doesn't overflow on the right/bottom
+        maxWidth: "min(24rem, calc(100vw - 2rem))",
+        transform:
+          mousePos.x + 400 > window.innerWidth ? "translateX(calc(-100% - 32px))" : undefined,
+      }}
+    >
+      <div className="space-y-2">
+        <h4 className="font-cyber font-bold text-sm cyber-neon-cyan">
+          {status.department.name} - {t("kpiStatus.incompleteKpis")}
+        </h4>
+        <p className="text-xs text-cyan-400/80">
+          {t("kpiStatus.month")}: {t(`months.${monthKey}`)}
+        </p>
+        <div className="border-t border-cyan-500/30 pt-2">
+          <p className="text-xs text-cyan-400/80 mb-2">
+            {t("kpiStatus.incompleteCount")}: {incompleteKpis.length}/{status.totalKpis}
+          </p>
+          <ul className="space-y-1 max-h-40 overflow-y-auto">
+            {incompleteKpis.map((kpi) => (
+              <li
+                key={kpi.id}
+                className="text-xs text-red-300 font-cyber border-l-2 border-red-500/50 pl-2 py-1 hover:text-red-200 hover:border-red-400/70 transition-colors"
+              >
+                {kpi.title || "Unnamed KPI"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,9 +14,11 @@ You reported "font lỗi" (font error), but investigation revealed:
 
 File names are stored with **mojibake** (corrupted encoding) in your PostgreSQL database.
 
-| What You See | What's in DB | What Should Be |
-|-------------|--------------|----------------|
-| `æ<ç»Ðø¼‰æŒPeû...` | `Tá»· lá»\u0087 xá»­ lÃ½` | `Tỷ lệ xử lý` |
+
+| What You See       | What's in DB              | What Should Be |
+| ------------------ | ------------------------- | -------------- |
+| `æ<ç»Ðø¼‰æŒPeû...` | `Tá»· lá»\u0087 xá»­ lÃ½` | `Tỷ lệ xử lý`  |
+
 
 ### Evidence from YOUR Database:
 
@@ -70,10 +72,12 @@ Original: "Tỷ lệ"
 ### 1. Backend Code Fixed ✅
 
 **Created:**
+
 - `apps/api/src/common/utils/encoding.util.ts` - Encoding fix utility
 - `apps/api/src/common/utils/encoding.util.spec.ts` - Tests (10/10 passing ✅)
 
 **Modified:**
+
 - `apps/api/src/modules/storage/services/document.service.ts` - Added fix
 - `apps/api/src/modules/kpi/services/kpi-attachment.service.ts` - Added fix
 
@@ -82,9 +86,11 @@ Original: "Tỷ lệ"
 ### 2. Migration Script Ready 🔄
 
 **Created:**
+
 - `apps/api/src/scripts/fix-filename-encoding.ts` - Database migration
 
 **What it does:**
+
 - Scans all documents in database
 - Detects mojibake patterns
 - Fixes `file_name` and `name` columns
@@ -155,6 +161,7 @@ SELECT id, file_name FROM documents ORDER BY created_at DESC LIMIT 5;
 ```
 
 Then check UI:
+
 1. Open browser
 2. Hard refresh: **Ctrl + Shift + R**
 3. Go to Boss UI → KPI page
@@ -167,6 +174,7 @@ Then check UI:
 ### Files Modified: 5 new + 2 updated
 
 **New Files:**
+
 1. `apps/api/src/common/utils/encoding.util.ts`
 2. `apps/api/src/common/utils/encoding.util.spec.ts`
 3. `apps/api/src/scripts/fix-filename-encoding.ts`
@@ -174,6 +182,7 @@ Then check UI:
 5. `docs/ENCODING-FIX-SUMMARY.md` (summary)
 
 **Modified Files:**
+
 1. `apps/api/src/modules/storage/services/document.service.ts`
 2. `apps/api/src/modules/kpi/services/kpi-attachment.service.ts`
 
@@ -191,6 +200,7 @@ Then check UI:
 ## 🔒 Safety
 
 ### Tests:
+
 ✅ **10/10 unit tests passing**
 
 ```bash
@@ -199,6 +209,7 @@ Tests:       10 passed, 10 total
 ```
 
 Test coverage:
+
 - ✅ Vietnamese mojibake → UTF-8
 - ✅ Correct text → No changes
 - ✅ English text → No changes  
@@ -226,12 +237,14 @@ docker exec -i iso-docs-postgres psql -U admin documents_db < backup_YYYYMMDD_HH
 ### Before Fix:
 
 **Database Query:**
+
 ```sql
 SELECT file_name FROM documents WHERE id = 'd17cd214-...';
 -- Result: Tá»· lá»\u0087 xá»­ lÃ½ khiáº¿u náº¡i ná»\u0099i bá»\u0099.pdf
 ```
 
 **UI Display:**
+
 ```
 æ<ç»Ðø¼‰æŒPeû¼©æµæ²\u0088æ»´æ¯æ±...
 ```
@@ -239,12 +252,14 @@ SELECT file_name FROM documents WHERE id = 'd17cd214-...';
 ### After Fix:
 
 **Database Query:**
+
 ```sql
 SELECT file_name FROM documents WHERE id = 'd17cd214-...';
 -- Result: Tỷ lệ xử lý khiếu nại nội bộ.pdf
 ```
 
 **UI Display:**
+
 ```
 Tỷ lệ xử lý khiếu nại nội bộ.pdf
 ```
@@ -255,12 +270,12 @@ Tỷ lệ xử lý khiếu nại nội bộ.pdf
 
 After migration, test these:
 
-- [ ] Upload new file with Vietnamese name → Check saves correctly
-- [ ] Check old files display correctly in UI
-- [ ] Download a file → File name should be correct
-- [ ] Check KPI attachments page
-- [ ] Check Documents page
-- [ ] Verify in database: `SELECT file_name FROM documents LIMIT 5;`
+- Upload new file with Vietnamese name → Check saves correctly
+- Check old files display correctly in UI
+- Download a file → File name should be correct
+- Check KPI attachments page
+- Check Documents page
+- Verify in database: `SELECT file_name FROM documents LIMIT 5;`
 
 ---
 
@@ -277,13 +292,15 @@ Complete documentation available:
 
 ## ⏱️ Time Estimate
 
-| Task | Time |
-|------|------|
-| Restart API | 10 seconds |
-| Run migration | 30 seconds |
-| Verify in DB | 30 seconds |
-| Verify in UI | 30 seconds |
-| **Total** | **~2 minutes** |
+
+| Task          | Time           |
+| ------------- | -------------- |
+| Restart API   | 10 seconds     |
+| Run migration | 30 seconds     |
+| Verify in DB  | 30 seconds     |
+| Verify in UI  | 30 seconds     |
+| **Total**     | **~2 minutes** |
+
 
 ---
 
@@ -320,17 +337,20 @@ Migration is successful when:
 ## 🎉 Summary
 
 ### The Problem:
+
 - ❌ Database contains mojibake (corrupted encoding)
 - ❌ Caused by incorrect handling of `file.originalname`
 - ❌ Affects ~45 documents with Vietnamese names
 
 ### The Solution:
+
 - ✅ Encoding utility created (10 tests passing)
 - ✅ Upload services fixed
 - ✅ Migration script ready
 - ✅ Full documentation provided
 
 ### Your Action:
+
 1. **Restart API server** (apply code fixes)
 2. **Run migration script** (fix database)
 3. **Verify in UI** (confirm success)

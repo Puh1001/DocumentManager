@@ -3,6 +3,7 @@
 ## Vấn đề (Problem)
 
 File names trong database đang bị lỗi encoding (mojibake):
+
 - ❌ Trong DB: `Tá»· lá»\u0087 xá»­ lÃ½`
 - ✅ Đúng: `Tỷ lệ xử lý`
 
@@ -85,10 +86,10 @@ SELECT id, file_name FROM documents ORDER BY created_at DESC LIMIT 10;
 
 ## Test sau khi migration
 
-- [ ] Upload file mới với tên tiếng Việt → Check DB → Phải lưu đúng
-- [ ] Download file → Tên file phải đúng
-- [ ] Xem file trong UI → Hiển thị đúng
-- [ ] Check audit logs → Không có errors
+- Upload file mới với tên tiếng Việt → Check DB → Phải lưu đúng
+- Download file → Tên file phải đúng
+- Xem file trong UI → Hiển thị đúng
+- Check audit logs → Không có errors
 
 ---
 
@@ -112,12 +113,14 @@ npm run dev
 ## Kết quả (Expected Results)
 
 ### Trước khi fix:
+
 ```
 Database: Tá»· lá»\u0087 xá»­ lÃ½ khiáº¿u náº¡i
 UI:       æ<ç»Ðø¼‰æŒPeû...
 ```
 
 ### Sau khi fix:
+
 ```
 Database: Tỷ lệ xử lý khiếu nại
 UI:       Tỷ lệ xử lý khiếu nại
@@ -128,6 +131,7 @@ UI:       Tỷ lệ xử lý khiếu nại
 ## Support
 
 Nếu gặp vấn đề:
+
 1. Check API logs trong terminal
 2. Check database với query: `SELECT * FROM documents WHERE file_name LIKE '%\\%' LIMIT 5;`
 3. Xem debug report: `docs/debug-reports/260121-database-encoding-corruption-fix.md`
