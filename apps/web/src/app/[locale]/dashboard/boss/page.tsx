@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/boss/breadcrumb";
 import { DepartmentGrid } from "@/components/boss/department-grid";
 import { DepartmentKpiStatus } from "@/components/boss/department-kpi-status";
 import { BossIsoOverviewTab } from "@/components/boss/boss-iso-overview-tab";
+import { BossMaintenanceTab } from "@/components/boss/boss-maintenance-tab";
 import { BossClientTab } from "@/components/boss/boss-client-tab";
 import { ViewSelector } from "@/components/boss/view-selector";
 import { KpiList } from "@/components/boss/kpi-list";
@@ -20,7 +21,7 @@ import { DocumentDetail } from "@/components/boss/document-detail";
 import { departmentApi, type Department } from "@/lib/api";
 import { getErrorMessage } from "@/lib/error-handler";
 
-type HomeTab = "departments" | "kpiStatus" | "isoOverview" | "client";
+type HomeTab = "departments" | "kpiStatus" | "isoOverview" | "maintenance" | "client";
 
 export default function BossPage() {
   const t = useTranslations("boss");
@@ -37,6 +38,9 @@ export default function BossPage() {
   const [isoOverviewDocumentId, setIsoOverviewDocumentId] = useState<
     string | null
   >(null);
+  const [maintenanceDetailId, setMaintenanceDetailId] = useState<
+    string | null
+  >(null);
 
   // Open tab from URL when redirect from /boss/iso-documents
   useEffect(() => {
@@ -46,6 +50,7 @@ export default function BossPage() {
         tab === "isoOverview" ||
         tab === "kpiStatus" ||
         tab === "departments" ||
+        tab === "maintenance" ||
         tab === "client"
       ) {
         setHomeTab(tab);
@@ -157,13 +162,14 @@ export default function BossPage() {
           <nav
             className="boss-home-tabs flex flex-wrap items-center gap-1 p-1 rounded-lg bg-cyan-500/5 border border-cyan-500/20 w-fit opacity-0 animate-slide-up transition-colors duration-200"
             style={{ animationDelay: "80ms" }}
-            aria-label="Main tabs: Department list, KPI Status, ISO Overview, Client Files"
+            aria-label="Main tabs: Department list, KPI Status, ISO Overview, Maintenance, Client Files"
           >
             {(
               [
                 ["departments", t("viewType.departments")],
                 ["kpiStatus", t("viewType.kpiStatus")],
                 ["isoOverview", t("viewType.isoOverview")],
+                ["maintenance", t("viewType.maintenance")],
                 ["client", t("viewType.client")],
               ] as const
             ).map(([tab, label]) => (
@@ -221,6 +227,19 @@ export default function BossPage() {
           ) : homeTab === "client" ? (
             <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
               <BossClientTab />
+            </div>
+          ) : homeTab === "maintenance" && maintenanceDetailId ? (
+            <MaintenanceDetail
+              maintenanceId={maintenanceDetailId}
+              onBack={() => setMaintenanceDetailId(null)}
+            />
+          ) : homeTab === "maintenance" ? (
+            <div className="opacity-0 animate-slide-up" style={{ animationDelay: "120ms" }}>
+              <BossMaintenanceTab
+                departments={visibleDepartments}
+                locale={locale}
+                onSelectMaintenance={setMaintenanceDetailId}
+              />
             </div>
           ) : null}
         </div>

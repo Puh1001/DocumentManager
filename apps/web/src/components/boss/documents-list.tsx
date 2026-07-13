@@ -31,22 +31,32 @@ interface DocumentsListProps {
   onBack: () => void;
 }
 
-// Recursively find all documents in a folder tree
-function getAllDocuments(folders: Folder[]): Document[] {
+// Recursively find all documents ONLY from ISO_documents folder and its children
+function getAllIsoDocuments(folders: Folder[]): Document[] {
   const documents: Document[] = [];
 
-  function traverse(folderList: Folder[]) {
+  function isIsoPath(path: string): boolean {
+    const lower = path.toLowerCase();
+    return lower.includes("/iso_documents") || lower === "iso_documents";
+  }
+
+  function traverse(folderList: Folder[], parentIsIso: boolean) {
     for (const folder of folderList) {
-      if (folder.documents) {
+      const thisIsIso = parentIsIso || isIsoPath(folder.path);
+
+      if (thisIsIso && folder.documents) {
         documents.push(...folder.documents);
       }
+
+      // Only traverse children if we're still under ISO_documents
+      // (don't go into KPI, Maintenance, or other sibling folders)
       if (folder.children && folder.children.length > 0) {
-        traverse(folder.children);
+        traverse(folder.children, thisIsIso);
       }
     }
   }
 
-  traverse(folders);
+  traverse(folders, false);
   return documents;
 }
 
@@ -83,10 +93,10 @@ export function DocumentsList({
     loadFolders();
   }, [loadFolders]);
 
-  // Get all documents from filtered folder tree (already filtered by departmentId)
+  // Get all documents from ISO_documents folder tree
   const documents = useMemo(() => {
     if (folders.length === 0) return [];
-    return getAllDocuments(folders);
+    return getAllIsoDocuments(folders);
   }, [folders]);
 
   if (loading) {
