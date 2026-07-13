@@ -125,7 +125,12 @@
     "empty": {
       "noDepartments": "Không có phòng ban",
       "noDepartmentsDescription": "Không có phòng ban nào phù hợp với bộ lọc đã chọn."
-    }
+    },
+    "incompleteKpis": "KPI chưa hoàn thành",
+    "incompleteCount": "Chưa hoàn thành",
+    "month": "Tháng",
+    "noKpiRecords": "Chưa có KPI nào được thiết lập",
+    "allCompleted": "Hoàn thành tất cả KPI"
   },
   "maintenance": {
     "description": "Mô tả",

@@ -614,7 +614,7 @@ function DepartmentKpiTooltip({
           {status.department.name} - {t("kpiStatus.incompleteKpis")}
         </h4>
         <p className="text-xs text-cyan-400/80">
-          {t("kpiStatus.month")}: {t(`months.${monthKey}`)}
+          {t("month")}: {t(`months.${monthKey}`)}
         </p>
         <div className="border-t border-cyan-500/30 pt-2">
           <p className="text-xs text-cyan-400/80 mb-2">

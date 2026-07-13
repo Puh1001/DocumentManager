@@ -125,7 +125,12 @@
     "empty": {
       "noDepartments": "No departments found",
       "noDepartmentsDescription": "No departments match the selected filter."
-    }
+    },
+    "incompleteKpis": "Incomplete KPIs",
+    "incompleteCount": "Incomplete",
+    "month": "Month",
+    "noKpiRecords": "No KPI records set up",
+    "allCompleted": "All KPIs completed"
   },
   "maintenance": {
     "description": "Description",
