@@ -599,7 +599,7 @@ function DepartmentKpiTooltip({
 
   return (
     <div
-      className="fixed z-50 max-w-md p-4 cyber-card cyber-corner border border-cyan-500/50 bg-gray-900/95 backdrop-blur-sm shadow-[0_0_24px_rgba(77,208,225,0.3)] pointer-events-none"
+      className="fixed z-50 max-w-sm p-4 rounded-lg border border-cyan-500/50 bg-gray-900/95 backdrop-blur-sm shadow-[0_0_24px_rgba(77,208,225,0.3)] pointer-events-none"
       style={{
         left: mousePos.x + 16,
         top: mousePos.y + 16,
