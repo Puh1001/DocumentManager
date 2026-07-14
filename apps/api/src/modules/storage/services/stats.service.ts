@@ -99,16 +99,23 @@ export class StatsService {
         where: deptFilter,
       });
 
-      // Count ACTIVE docs per department + level
-      const status = "ACTIVE";
+      // Count ACTIVE docs per department + level — ISO only, exclude versions/delete folders
       const raw: Array<{ department_id: string; level_id: string; count: number }> = await this.prisma.$queryRaw`
         SELECT f."department_id", d."level_id", COUNT(d.id)::int AS "count"
         FROM "documents" d
         JOIN "folders" f ON f.id = d."folder_id"
-        WHERE d.status = CAST(${status} AS "DocumentStatus")
+        WHERE d.status = CAST('ACTIVE' AS "DocumentStatus")
           AND d."level_id" IS NOT NULL
           AND f."department_id" IS NOT NULL
           AND f.path LIKE '%/ISO_documents%'
+          AND f.path NOT LIKE '%/versions/%'
+          AND f.path NOT LIKE '%\\versions\\%'
+          AND f.path NOT LIKE '%/Delete_files%'
+          AND f.path NOT LIKE '%\\Delete_files%'
+          AND f.path NOT LIKE '%/delete files%'
+          AND f.path NOT LIKE '%\\delete files%'
+          AND f.path NOT LIKE '%/Deleted files%'
+          AND f.path NOT LIKE '%\\Deleted files%'
         GROUP BY f."department_id", d."level_id"
         ORDER BY f."department_id"
       `;
