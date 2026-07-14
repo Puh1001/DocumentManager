@@ -136,7 +136,10 @@ export function NoticeCard({
   const handleViewFile = async (att: MaintenanceAttachment) => {
     try {
       const buffer = await maintenanceAttachmentApi.downloadAttachment(att.id);
-      const blob = new Blob([buffer]);
+      const mimeType = att.fileName.toLowerCase().endsWith(".pdf")
+        ? "application/pdf"
+        : "image/png";
+      const blob = new Blob([buffer], { type: mimeType });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       // Revoke after a delay to let the new tab load

@@ -224,7 +224,23 @@ export class MaintenanceAttachmentService {
     });
 
     const doc = await this.documentService.findById(attachment.documentId);
-    return { stream: await this.documentService.getStream(attachment.documentId), mimeType: doc.mimeType ?? "application/octet-stream" };
+    // Derive MIME type from fileType (non-nullable) instead of DB mimeType (nullable)
+    const mimeTypes: Record<string, string> = {
+      pdf: "application/pdf",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      gif: "image/gif",
+      webp: "image/webp",
+    };
+    const mimeType = doc.fileType
+      ? (mimeTypes[doc.fileType] ?? "application/octet-stream")
+      : "application/octet-stream";
+
+    return {
+      stream: await this.documentService.getStream(attachment.documentId),
+      mimeType,
+    };
   }
 
   async download(attachmentId: string, userId: string) {
