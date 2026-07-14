@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { maintenanceApi, type MaintenanceNotice, type Department, getDepartmentName } from "@/lib/api";
 import { Wrench, ChevronDown, RefreshCw } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";

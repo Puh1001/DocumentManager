@@ -30,10 +30,8 @@ interface BossIsoOverviewTabProps {
 
 /** Split documents client-side: LEVEL1-3 vs LEVEL4 */
 function splitByLevel(docs: Document[], levels: DocumentLevel[]): { level13: Document[]; level4: Document[] } {
-  const level4Codes = new Set(["LEVEL4", "level4"]);
   // Get actual level codes from the levels array
   const l4Codes = new Set(levels.filter(l => l.code.toUpperCase() === "LEVEL4").map(l => l.code));
-  const l13Codes = new Set(levels.filter(l => l.code.toUpperCase() !== "LEVEL4").map(l => l.code));
 
   const level13: Document[] = [];
   const level4: Document[] = [];
