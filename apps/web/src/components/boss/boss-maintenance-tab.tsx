@@ -3,8 +3,11 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { maintenanceApi, type MaintenanceNotice, type Department, getDepartmentName } from "@/lib/api";
-import { Wrench, ChevronDown, RefreshCw } from "lucide-react";
+import { Wrench, ChevronDown, RefreshCw, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { getErrorMessage } from "@/lib/error-handler";
+import { Input } from "@/components/ui/input";
+
+const ITEMS_PER_PAGE = 20;
 
 interface BossMaintenanceTabProps {
   departments: Department[];
@@ -24,9 +27,11 @@ export function BossMaintenanceTab({
   const [error, setError] = useState<string | null>(null);
 
   // Filters
+  const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadNotices = useCallback(async () => {
     try {
@@ -46,10 +51,15 @@ export function BossMaintenanceTab({
     loadNotices();
   }, [loadNotices]);
 
+  // Reset page on filter change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, departmentFilter, startDateFilter, endDateFilter]);
+
   const filteredNotices = useMemo(() => {
     const fromTime = startDateFilter ? new Date(startDateFilter + 'T00:00:00').getTime() : null;
     const toTime = endDateFilter ? new Date(endDateFilter + 'T23:59:59').getTime() : null;
+    const q = searchQuery.toLowerCase().trim();
     return notices.filter((n) => {
+      if (q && !n.title.toLowerCase().includes(q)) return false;
       if (departmentFilter && n.departmentId !== departmentFilter) return false;
       const endTime = new Date(n.endDate).getTime();
       const startTime = new Date(n.startDate).getTime();
@@ -57,7 +67,13 @@ export function BossMaintenanceTab({
       if (toTime && startTime > toTime) return false;
       return true;
     });
-  }, [notices, departmentFilter, startDateFilter, endDateFilter]);
+  }, [notices, searchQuery, departmentFilter, startDateFilter, endDateFilter]);
+
+  const totalPages = Math.ceil(filteredNotices.length / ITEMS_PER_PAGE);
+  const paginatedNotices = filteredNotices.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const getDepartmentNameForNotice = (notice: MaintenanceNotice) => {
     if (notice.department) return notice.department.name;
@@ -67,6 +83,15 @@ export function BossMaintenanceTab({
     }
     return "";
   };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setDepartmentFilter("");
+    setStartDateFilter("");
+    setEndDateFilter("");
+  };
+
+  const hasActiveFilters = searchQuery || departmentFilter || startDateFilter || endDateFilter;
 
   if (loading) {
     return (
@@ -94,6 +119,29 @@ export function BossMaintenanceTab({
       {/* Filter bar */}
       <div className="cyber-card cyber-corner p-4">
         <div className="flex flex-wrap items-end gap-4">
+          {/* Search */}
+          <div className="grid gap-1.5 min-w-0 flex-1 min-w-[180px]">
+            <label className="text-xs font-cyber text-cyan-400/80">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400/50" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by title..."
+                className="cyber-input w-full h-10 rounded-lg border border-cyan-500/40 bg-cyan-500/5 pl-9 pr-9 text-sm text-cyan-100 font-cyber"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400/60 hover:text-cyan-300"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Department filter */}
           <div className="grid gap-1.5 min-w-0 flex-1 min-w-[140px]">
             <label className="text-xs font-cyber text-cyan-400/80">Department</label>
@@ -134,15 +182,27 @@ export function BossMaintenanceTab({
             />
           </div>
 
-          <button
-            type="button"
-            onClick={loadNotices}
-            disabled={loading}
-            className="cyber-button h-10 px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={loadNotices}
+              disabled={loading}
+              className="cyber-button h-10 px-4 py-2 font-cyber text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="cyber-button h-10 px-3 py-2 font-cyber text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -167,7 +227,7 @@ export function BossMaintenanceTab({
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredNotices.map((notice, index) => (
+            {paginatedNotices.map((notice, index) => (
               <button
                 key={notice.id}
                 type="button"
@@ -187,6 +247,35 @@ export function BossMaintenanceTab({
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-cyan-500/20">
+            <p className="text-sm text-cyan-400/80 font-cyber">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredNotices.length)} / {filteredNotices.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="cyber-button p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-cyber text-cyan-300 px-2">{currentPage} / {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="cyber-button p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { CalendarDays, Megaphone } from "lucide-react";
+import { CalendarDays, Megaphone, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import { PageGuard } from "@/components/page-guard";
 import { getErrorMessage } from "@/lib/error-handler";
 import { useAuth } from "@/lib/auth-context";
 import { NoticeCard } from "@/components/maintenance/notice-card";
+
+const ITEMS_PER_PAGE = 20;
 
 export const pageMetadata: PageMetadata = {
   path: "/dashboard/maintenance",
@@ -72,6 +74,13 @@ export default function MaintenancePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(true);
 
+  // Search & Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     const loadDepartments = async () => {
       try {
@@ -86,10 +95,32 @@ export default function MaintenancePage() {
     loadDepartments();
   }, []);
 
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterDepartment, filterStartDate, filterEndDate]);
+
   const sortedNotices = useMemo(
     () => [...notices].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [notices]
   );
+
+  const filteredNotices = useMemo(() => {
+    return sortedNotices.filter((n) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!n.title.toLowerCase().includes(q)) return false;
+      }
+      if (filterDepartment && n.departmentId !== filterDepartment) return false;
+      if (filterStartDate) {
+        const filterFrom = new Date(filterStartDate + 'T00:00:00').getTime();
+        if (new Date(n.endDate).getTime() < filterFrom) return false;
+      }
+      if (filterEndDate) {
+        const filterTo = new Date(filterEndDate + 'T23:59:59').getTime();
+        if (new Date(n.startDate).getTime() > filterTo) return false;
+      }
+      return true;
+    });
+  }, [sortedNotices, searchQuery, filterDepartment, filterStartDate, filterEndDate]);
 
   const getNoticeDepartmentName = (notice: MaintenanceNotice) => {
     if (notice.department) return notice.department.name;
@@ -270,24 +301,120 @@ export default function MaintenancePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Search bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("searchPlaceholder") || "Search by title..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-8"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  className="w-full sm:w-auto rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                >
+                  <option value="">{t("form.allDepartments")}</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+                <Input
+                  type="date"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  className="w-full sm:w-auto"
+                  placeholder={t("form.startLabel")}
+                />
+                <Input
+                  type="date"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  className="w-full sm:w-auto"
+                  placeholder={t("form.endLabel")}
+                />
+                {(searchQuery || filterDepartment || filterStartDate || filterEndDate) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilterDepartment("");
+                      setFilterStartDate("");
+                      setFilterEndDate("");
+                    }}
+                  >
+                    {t("actions.cancel") || "Clear"}
+                  </Button>
+                )}
+              </div>
+
               {loading ? (
                 <p className="text-sm text-muted-foreground">{commonT("status.loading")}</p>
-              ) : sortedNotices.length === 0 ? (
+              ) : filteredNotices.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("list.empty")}</p>
               ) : (
-                sortedNotices.map((notice) => (
-                  <NoticeCard
-                    key={notice.id}
-                    notice={notice}
-                    departmentName={getNoticeDepartmentName(notice)}
-                    t={t}
-                    commonT={commonT}
-                    errorT={errorT}
-                    canModify={canModifyNotice(notice)}
-                    onEdit={handleEdit}
-                    onDelete={(id) => setDeleteConfirmId(id)}
-                  />
-                ))
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {filteredNotices.length} {t("list.sectionTitle") || "notices"}
+                  </p>
+                  {filteredNotices
+                    .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                    .map((notice) => (
+                      <NoticeCard
+                        key={notice.id}
+                        notice={notice}
+                        departmentName={getNoticeDepartmentName(notice)}
+                        t={t}
+                        commonT={commonT}
+                        errorT={errorT}
+                        canModify={canModifyNotice(notice)}
+                        onEdit={handleEdit}
+                        onDelete={(id) => setDeleteConfirmId(id)}
+                      />
+                    ))}
+                  {/* Pagination */}
+                  {filteredNotices.length > ITEMS_PER_PAGE && (
+                    <div className="flex items-center justify-between pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredNotices.length)} / {filteredNotices.length}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline" size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-xs text-muted-foreground px-1">
+                          {currentPage} / {Math.ceil(filteredNotices.length / ITEMS_PER_PAGE)}
+                        </span>
+                        <Button
+                          variant="outline" size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredNotices.length / ITEMS_PER_PAGE), p + 1))}
+                          disabled={currentPage === Math.ceil(filteredNotices.length / ITEMS_PER_PAGE)}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
