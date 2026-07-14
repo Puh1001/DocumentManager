@@ -112,35 +112,35 @@ export class DocumentService {
         : "ACTIVE";
     where.status = status as Prisma.EnumDocumentStatusFilter["equals"];
 
-    // Always exclude version folders and Delete_files folders from main document listing
-    // Exclude folders whose path contains "/versions/" or "\versions\" (Windows paths)
-    // Exclude folders whose path contains "Delete_files", "delete files", or "Deleted files" (case-insensitive, various formats)
-    // Additionally, only include folders under the ISO_documents section so the flat list
-    // behaves as an ISO documents view and does not show KPI or Maintenance files.
-    const folderWhere: Prisma.FolderWhereInput = {
-      AND: [
-        { path: { not: { contains: "/versions/" } } },
-        { path: { not: { contains: "\\versions\\" } } },
-        // Exclude Delete_files folders (case-insensitive matching for various formats)
-        { path: { not: { contains: "/Delete_files" } } },
-        { path: { not: { contains: "\\Delete_files" } } },
-        { path: { not: { contains: "/delete files" } } },
-        { path: { not: { contains: "\\delete files" } } },
-        { path: { not: { contains: "/Deleted files" } } },
-        { path: { not: { contains: "\\Deleted files" } } },
-        // Only include folders under ISO_documents section (documents area)
-        {
-          OR: [
-            // New canonical layout: "{dept}/ISO_documents" and children
-            { path: { contains: "/ISO_documents" } },
-            { path: { contains: "\\ISO_documents" } },
-            // Safety for rare root/legacy layouts
-            { path: { endsWith: "/ISO_documents" } },
-            { path: { equals: "ISO_documents" } },
-          ],
-        },
-      ],
-    };
+    // For deleted queries, relax folder restrictions so docs in Delete_files are found.
+    // For non-deleted queries, exclude version/delete folders and scope to ISO_documents only.
+    let folderWhere: Prisma.FolderWhereInput;
+    if (filters?.status === "DELETED") {
+      folderWhere = {
+        path: { not: { contains: "/versions/" } },
+      };
+    } else {
+      folderWhere = {
+        AND: [
+          { path: { not: { contains: "/versions/" } } },
+          { path: { not: { contains: "\\versions\\" } } },
+          { path: { not: { contains: "/Delete_files" } } },
+          { path: { not: { contains: "\\Delete_files" } } },
+          { path: { not: { contains: "/delete files" } } },
+          { path: { not: { contains: "\\delete files" } } },
+          { path: { not: { contains: "/Deleted files" } } },
+          { path: { not: { contains: "\\Deleted files" } } },
+          {
+            OR: [
+              { path: { contains: "/ISO_documents" } },
+              { path: { contains: "\\ISO_documents" } },
+              { path: { endsWith: "/ISO_documents" } },
+              { path: { equals: "ISO_documents" } },
+            ],
+          },
+        ],
+      };
+    }
 
     // Department filter (via folder): access control and/or explicit department filter
     // When departmentIdsForFilter is set (including []), restrict to those departments or none
