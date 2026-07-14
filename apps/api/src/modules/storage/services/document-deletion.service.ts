@@ -685,16 +685,31 @@ export class DocumentDeletionService {
       originalFilePath = (details.originalPath as string) || null;
     }
 
+    // Fallback: find original folder from document's current Delete_files folder path
     if (!originalFolderId) {
-      throw new BadRequestException("Cannot restore: original folder not found in audit log");
+      // Current folder is {dept}/Delete_files — find ISO_documents sibling folder
+      const currentFolder = await this.folderService.findById(document.folderId);
+      const deptFolder = currentFolder.parentId
+        ? await this.folderService.findById(currentFolder.parentId)
+        : null;
+      if (deptFolder) {
+        const isoFolder = await (this.prisma as PrismaClientLike).folder.findFirst({
+          where: { parentId: deptFolder.id, path: { contains: "/ISO_documents" } },
+        });
+        if (isoFolder && !isoFolder.deletedAt) {
+          originalFolderId = isoFolder.id;
+        }
+      }
     }
 
-    // Verify original folder still exists
-    const originalFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
-      where: { id: originalFolderId },
-    });
+    // Verify original folder exists
+    let originalFolder = originalFolderId
+      ? await (this.prisma as PrismaClientLike).folder.findUnique({
+          where: { id: originalFolderId },
+        })
+      : null;
     if (!originalFolder || originalFolder.deletedAt) {
-      throw new BadRequestException("Cannot restore: original folder no longer exists");
+      throw new BadRequestException("Cannot restore: original folder not found. The folder may have been deleted.");
     }
 
     // Move file back from Delete_files to original path
