@@ -100,24 +100,30 @@ export class StatsService {
       });
 
       // Count ACTIVE docs per department + level — ISO only, exclude versions/delete folders
+      // Dedup by (folder_id, file_name) to match document list behavior
       const raw: Array<{ department_id: string; level_id: string; count: number }> = await this.prisma.$queryRaw`
-        SELECT f."department_id", d."level_id", COUNT(d.id)::int AS "count"
-        FROM "documents" d
-        JOIN "folders" f ON f.id = d."folder_id"
-        WHERE d.status = CAST('ACTIVE' AS "DocumentStatus")
-          AND d."level_id" IS NOT NULL
-          AND f."department_id" IS NOT NULL
-          AND f.path LIKE '%/ISO_documents%'
-          AND f.path NOT LIKE '%/versions/%'
-          AND f.path NOT LIKE '%\\versions\\%'
-          AND f.path NOT LIKE '%/Delete_files%'
-          AND f.path NOT LIKE '%\\Delete_files%'
-          AND f.path NOT LIKE '%/delete files%'
-          AND f.path NOT LIKE '%\\delete files%'
-          AND f.path NOT LIKE '%/Deleted files%'
-          AND f.path NOT LIKE '%\\Deleted files%'
-        GROUP BY f."department_id", d."level_id"
-        ORDER BY f."department_id"
+        SELECT d."department_id", d."level_id", COUNT(*)::int AS "count"
+        FROM (
+          SELECT DISTINCT ON (f."department_id", d."file_name")
+            f."department_id", d."level_id"
+          FROM "documents" d
+          JOIN "folders" f ON f.id = d."folder_id"
+          WHERE d.status = CAST('ACTIVE' AS "DocumentStatus")
+            AND d."level_id" IS NOT NULL
+            AND f."department_id" IS NOT NULL
+            AND f.path LIKE '%/ISO_documents%'
+            AND f.path NOT LIKE '%/versions/%'
+            AND f.path NOT LIKE '%\\versions\\%'
+            AND f.path NOT LIKE '%/Delete_files%'
+            AND f.path NOT LIKE '%\\Delete_files%'
+            AND f.path NOT LIKE '%/delete files%'
+            AND f.path NOT LIKE '%\\delete files%'
+            AND f.path NOT LIKE '%/Deleted files%'
+            AND f.path NOT LIKE '%\\Deleted files%'
+          ORDER BY f."department_id", d."file_name", d."updated_at" DESC
+        ) d
+        GROUP BY d."department_id", d."level_id"
+        ORDER BY d."department_id"
       `;
 
       // Aggregate into per-department stats
