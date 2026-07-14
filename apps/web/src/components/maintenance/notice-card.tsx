@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 interface NoticeCardProps {
   notice: MaintenanceNotice;
   departmentName: string;
+  canModify: boolean; // user belongs to this notice's department
   t: ReturnType<typeof useTranslations<"maintenance">>;
   commonT: ReturnType<typeof useTranslations<"common">>;
   errorT: ReturnType<typeof useTranslations<"errors">>;
@@ -42,6 +43,7 @@ const formatDate = (date: string) =>
 export function NoticeCard({
   notice,
   departmentName,
+  canModify,
   t,
   commonT,
   errorT,
@@ -148,18 +150,22 @@ export function NoticeCard({
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {new Date(notice.createdAt).toLocaleDateString()}
           </span>
+          {canCreate && canModify && (
           <Button
             variant="ghost" size="sm" onClick={() => onEdit(notice)}
             className="h-8 w-8 p-0"
           >
             <Pencil className="h-4 w-4" />
           </Button>
+          )}
+          {canCreate && canModify && (
           <Button
             variant="ghost" size="sm" onClick={() => onDelete(notice.id)}
             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
+          )}
         </div>
       </div>
 
@@ -181,8 +187,8 @@ export function NoticeCard({
 
       {expanded && (
         <div className="mt-2 space-y-2 border-t pt-2">
-          {/* Upload button */}
-          {canCreate && (
+          {/* Upload button — only for own department */}
+          {canCreate && canModify && (
             <div>
               <input
                 type="file"
@@ -236,7 +242,7 @@ export function NoticeCard({
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDownload(att)}>
                   <Download className="h-3 w-3" />
                 </Button>
-                {canCreate && (
+                {canCreate && canModify && (
                   <Button
                     variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                     onClick={() => handleDeleteAttachment(att.id)}

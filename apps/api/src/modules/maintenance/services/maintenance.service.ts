@@ -74,6 +74,27 @@ export class MaintenanceService {
     return notice;
   }
 
+  private async resolveUserInfo(userId: string): Promise<{
+    departmentIds: string[];
+    isAdmin: boolean;
+    isBoss: boolean;
+  }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        departments: { select: { departmentId: true } },
+        roles: { select: { role: { select: { name: true } } } },
+      },
+    });
+    if (!user) throw CustomException.notFound(ErrorCodes.USER.NOT_FOUND, "User not found");
+    const roleNames = user.roles.map((r) => r.role.name);
+    return {
+      departmentIds: user.departments.map((d) => d.departmentId),
+      isAdmin: roleNames.includes("admin"),
+      isBoss: roleNames.includes("boss"),
+    };
+  }
+
   async create(dto: CreateMaintenanceNoticeDto, userId: string) {
     // Validate dates
     const startDate = new Date(dto.startDate);
@@ -97,6 +118,20 @@ export class MaintenanceService {
           ErrorCodes.DEPARTMENT.NOT_FOUND,
           "Department not found"
         );
+      }
+
+      // Non-admin/boss users can only create notices for their own departments
+      const userInfo = await this.resolveUserInfo(userId);
+      if (!userInfo.isAdmin && !userInfo.isBoss) {
+        if (
+          !userInfo.departmentIds ||
+          !userInfo.departmentIds.includes(dto.departmentId)
+        ) {
+          throw CustomException.forbidden(
+            ErrorCodes.PERMISSION.INVALID_SUBJECT,
+            "You can only create maintenance notices for your own department"
+          );
+        }
       }
     }
 
@@ -128,7 +163,7 @@ export class MaintenanceService {
     });
   }
 
-  async update(id: string, dto: UpdateMaintenanceNoticeDto) {
+  async update(id: string, dto: UpdateMaintenanceNoticeDto, userId?: string) {
     const notice = await this.prisma.maintenanceNotice.findUnique({
       where: { id },
     });
@@ -138,6 +173,23 @@ export class MaintenanceService {
         ErrorCodes.MAINTENANCE.NOT_FOUND,
         "Maintenance notice not found"
       );
+    }
+
+    // Non-admin/boss can only update own department notices
+    if (userId) {
+      const userInfo = await this.resolveUserInfo(userId);
+      if (!userInfo.isAdmin && !userInfo.isBoss) {
+        if (
+          !userInfo.departmentIds ||
+          !notice.departmentId ||
+          !userInfo.departmentIds.includes(notice.departmentId)
+        ) {
+          throw CustomException.forbidden(
+            ErrorCodes.PERMISSION.INVALID_SUBJECT,
+            "You can only update maintenance notices from your own department"
+          );
+        }
+      }
     }
 
     // Validate dates if provided
@@ -197,7 +249,7 @@ export class MaintenanceService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId?: string) {
     const notice = await this.prisma.maintenanceNotice.findUnique({
       where: { id },
     });
@@ -207,6 +259,23 @@ export class MaintenanceService {
         ErrorCodes.MAINTENANCE.NOT_FOUND,
         "Maintenance notice not found"
       );
+    }
+
+    // Non-admin/boss can only delete own department notices
+    if (userId) {
+      const userInfo = await this.resolveUserInfo(userId);
+      if (!userInfo.isAdmin && !userInfo.isBoss) {
+        if (
+          !userInfo.departmentIds ||
+          !notice.departmentId ||
+          !userInfo.departmentIds.includes(notice.departmentId)
+        ) {
+          throw CustomException.forbidden(
+            ErrorCodes.PERMISSION.INVALID_SUBJECT,
+            "You can only delete maintenance notices from your own department"
+          );
+        }
+      }
     }
 
     return this.prisma.maintenanceNotice.delete({

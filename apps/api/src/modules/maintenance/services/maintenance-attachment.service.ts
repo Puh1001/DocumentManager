@@ -67,8 +67,6 @@ export class MaintenanceAttachmentService {
       );
     }
 
-    await this.checkDepartmentAccess(notice.departmentId, userId);
-
     if (!file) {
       throw CustomException.badRequest(
         ErrorCodes.DOCUMENT.FILE_REQUIRED,
@@ -84,6 +82,9 @@ export class MaintenanceAttachmentService {
         `Only ${ALLOWED_EXTENSIONS.join(", ")} files are allowed for maintenance attachments`
       );
     }
+
+    // Write ops require same-department access
+    await this.checkWriteAccess(notice.departmentId, userId);
 
     // Resolve canonical Maintenance section root folder for this department
     const folderStructure =
@@ -175,7 +176,7 @@ export class MaintenanceAttachmentService {
       );
     }
 
-    await this.checkDepartmentAccess(notice.departmentId, userId);
+    this.checkReadAccess();
 
     const attachments = await (
       this.prisma as PrismaClientLike
@@ -273,6 +274,7 @@ export class MaintenanceAttachmentService {
 
   async deleteAttachment(attachmentId: string, userId: string) {
     const attachment = await this.loadAttachmentWithNotice(attachmentId, userId);
+    await this.checkWriteAccess(attachment.maintenanceNotice.departmentId, userId);
 
     const status = await this.deletionService.checkDeletionStatus(
       attachment.documentId,
@@ -370,12 +372,17 @@ export class MaintenanceAttachmentService {
       );
     }
 
-    await this.checkDepartmentAccess(attachment.maintenanceNotice.departmentId, userId);
+    await this.checkReadAccess();
 
     return attachment;
   }
 
-  private async checkDepartmentAccess(
+  private checkReadAccess(): void {
+    // Read access: all authenticated users can view
+    return;
+  }
+
+  private async checkWriteAccess(
     recordDepartmentId: string | null,
     userId: string
   ): Promise<void> {
@@ -388,7 +395,7 @@ export class MaintenanceAttachmentService {
     if (!userInfo.departmentIds || userInfo.departmentIds.length === 0) {
       throw CustomException.forbidden(
         ErrorCodes.PERMISSION.NOT_FOUND,
-        "User must belong to a department to access maintenance attachments"
+        "User must belong to a department to modify maintenance attachments"
       );
     }
 

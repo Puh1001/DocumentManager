@@ -26,6 +26,7 @@ import type { PageMetadata } from "@/lib/types/page-metadata";
 import { registerPage } from "@/lib/page-registry";
 import { PageGuard } from "@/components/page-guard";
 import { getErrorMessage } from "@/lib/error-handler";
+import { useAuth } from "@/lib/auth-context";
 import { NoticeCard } from "@/components/maintenance/notice-card";
 
 export const pageMetadata: PageMetadata = {
@@ -61,6 +62,7 @@ export default function MaintenancePage() {
   const commonT = useTranslations("common");
   const errorT = useTranslations("errors");
   const locale = useLocale();
+  const { user } = useAuth();
   const { notices, addNotice, updateNotice, deleteNotice, loading } =
     useMaintenanceNotices();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -96,6 +98,13 @@ export default function MaintenancePage() {
       return dept ? getDepartmentName(dept, locale) : t("list.allDepartments");
     }
     return t("list.allDepartments");
+  };
+
+  const canModifyNotice = (notice: MaintenanceNotice): boolean => {
+    if (!user) return false;
+    if (user.roles.includes("admin") || user.roles.includes("boss")) return true;
+    if (!notice.departmentId) return false;
+    return user.departments?.some((d) => d.id === notice.departmentId) ?? false;
   };
 
   const handleEdit = (notice: MaintenanceNotice) => {
@@ -274,6 +283,7 @@ export default function MaintenancePage() {
                     t={t}
                     commonT={commonT}
                     errorT={errorT}
+                    canModify={canModifyNotice(notice)}
                     onEdit={handleEdit}
                     onDelete={(id) => setDeleteConfirmId(id)}
                   />

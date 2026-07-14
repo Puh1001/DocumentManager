@@ -49,15 +49,15 @@ export class MaintenanceController {
   @UseGuards(PoliciesGuard)
   @CheckPolicies({ action: "edit", subject: "Maintenance" })
   @ApiOperation({ summary: "Update maintenance notice (managers/admins only)" })
-  update(@Param("id") id: string, @Body() dto: UpdateMaintenanceNoticeDto) {
-    return this.maintenanceService.update(id, dto);
+  update(@Param("id") id: string, @Body() dto: UpdateMaintenanceNoticeDto, @Request() req: AuthenticatedRequest) {
+    return this.maintenanceService.update(id, dto, req.user.id);
   }
 
   @Delete(":id")
   @UseGuards(PoliciesGuard)
   @CheckPolicies({ action: "delete", subject: "Maintenance" })
   @ApiOperation({ summary: "Delete maintenance notice (managers/admins only)" })
-  remove(@Param("id") id: string) {
-    return this.maintenanceService.remove(id);
+  remove(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
+    return this.maintenanceService.remove(id, req.user.id);
   }
 }
