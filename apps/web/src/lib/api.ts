@@ -668,7 +668,7 @@ export const maintenanceAttachmentApi = {
   getAttachments: (noticeId: string) =>
     api.get<MaintenanceAttachment[]>(`/maintenance/notices/${noticeId}/attachments`),
   getAttachmentStreamUrl: (attachmentId: string) =>
-    `/maintenance/attachments/${attachmentId}/stream`,
+    `/api/maintenance/attachments/${attachmentId}/stream`,
   downloadAttachment: (attachmentId: string) =>
     api.fetchFileAsArrayBuffer(`/maintenance/attachments/${attachmentId}/download`),
   uploadAttachment: (noticeId: string, file: File, description?: string) =>
