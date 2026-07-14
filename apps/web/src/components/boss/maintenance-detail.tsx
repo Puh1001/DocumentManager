@@ -104,11 +104,21 @@ export function MaintenanceDetail({
     }
   };
 
-  const handlePrint = (att: MaintenanceAttachment) => {
-    window.open(
-      maintenanceAttachmentApi.getAttachmentStreamUrl(att.id),
-      "_blank"
-    );
+  const handlePrint = async (att: MaintenanceAttachment) => {
+    try {
+      const buffer = await maintenanceAttachmentApi.downloadAttachment(att.id);
+      const blob = new Blob([buffer], { type: att.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/png" });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, "_blank");
+      if (printWindow) {
+        printWindow.onload = () => {
+          try { printWindow.print(); } catch {}
+        };
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      console.error("Print failed", err);
+    }
   };
 
   if (loading) {

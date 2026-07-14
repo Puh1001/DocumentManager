@@ -133,6 +133,19 @@ export function NoticeCard({
     }
   };
 
+  const handleViewFile = async (att: MaintenanceAttachment) => {
+    try {
+      const buffer = await maintenanceAttachmentApi.downloadAttachment(att.id);
+      const blob = new Blob([buffer]);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      // Revoke after a delay to let the new tab load
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      console.error("View failed", err);
+    }
+  };
+
   return (
     <div className="rounded-lg border border-border p-3">
       <div className="flex items-start justify-between gap-3">
@@ -231,13 +244,9 @@ export function NoticeCard({
                 <span className="text-xs truncate max-w-[160px]">{att.fileName}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" asChild>
-                  <a
-                    href={maintenanceAttachmentApi.getAttachmentStreamUrl(att.id)}
-                    target="_blank" rel="noopener noreferrer"
-                  >
-                    <Eye className="h-3 w-3" />
-                  </a>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0"
+                  onClick={() => handleViewFile(att)}>
+                  <Eye className="h-3 w-3" />
                 </Button>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDownload(att)}>
                   <Download className="h-3 w-3" />

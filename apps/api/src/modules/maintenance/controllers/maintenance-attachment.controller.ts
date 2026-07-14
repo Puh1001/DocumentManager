@@ -43,7 +43,7 @@ class UploadAttachmentDto {
 
 class SubmitDeletionRequestDto {
   @IsString()
-  reason: string;
+  reason!: string;
 
   @IsString()
   @IsOptional()
@@ -113,7 +113,8 @@ export class MaintenanceAttachmentController {
     @Param("id") attachmentId: string,
     @Res() res: Response
   ) {
-    const stream = await this.attachmentService.getStream(attachmentId, req.user.id);
+    const { stream, mimeType } = await this.attachmentService.getStream(attachmentId, req.user.id);
+    res.setHeader("Content-Type", mimeType || "application/octet-stream");
     stream.pipe(res);
   }
 

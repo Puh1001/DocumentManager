@@ -223,7 +223,8 @@ export class MaintenanceAttachmentService {
       },
     });
 
-    return this.documentService.getStream(attachment.documentId);
+    const doc = await this.documentService.findById(attachment.documentId);
+    return { stream: await this.documentService.getStream(attachment.documentId), mimeType: doc.mimeType ?? "application/octet-stream" };
   }
 
   async download(attachmentId: string, userId: string) {
