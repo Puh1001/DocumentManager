@@ -81,11 +81,14 @@ export function BossIsoOverviewTab({
       setError(null);
       try {
         const params = new URLSearchParams();
-        params.append("page", page.toString());
-        params.append("limit", LIMIT.toString());
         params.append("status", "ACTIVE");
         if (departmentFilter) params.append("departmentId", departmentFilter);
-        if (levelFilter) params.append("level", levelFilter);
+        if (levelFilter) {
+          // Single-level view: use pagination
+          params.append("page", page.toString());
+          params.append("limit", LIMIT.toString());
+          params.append("level", levelFilter);
+        }
 
         const res = await api.get<{
           data: Document[];
@@ -97,7 +100,7 @@ export function BossIsoOverviewTab({
 
         setAllDocs(res.data ?? []);
         setTotal(res.total ?? 0);
-        setTotalPages(res.totalPages ?? 0);
+        setTotalPages(levelFilter ? (res.totalPages ?? 0) : 1);
         setCurrentPage(res.page ?? page);
       } catch (err) {
         setError(getErrorMessage(err, (key: string) => tCommon(key)));

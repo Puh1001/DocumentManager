@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Folder, Users, Clock, CalendarDays } from "lucide-react";
+import { FileText, Folder, Users, Clock, CalendarDays, BarChart3 } from "lucide-react";
 import { api, type Department, type MaintenanceNotice } from "@/lib/api";
 import { useMaintenanceNotices } from "@/hooks/use-maintenance-notices";
 import { useTranslations as useMaintenanceTranslations } from "next-intl";
@@ -13,6 +13,17 @@ interface Stats {
   totalFolders: number;
   totalUsers: number;
   recentUploads: number;
+}
+
+interface DepartmentStatsItem {
+  id: string;
+  name: string;
+  code: string;
+  level1: number;
+  level2: number;
+  level3: number;
+  level4: number;
+  total: number;
 }
 
 const formatDate = (date: string) =>
@@ -32,6 +43,8 @@ export default function DashboardPage() {
     recentUploads: 0,
   });
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [deptStats, setDeptStats] = useState<DepartmentStatsItem[]>([]);
+  const [loadingDeptStats, setLoadingDeptStats] = useState(true);
   const upcomingNotices = useMemo(
     () =>
       [...notices]
@@ -80,6 +93,20 @@ export default function DashboardPage() {
       }
     };
     loadDepartments();
+  }, []);
+
+  useEffect(() => {
+    const loadDeptStats = async () => {
+      try {
+        const data = await api.get<DepartmentStatsItem[]>("/storage/stats/departments");
+        setDeptStats(data);
+      } catch (err) {
+        console.error("Failed to load department stats", err);
+      } finally {
+        setLoadingDeptStats(false);
+      }
+    };
+    loadDeptStats();
   }, []);
 
   const statCards = [
@@ -139,16 +166,47 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <Card>
+        {/* ISO Department Stats */}
+        <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">
-              {t("sections.recentDocuments")}
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              {t("sections.isoStats") || "ISO Documents by Department"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {t("sections.recentDocumentsDescription")}
-            </p>
+            {loadingDeptStats ? (
+              <p className="text-sm text-muted-foreground">{t("stats.loading") || "Loading..."}</p>
+            ) : deptStats.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="pb-2 pr-4 font-medium">Department</th>
+                      <th className="pb-2 pr-3 font-medium text-center">Level 1</th>
+                      <th className="pb-2 pr-3 font-medium text-center">Level 2</th>
+                      <th className="pb-2 pr-3 font-medium text-center">Level 3</th>
+                      <th className="pb-2 pr-3 font-medium text-center">Level 4</th>
+                      <th className="pb-2 font-medium text-center">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deptStats.map((d) => (
+                      <tr key={d.id} className="border-b last:border-0">
+                        <td className="py-2 pr-4 font-medium">{d.name}</td>
+                        <td className="py-2 pr-3 text-center">{d.level1}</td>
+                        <td className="py-2 pr-3 text-center">{d.level2}</td>
+                        <td className="py-2 pr-3 text-center">{d.level3}</td>
+                        <td className="py-2 pr-3 text-center">{d.level4}</td>
+                        <td className="py-2 text-center font-semibold">{d.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
