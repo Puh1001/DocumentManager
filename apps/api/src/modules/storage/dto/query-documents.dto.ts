@@ -39,4 +39,12 @@ export class QueryDocumentsDto {
   })
   @IsOptional()
   level?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter by level group: "13" for LEVEL1-3, "4" for LEVEL4. When set, pagination applies to that group.',
+    enum: ["13", "4"],
+  })
+  @IsOptional()
+  levelGroup?: "13" | "4";
 }

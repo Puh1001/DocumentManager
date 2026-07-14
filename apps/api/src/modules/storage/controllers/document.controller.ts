@@ -77,6 +77,7 @@ export class DocumentController {
       departmentId: query.departmentId,
       departmentIdsForFilter: undefined,
       level: query.level,
+      levelGroup: query.levelGroup,
       page: query.page,
       limit: query.limit,
     });

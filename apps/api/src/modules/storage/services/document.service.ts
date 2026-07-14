@@ -23,6 +23,8 @@ export interface FindAllDocumentsFilters {
   departmentIdsForFilter?: string[];
   /** Filter by document level ID. */
   level?: string;
+  /** Filter by level group: "13" = LEVEL1-3, "4" = LEVEL4. Overrides `level`. */
+  levelGroup?: "13" | "4";
   page?: number;
   limit?: number;
 }
@@ -159,6 +161,25 @@ export class DocumentService {
     // Level filter (by document level ID)
     if (filters?.level?.trim()) {
       where.levelId = filters.level;
+    }
+
+    // Level group filter: "13" = LEVEL1-3, "4" = LEVEL4
+    // Resolve level IDs by code pattern
+    if (filters?.levelGroup) {
+      const codes = filters.levelGroup === "13"
+        ? ["LEVEL1", "LEVEL2", "LEVEL3"]
+        : ["LEVEL4"];
+      const levels = await (this.prisma as PrismaClientLike).documentLevel.findMany({
+        where: { code: { in: codes } },
+        select: { id: true },
+      });
+      const levelIds = levels.map(l => l.id);
+      if (levelIds.length > 0) {
+        where.levelId = { in: levelIds };
+      } else {
+        // No matching levels — force empty result
+        where.levelId = { in: [] };
+      }
     }
 
     const [documents, uniquePairs] = await Promise.all([

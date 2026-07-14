@@ -108,6 +108,7 @@ export class StatsService {
         WHERE d.status = CAST(${status} AS "DocumentStatus")
           AND d."level_id" IS NOT NULL
           AND f."department_id" IS NOT NULL
+          AND f.path LIKE '%/ISO_documents%'
         GROUP BY f."department_id", d."level_id"
         ORDER BY f."department_id"
       `;
