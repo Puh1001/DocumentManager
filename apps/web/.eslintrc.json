@@ -27,7 +27,8 @@
       { "argsIgnorePattern": "^_" }
     ],
     "react/react-in-jsx-scope": "off",
-    "react/prop-types": "off"
+    "react/prop-types": "off",
+    "no-empty": ["error", { "allowEmptyCatch": true }]
   },
   "env": {
     "browser": true,

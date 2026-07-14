@@ -112,7 +112,11 @@ export function MaintenanceDetail({
       const printWindow = window.open(url, "_blank");
       if (printWindow) {
         printWindow.onload = () => {
-          try { printWindow.print(); } catch {}
+          try {
+            printWindow.print();
+          } catch {
+            // ignore print errors
+          }
         };
       }
       setTimeout(() => URL.revokeObjectURL(url), 60000);

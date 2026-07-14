@@ -47,10 +47,14 @@ export function BossMaintenanceTab({
   }, [loadNotices]);
 
   const filteredNotices = useMemo(() => {
+    const fromTime = startDateFilter ? new Date(startDateFilter + 'T00:00:00').getTime() : null;
+    const toTime = endDateFilter ? new Date(endDateFilter + 'T23:59:59').getTime() : null;
     return notices.filter((n) => {
       if (departmentFilter && n.departmentId !== departmentFilter) return false;
-      if (startDateFilter && new Date(n.endDate) < new Date(startDateFilter)) return false;
-      if (endDateFilter && new Date(n.startDate) > new Date(endDateFilter)) return false;
+      const endTime = new Date(n.endDate).getTime();
+      const startTime = new Date(n.startDate).getTime();
+      if (fromTime && endTime < fromTime) return false;
+      if (toTime && startTime > toTime) return false;
       return true;
     });
   }, [notices, departmentFilter, startDateFilter, endDateFilter]);

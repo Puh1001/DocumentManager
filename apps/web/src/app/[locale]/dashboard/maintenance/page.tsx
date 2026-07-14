@@ -151,8 +151,8 @@ export default function MaintenancePage() {
     const payload = {
       title: trimmedTitle,
       description: form.description || undefined,
-      startDate: form.startDate,
-      endDate: form.endDate,
+      startDate: new Date(form.startDate + 'T00:00:00').toISOString(),
+      endDate: new Date(form.endDate + 'T23:59:59').toISOString(),
       departmentId: form.departmentId || undefined,
     };
 
