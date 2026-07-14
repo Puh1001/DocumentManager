@@ -653,6 +653,92 @@ export class DocumentDeletionService {
     });
   }
 
+  async restoreDocument(documentId: string, userId: string) {
+    this.logger.log(`User ${userId} restoring document ${documentId}`);
+
+    // Only DCC/admin can restore — verify via user's roles
+    const user = await this.usersService.findById(userId);
+    const userWithRelations = user as unknown as UserWithRelations;
+    const isDCC = userWithRelations.roles?.some((r) => r.name === "dcc") || false;
+    const isAdmin = userWithRelations.roles?.some((r) => r.name === "admin") || false;
+    if (!isDCC && !isAdmin) {
+      throw new ForbiddenException("Only DCC members or admins can restore documents");
+    }
+
+    const document = await this.documentService.findById(documentId);
+    if (document.status !== "DELETED") {
+      throw new BadRequestException("Only deleted documents can be restored");
+    }
+
+    // Get the last deletion audit log to find original folder ID and original path
+    const lastDeleteLog = await (this.prisma as PrismaClientLike).auditLog.findFirst({
+      where: { resourceId: documentId, action: "DELETE" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    let originalFolderId: string | null = null;
+    let originalFilePath: string | null = null;
+
+    if (lastDeleteLog?.details && typeof lastDeleteLog.details === "object") {
+      const details = lastDeleteLog.details as Record<string, unknown>;
+      originalFolderId = (details.originalFolderId as string) || null;
+      originalFilePath = (details.originalPath as string) || null;
+    }
+
+    if (!originalFolderId) {
+      throw new BadRequestException("Cannot restore: original folder not found in audit log");
+    }
+
+    // Verify original folder still exists
+    const originalFolder = await (this.prisma as PrismaClientLike).folder.findUnique({
+      where: { id: originalFolderId },
+    });
+    if (!originalFolder || originalFolder.deletedAt) {
+      throw new BadRequestException("Cannot restore: original folder no longer exists");
+    }
+
+    // Move file back from Delete_files to original path
+    const currentFilePath = document.filePath;
+    if (currentFilePath?.trim() && originalFilePath) {
+      try {
+        await this.smbService.rename(currentFilePath, originalFilePath);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown";
+        this.logger.warn(`Failed to move file back to original location: ${msg}. Proceeding with DB update.`);
+      }
+    }
+
+    // Update document record
+    await (this.prisma as PrismaClientLike).$transaction(async (tx) => {
+      await (tx as PrismaClientLike).document.update({
+        where: { id: documentId },
+        data: {
+          status: "ACTIVE",
+          folderId: originalFolderId!,
+          filePath: originalFilePath || currentFilePath,
+        },
+      });
+
+      await (tx as PrismaClientLike).auditLog.create({
+        data: {
+          userId,
+          action: "RESTORE",
+          resourceType: "Document",
+          resourceId: documentId,
+          details: {
+            restoredFromFolder: document.folderId,
+            restoredToFolder: originalFolderId,
+            originalPath: originalFilePath,
+            currentPath: currentFilePath,
+          },
+        },
+      });
+    });
+
+    this.logger.log(`Document ${documentId} restored successfully by user ${userId}`);
+    return this.documentService.findById(documentId);
+  }
+
   private async executeDelete(
     documentId: string,
     userId: string,
@@ -810,6 +896,7 @@ export class DocumentDeletionService {
             details: {
               reason,
               originalPath: oldFilePath,
+              originalFolderId: currentFolder.id,
               newPath: newFilePath,
               movedCurrentFile,
             },
@@ -872,7 +959,8 @@ export class DocumentDeletionService {
           },
         });
       } catch (error) {
-        if (error.code === "P2002") {
+        const e = error as any;
+        if (e?.code === "P2002") {
           deleteFolder = await (
             this.prisma as PrismaClientLike
           ).folder.findUnique({

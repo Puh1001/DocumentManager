@@ -446,6 +446,12 @@ export class DocumentController {
     return this.deletionService.selfDelete(id, req.user.id);
   }
 
+  @Patch(":id/restore")
+  @ApiOperation({ summary: "Restore a deleted document (DCC/admin only)" })
+  async restore(@Param("id") id: string, @Request() req: AuthenticatedRequest) {
+    return this.deletionService.restoreDocument(id, req.user.id);
+  }
+
   @Get(":id/open-path")
   @ApiOperation({ summary: "Get path to open document in local application" })
   async getOpenPath(@Param("id") id: string): Promise<OpenPathResponse> {

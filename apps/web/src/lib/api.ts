@@ -1101,6 +1101,9 @@ export const deletionRequestApi = {
 
   review: (id: string, data: ReviewDeletionRequestDto) =>
     api.post<DeletionRequest>(`/storage/deletion-requests/${id}/review`, data),
+
+  restoreDocument: (documentId: string) =>
+    api.patch<Document>(`/storage/documents/${documentId}/restore`),
 };
 
 // Client files (dashboard Client page)

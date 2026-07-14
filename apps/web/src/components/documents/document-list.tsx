@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Eye, Download, History, ExternalLink, FileEdit, Building2 } from "lucide-react";
 import { useAbility } from "@/hooks/use-ability";
 import { useDeletionStatus } from "@/hooks/use-deletion-status";
+import { useAuth } from "@/lib/auth-context";
+import { deletionRequestApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { Document as DocumentType } from "@/lib/types/ability.types";
 import type { Document, DocumentLevel } from "@/lib/types/document.types";
 import { getRevisionLabelFromVersionCount } from "@iso-docs/shared";
@@ -334,6 +337,26 @@ function DocumentDeletionControls({
   onDeleted,
 }: DocumentDeletionControlsProps) {
   const { status, loading, refetch } = useDeletionStatus(document.id);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [restoring, setRestoring] = useState(false);
+
+  const isDccOrAdmin = user?.roles?.some((r) => r === "dcc" || r === "admin") ?? false;
+  const isDeleted = document.status === "DELETED";
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      await deletionRequestApi.restoreDocument(document.id);
+      toast({ title: "Document restored successfully" });
+      onDeleted?.(document.id);
+    } catch (err) {
+      console.error("Restore failed", err);
+      toast({ title: "Failed to restore document", variant: "destructive" });
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   return (
     <>
@@ -359,6 +382,17 @@ function DocumentDeletionControls({
           onDeleted={() => onDeleted?.(document.id)}
         />
       </DeletionErrorBoundary>
+      {isDeleted && isDccOrAdmin && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRestore}
+          disabled={restoring}
+          className="ml-2 h-7 text-xs"
+        >
+          {restoring ? "Restoring..." : "Restore"}
+        </Button>
+      )}
     </>
   );
 }
