@@ -168,16 +168,48 @@ export class KpiAttachmentService {
       );
     }
 
+    // Auto-rename: nếu file trùng tên đã tồn tại trong folder, append _YYYYMMDD
+    // để tránh unique constraint violation (folder_id, file_name) ở DB
+    const effectiveFileName = fileName || file.originalname;
+    const normalizedEffectiveName = effectiveFileName.normalize("NFC");
+
+    const existingDoc = await (this.prisma as PrismaClientLike).document.findFirst({
+      where: {
+        folderId: targetFolderId,
+        fileName: normalizedEffectiveName,
+        status: "ACTIVE",
+      },
+      select: { id: true },
+    });
+
+    let finalFileName = fileName;
+    if (existingDoc) {
+      const ext = path.extname(normalizedEffectiveName);
+      const baseName = path.basename(normalizedEffectiveName, ext);
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      const dateSuffix = `${y}${m}${d}`;
+      const newFileName = `${baseName}_${dateSuffix}${ext}`;
+      finalFileName = newFileName;
+
+      this.logger.warn(
+        `KPI attachment filename conflict resolved: "${normalizedEffectiveName}" -> "${newFileName}" (folder: ${targetFolderId})`,
+      );
+    }
+
     // Store file using existing document pipeline on SMB-backed storage
     // Pass fileName từ body (UTF-8 thô) để tránh vấn đề encoding
     // Default to document level 1 for KPI uploads
+    // Dùng finalFileName đã qua auto-rename nếu conflict
     const document = await this.documentService.upload(
       targetFolderId,
       file,
       user.userId,
       record.title,
-      fileName,
-      defaultLevel.id
+      finalFileName,
+      defaultLevel.id,
     );
 
     // Month: default to current month when omitted; validate 1-12 when provided
