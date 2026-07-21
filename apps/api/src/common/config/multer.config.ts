@@ -21,7 +21,7 @@ export const multerConfig = {
     },
   }),
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB
+    fileSize: 500 * 1024 * 1024, // 500MB
   },
   fileFilter: (req: Request, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
     // Accept all files, validation happens in services
