@@ -215,9 +215,6 @@ model Document {
   // ISO document level (optional - required for ISO documents, null for client files)
   levelId String? @map("level_id")
 
-  // Composite unique constraint on folderId + fileName to prevent duplicates
-  @@unique([folderId, fileName], name: "document_folder_file_unique")
-
   // Business document number (No.) entered by user
   documentNo String? @map("document_no")
 
