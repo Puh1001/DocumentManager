@@ -180,6 +180,13 @@ export class DocumentSyncHandler {
           }
           return;
         }
+
+        // UUID-named file without a matching document is an orphaned current file
+        // on SMB (stale / previous-sync residue). Skip creation to avoid junk records.
+        this.logger.debug(
+          `Skipping orphan UUID file (no matching document): ${file.path}`
+        );
+        return;
       }
 
       // Document doesn't exist - create it
