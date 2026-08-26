@@ -24,6 +24,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { RejectDialog } from '@/components/dcc/reject-dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useFolderSync } from '@/hooks/use-folder-sync';
 import type { PageMetadata } from '@/lib/types/page-metadata';
 import { registerPage } from '@/lib/page-registry';
@@ -74,7 +75,6 @@ interface DeletionRequest {
 
 export default function DeletionRequestsPage() {
   const { toast } = useToast();
-  const [requests, setRequests] = useState<DeletionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
@@ -86,13 +86,15 @@ export default function DeletionRequestsPage() {
   );
   const [approving, setApproving] = useState(false);
   
-  // New state for tabs, search, and pagination
   const [type, setType] = useState<'ISO' | 'KPI'>('ISO');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [cache, setCache] = useState<Record<string, { requests: DeletionRequest[]; totalPages: number; totalCount: number }>>({});
+
+  // Calculate current cache key
+  const currentCacheKey = `${type}-${page}-${search}`;
+  const cachedData = cache[currentCacheKey];
 
   // Debounce search input
   useEffect(() => {
@@ -103,15 +105,27 @@ export default function DeletionRequestsPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const fetchRequests = useCallback(async () => {
+  const fetchRequests = useCallback(async (force = false) => {
+    // If we have cached data and not forcing a refresh, just return (no loading state needed)
+    if (!force && cache[`${type}-${page}-${search}`]) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await api.get<{ data: DeletionRequest[]; meta: { totalPages: number; total: number } }>(
         `/storage/deletion-requests?type=${type}&search=${encodeURIComponent(search)}&page=${page}&limit=10`,
       );
-      setRequests(response.data);
-      setTotalPages(response.meta.totalPages);
-      setTotalCount(response.meta.total);
+      
+      setCache((prev) => ({
+        ...prev,
+        [`${type}-${page}-${search}`]: {
+          requests: response.data,
+          totalPages: response.meta.totalPages,
+          totalCount: response.meta.total,
+        }
+      }));
     } catch (error: unknown) {
       const apiError = error as { message?: string; response?: { data?: { message?: string } } };
       toast({
@@ -125,11 +139,11 @@ export default function DeletionRequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, type, search, page]);
+  }, [toast, type, search, page, cache]);
 
   useEffect(() => {
     fetchRequests();
-  }, [fetchRequests]);
+  }, [fetchRequests]); // Re-run when these change
 
   // Listen to WebSocket events for real-time updates
   useFolderSync({
@@ -140,7 +154,7 @@ export default function DeletionRequestsPage() {
         event.type === 'deletion_request_rejected' ||
         event.type === 'deletion_request_approved'
       ) {
-        fetchRequests();
+        fetchRequests(true);
       }
     },
     enabled: true,
@@ -164,7 +178,7 @@ export default function DeletionRequestsPage() {
         description: 'Request approved and document deleted',
         variant: 'success',
       });
-      fetchRequests();
+      fetchRequests(true);
       setShowApproveConfirm(false);
       setApprovingRequestId(null);
     } catch (error: unknown) {
@@ -195,18 +209,12 @@ export default function DeletionRequestsPage() {
       description: 'Request rejected',
       variant: 'success',
     });
-    fetchRequests();
+    fetchRequests(true);
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12 text-muted-foreground">
-          Loading...
-        </div>
-      </div>
-    );
-  }
+  const currentRequests = cachedData?.requests || [];
+  const currentTotalPages = cachedData?.totalPages || 1;
+  const currentTotalCount = cachedData?.totalCount || 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -248,7 +256,11 @@ export default function DeletionRequestsPage() {
           </Tabs.Trigger>
         </Tabs.List>
 
-      {requests.length === 0 ? (
+      {loading && !cachedData ? (
+        <div className="py-12 flex justify-center text-muted-foreground">
+          <LoadingSpinner className="h-8 w-8" />
+        </div>
+      ) : currentRequests.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             No pending deletion requests
@@ -256,7 +268,7 @@ export default function DeletionRequestsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {requests.map((request) => (
+          {currentRequests.map((request) => (
             <Card key={request.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -351,7 +363,7 @@ export default function DeletionRequestsPage() {
         </div>
       )}
 
-      {totalPages > 1 && (
+      {currentTotalPages > 1 && (
         <div className="flex justify-end items-center space-x-4 mt-6">
           <Button
             variant="outline"
@@ -362,13 +374,13 @@ export default function DeletionRequestsPage() {
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages} ({totalCount} total)
+            Page {page} of {currentTotalPages} ({currentTotalCount} total)
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(currentTotalPages, p + 1))}
+            disabled={page === currentTotalPages}
           >
             Next
           </Button>

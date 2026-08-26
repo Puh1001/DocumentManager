@@ -19,7 +19,8 @@
     "client": "Client Files",
     "modules": "Modules",
     "module": "Modules",
-    "boss": "BPVN Management Board"
+    "boss": "BPVN Management Board",
+    "deletion_requests": "Deletion Requests"
   },
   "actions": {
     "view": "View",

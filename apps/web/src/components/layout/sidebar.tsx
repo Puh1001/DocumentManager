@@ -140,7 +140,12 @@ export function Sidebar() {
         const tryTranslate = (key: string) => {
           try {
             const translated = t(key);
-            if (translated && translated !== key && !translated.startsWith("navigation.")) {
+            if (
+              translated && 
+              translated !== key && 
+              !translated.startsWith("navigation.") &&
+              !translated.startsWith("common.navigation.")
+            ) {
               return translated;
             }
           } catch {

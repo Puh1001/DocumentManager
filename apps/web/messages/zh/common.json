@@ -19,7 +19,8 @@
     "client": "客户文件",
     "modules": "模块",
     "module": "模块",
-    "boss": "BPVN 管理看板"
+    "boss": "BPVN 管理看板",
+    "deletion_requests": "删除请求"
   },
   "actions": {
     "view": "查看",

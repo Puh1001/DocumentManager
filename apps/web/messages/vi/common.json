@@ -19,7 +19,8 @@
     "client": "Tài liệu khách hàng",
     "modules": "Module",
     "module": "Module",
-    "boss": "Ban quản trị BPVN"
+    "boss": "Ban quản trị BPVN",
+    "deletion_requests": "Yêu cầu xóa"
   },
   "actions": {
     "view": "Xem",
