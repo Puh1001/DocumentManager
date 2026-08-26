@@ -7,8 +7,9 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { DocumentDeletionService } from '../services/document-deletion.service';
 import { ReviewDeletionRequestDto } from '../dto/review-deletion-request.dto';
@@ -27,7 +28,13 @@ export class DeletionRequestController {
 
   @Get()
   @ApiOperation({ summary: 'List pending deletion requests (DCC only)' })
-  async listPending(@Request() req: AuthenticatedRequest) {
+  async listPending(
+    @Request() req: AuthenticatedRequest,
+    @Query('type') type?: 'ISO' | 'KPI' | 'ALL',
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     // Verify DCC role at controller level (defense in depth)
     // Note: UsersService.findById() already transforms roles to Array<{ name: string }>
     const user = await this.usersService.findById(req.user.id);
@@ -45,7 +52,12 @@ export class DeletionRequestController {
         'Only DCC members or admins can view deletion requests',
       );
     }
-    return this.deletionService.listPendingRequests();
+    return this.deletionService.listPendingRequests({
+      type,
+      search,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get('my-requests')

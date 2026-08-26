@@ -129,21 +129,36 @@ export function Sidebar() {
 
         // Try to use translation key for navigation label, fallback to page.name
         const moduleKey = page.module.toLowerCase();
-        const navKey = `navigation.${moduleKey}`;
+        const pathBasename = page.path.split('/').pop() || '';
+        
+        // Keys to try in order of preference
+        const specificKey = `navigation.${pathBasename.replace(/-/g, '_')}`;
+        const moduleNavKey = `navigation.${moduleKey}`;
+        
         let displayName = page.name;
-        try {
-          const translated = t(navKey);
-          // If translation exists and is not the key path itself, use it
-          // (next-intl returns the key path if translation is missing)
-          if (
-            translated &&
-            translated !== navKey &&
-            !translated.startsWith("navigation.")
-          ) {
-            displayName = translated;
+        
+        const tryTranslate = (key: string) => {
+          try {
+            const translated = t(key);
+            if (translated && translated !== key && !translated.startsWith("navigation.")) {
+              return translated;
+            }
+          } catch {
+            return null;
           }
-        } catch {
-          // Translation key doesn't exist, use page.name
+          return null;
+        };
+
+        const specificTranslation = tryTranslate(specificKey);
+        if (specificTranslation) {
+          displayName = specificTranslation;
+        } else {
+          const moduleTranslation = tryTranslate(moduleNavKey);
+          // Only use module translation if the path basename matches the module name (e.g. /dashboard/users and User module)
+          // This prevents pages like /dashboard/dcc/deletion-requests from being named "Document"
+          if (moduleTranslation && (pathBasename.includes(moduleKey) || moduleKey.includes(pathBasename) || pathBasename === '')) {
+            displayName = moduleTranslation;
+          }
         }
 
         return {

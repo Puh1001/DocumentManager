@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import {
   CheckCircle,
   XCircle,
@@ -27,10 +28,11 @@ import { useFolderSync } from '@/hooks/use-folder-sync';
 import type { PageMetadata } from '@/lib/types/page-metadata';
 import { registerPage } from '@/lib/page-registry';
 import { fixFileNameEncoding } from '@/lib/utils/encoding-fix';
+import * as Tabs from '@radix-ui/react-tabs';
 
 export const pageMetadata: PageMetadata = {
   path: '/dashboard/dcc/deletion-requests',
-  name: 'Deletion Requests',
+  name: 'Deletion Request',
   module: 'Document',
   action: 'manage',
   icon: 'FileCheck',
@@ -83,14 +85,33 @@ export default function DeletionRequestsPage() {
     null,
   );
   const [approving, setApproving] = useState(false);
+  
+  // New state for tabs, search, and pagination
+  const [type, setType] = useState<'ISO' | 'KPI'>('ISO');
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1); // Reset to page 1 on search change
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get<DeletionRequest[]>(
-        '/storage/deletion-requests',
+      const response = await api.get<{ data: DeletionRequest[]; meta: { totalPages: number; total: number } }>(
+        `/storage/deletion-requests?type=${type}&search=${encodeURIComponent(search)}&page=${page}&limit=10`,
       );
-      setRequests(response);
+      setRequests(response.data);
+      setTotalPages(response.meta.totalPages);
+      setTotalCount(response.meta.total);
     } catch (error: unknown) {
       const apiError = error as { message?: string; response?: { data?: { message?: string } } };
       toast({
@@ -104,7 +125,7 @@ export default function DeletionRequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, type, search, page]);
 
   useEffect(() => {
     fetchRequests();
@@ -189,12 +210,43 @@ export default function DeletionRequestsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Deletion Requests</h1>
-        <p className="text-muted-foreground mt-2">
-          Review and approve/reject document deletion requests
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Deletion Requests</h1>
+          <p className="text-muted-foreground mt-2">
+            Review and approve/reject document deletion requests
+          </p>
+        </div>
+        <div className="w-full sm:w-72">
+          <Input
+            placeholder="Search by file or requester..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
       </div>
+
+      <Tabs.Root
+        value={type}
+        onValueChange={(v) => {
+          setType(v as 'ISO' | 'KPI');
+          setPage(1);
+        }}
+      >
+        <Tabs.List className="flex space-x-4 border-b mb-6">
+          <Tabs.Trigger
+            value="ISO"
+            className="px-4 py-2 border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground border-transparent font-medium transition-all"
+          >
+            ISO Documents
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            value="KPI"
+            className="px-4 py-2 border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground text-muted-foreground border-transparent font-medium transition-all"
+          >
+            KPI Attachments
+          </Tabs.Trigger>
+        </Tabs.List>
 
       {requests.length === 0 ? (
         <Card>
@@ -298,6 +350,31 @@ export default function DeletionRequestsPage() {
           ))}
         </div>
       )}
+
+      {totalPages > 1 && (
+        <div className="flex justify-end items-center space-x-4 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages} ({totalCount} total)
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+      </Tabs.Root>
 
       {selectedRequestId && (
         <RejectDialog

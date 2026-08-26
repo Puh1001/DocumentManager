@@ -19,6 +19,7 @@ import {
 } from "./user-department.resolver";
 import { Express } from "express";
 import * as path from "path";
+import { OnEvent } from "@nestjs/event-emitter";
 
 /** Used until Prisma client is regenerated (schema has month); safe at runtime after migration. */
 type KpiAttachmentCreateWithMonth = {
@@ -963,5 +964,74 @@ export class KpiAttachmentService {
         "Access denied: KPI attachment belongs to a department you're not assigned to"
       );
     }
+  }
+
+  @OnEvent("document.deleted")
+  async handleDocumentDeletedEvent(payload: {
+    documentId: string;
+    userId: string;
+    deletionMethod: string;
+  }) {
+    if (payload.deletionMethod !== "dcc-approved") return;
+
+    // Check if this document is a KPI attachment
+    const attachment = await (
+      this.prisma as PrismaClientLike
+    ).kpiAttachment.findFirst({
+      where: { documentId: payload.documentId },
+    });
+
+    if (!attachment) return;
+
+    this.logger.log(
+      `Handling DCC approved deletion for KPI attachment ${attachment.id}`
+    );
+
+    // Use transaction for atomic operations: delete attachment + status revert + audit log
+    await (this.prisma as PrismaClientLike).$transaction(async (tx) => {
+      // Delete the attachment record
+      await tx.kpiAttachment.delete({
+        where: { id: attachment.id },
+      });
+
+      // Check remaining attachments for this KPI record
+      const remainingCount = await tx.kpiAttachment.count({
+        where: { kpiRecordId: attachment.kpiRecordId },
+      });
+
+      // If no attachments remain and status is COMPLETED, revert to PENDING
+      if (remainingCount === 0) {
+        const kpiRecord = await tx.kpiRecord.findUnique({
+          where: { id: attachment.kpiRecordId },
+          select: { status: true },
+        });
+
+        if (kpiRecord?.status === KpiStatus.COMPLETED) {
+          await tx.kpiRecord.update({
+            where: { id: attachment.kpiRecordId },
+            data: { status: KpiStatus.PENDING },
+          });
+
+          this.logger.log(
+            `Auto-reverted KPI record ${attachment.kpiRecordId} status to PENDING after DCC approved deletion`
+          );
+        }
+      }
+
+      // Audit log within transaction
+      await tx.auditLog.create({
+        data: {
+          userId: payload.userId,
+          action: "DELETE",
+          resourceType: "KpiAttachment",
+          resourceId: attachment.id,
+          details: {
+            kpiRecordId: attachment.kpiRecordId,
+            documentId: attachment.documentId,
+            deletionMethod: payload.deletionMethod,
+          },
+        },
+      });
+    });
   }
 }

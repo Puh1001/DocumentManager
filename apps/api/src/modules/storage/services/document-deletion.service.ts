@@ -14,6 +14,7 @@ import { UsersService } from "@/modules/users/users.service";
 import { FolderSyncGateway } from "../gateways/folder-sync.gateway";
 import { StoragePathBuilder } from "../utils/storage-path.util";
 import { Folder } from "@prisma/client";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import * as path from "path";
 
 // Type definitions for Prisma includes
@@ -50,7 +51,8 @@ export class DocumentDeletionService {
     private readonly folderService: FolderService,
     private readonly smbService: SmbService,
     private readonly usersService: UsersService,
-    private readonly folderSyncGateway: FolderSyncGateway
+    private readonly folderSyncGateway: FolderSyncGateway,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   async checkDeletionStatus(
@@ -336,6 +338,13 @@ export class DocumentDeletionService {
           userId,
           `DCC approved deletion request: ${request.reason}`
         );
+        
+        // Emit event for other modules (e.g., KPI) to clean up related records
+        this.eventEmitter.emit("document.deleted", {
+          documentId: request.documentId,
+          userId,
+          deletionMethod: "dcc-approved",
+        });
       }
       // document_deleted event is already broadcast by executeDelete/replaceDocumentWithReplacement
     } else {
@@ -376,18 +385,58 @@ export class DocumentDeletionService {
     return updatedRequest;
   }
 
-  async listPendingRequests() {
-    return (this.prisma as PrismaClientLike).deletionRequest.findMany({
-      where: { status: "PENDING" },
-      include: {
-        document: {
-          include: { folder: true },
+  async listPendingRequests(options?: {
+    type?: "ISO" | "KPI" | "ALL";
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { type = "ALL", search = "", page = 1, limit = 10 } = options || {};
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = { status: "PENDING" };
+
+    if (type === "KPI") {
+      where.document = { ...where.document, kpiAttachments: { some: {} } };
+    } else if (type === "ISO") {
+      where.document = { ...where.document, kpiAttachments: { none: {} } };
+    }
+
+    if (search.trim()) {
+      where.OR = [
+        { document: { name: { contains: search.trim() } } },
+        { document: { fileName: { contains: search.trim() } } },
+        { requester: { fullName: { contains: search.trim() } } },
+      ];
+    }
+
+    const [total, data] = await Promise.all([
+      (this.prisma as PrismaClientLike).deletionRequest.count({ where }),
+      (this.prisma as PrismaClientLike).deletionRequest.findMany({
+        where,
+        include: {
+          document: {
+            include: { folder: true },
+          },
+          requester: true,
+          replacementFile: true,
         },
-        requester: true,
-        replacementFile: true,
+        orderBy: { requestedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { requestedAt: "asc" },
-    });
+    };
   }
 
   async getRequestById(requestId: string) {

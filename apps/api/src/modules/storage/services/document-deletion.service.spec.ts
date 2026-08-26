@@ -539,14 +539,16 @@ describe("DocumentDeletionService", () => {
         },
       ];
 
+      (prismaService.deletionRequest.count as jest.Mock).mockResolvedValue(1);
       (prismaService.deletionRequest.findMany as jest.Mock).mockResolvedValue(
         requests
       );
 
       const result = await service.listPendingRequests();
 
-      expect(result).toHaveLength(1);
-      expect(result[0].status).toBe("PENDING");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].status).toBe("PENDING");
+      expect(result.meta.total).toBe(1);
       expect(prismaService.deletionRequest.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { status: "PENDING" },

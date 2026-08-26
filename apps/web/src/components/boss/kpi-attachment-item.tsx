@@ -38,15 +38,16 @@ export function KpiAttachmentItem({
   // Check deletion status to determine if delete button should be visible
   const { status: deletionStatus } = useKpiAttachmentDeletionStatus(attachment.id);
   
-  // Determine if delete button should be visible
-  // Button should only be visible if:
-  // 1. User has permission (canDelete prop)
   // 2. Backend says user can delete and file is not expired
-  const canShowDeleteButton = canDelete && 
-    onAttachmentDelete && 
-    deletionStatus && 
-    deletionStatus.canDelete && 
-    !deletionStatus.isExpired;
+  // 3. OR file is expired and user can submit a deletion request
+  const canShowDeleteButton = Boolean(
+    canDelete &&
+    deletionStatus &&
+    (
+      (deletionStatus.canDelete && !deletionStatus.isExpired && onAttachmentDelete) ||
+      (deletionStatus.isExpired && !deletionStatus.hasActiveRequest && onDeletionRequest)
+    )
+  );
 
   const containerClass =
     variant === 'cyber'
