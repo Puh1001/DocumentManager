@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { getErrorMessage } from "@/lib/error-handler";
-import { FileText, Lock, User } from "lucide-react";
+import { Lock, User } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -65,9 +66,14 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md mx-4 relative bg-white/95 backdrop-blur shadow-2xl border-0">
         <CardHeader className="space-y-4 text-center pb-2">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <FileText className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <Image
+            src="/icon.png"
+            alt="ISO Docs"
+            width={64}
+            height={64}
+            className="mx-auto rounded-2xl shadow-lg"
+            priority
+          />
           <div>
             <CardTitle className="text-2xl font-bold tracking-tight">
               {tAuth("title")}

@@ -15,6 +15,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Actions, Subjects } from "@/lib/types/ability.types";
 import { isValidSubject } from "@/lib/utils/subject-validation";
 import { LayoutDashboard, FileText, Settings } from "lucide-react";
+import Image from "next/image";
 
 interface NavigationItem {
   name: string;
@@ -167,9 +168,14 @@ export function Sidebar() {
       <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r bg-background px-6 pb-4">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <Image
+            src="/icon.png"
+            alt="ISO Docs"
+            width={40}
+            height={40}
+            className="rounded-xl"
+            priority
+          />
           <div>
             <span className="font-bold text-lg">{t("app.name")}</span>
             <span className="block text-xs text-muted-foreground">

@@ -4,6 +4,10 @@ import { routing } from "../../i18n/routing";
 
 export const metadata: Metadata = {
   title: "ISO Document Manager",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
   description: "Hệ thống quản lý tài liệu ISO",
 };
 
