@@ -30,6 +30,7 @@ import type { PageMetadata } from '@/lib/types/page-metadata';
 import { registerPage } from '@/lib/page-registry';
 import { fixFileNameEncoding } from '@/lib/utils/encoding-fix';
 import * as Tabs from '@radix-ui/react-tabs';
+import { useParams } from 'next/navigation';
 
 export const pageMetadata: PageMetadata = {
   path: '/dashboard/dcc/deletion-requests',
@@ -74,6 +75,8 @@ interface DeletionRequest {
 }
 
 export default function DeletionRequestsPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -324,7 +327,9 @@ export default function DeletionRequestsPage() {
                         </span>
                       </div>
                       <a
-                        href={`/documents/${request.replacementFile.id}`}
+                        href={`/${locale}/dashboard/documents/${request.replacementFile.id}/view`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-sm text-primary hover:underline pl-6"
                       >
                         {request.replacementFile.name}
