@@ -492,11 +492,34 @@ export class DocumentService {
     const sourceFileName = fileName || file.originalname;
     const normalizedFileName = sourceFileName.normalize("NFC");
     const fileType = path.extname(normalizedFileName).slice(1).toLowerCase();
-    const documentName =
+    const originalDocumentName =
       name ||
       path
         .basename(normalizedFileName, path.extname(normalizedFileName))
         .normalize("NFC");
+    
+    // Deduplicate file name in the target folder
+    let finalFileName = normalizedFileName;
+    let finalDocumentName = originalDocumentName;
+    let counter = 1;
+    while (true) {
+      const existing = await (this.prisma as PrismaClientLike).document.findUnique({
+        where: {
+          document_folder_file_unique: {
+            folderId,
+            fileName: finalFileName,
+          },
+        },
+      });
+      if (!existing) break;
+
+      const ext = path.extname(normalizedFileName);
+      const baseFileName = path.basename(normalizedFileName, ext);
+      finalFileName = `${baseFileName} (${counter})${ext}`;
+      finalDocumentName = `${originalDocumentName} (${counter})`;
+      counter++;
+    }
+
     const checksum = crypto
       .createHash("sha256")
       .update(file.buffer)
@@ -542,8 +565,8 @@ export class DocumentService {
     // Use normalized fileName and documentName for database storage
     const document = await (this.prisma as PrismaClientLike).document.create({
       data: {
-        name: documentName, // Already normalized above
-        fileName: normalizedFileName, // Normalized to NFC
+        name: finalDocumentName, // Already normalized above
+        fileName: finalFileName, // Normalized to NFC
         fileType,
         mimeType,
         fileSize: file.size,

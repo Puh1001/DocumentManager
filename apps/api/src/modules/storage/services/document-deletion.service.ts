@@ -634,12 +634,27 @@ export class DocumentDeletionService {
           },
         });
 
+        // If the replacement file was auto-deduplicated (e.g. "file (1).pdf"), revert it to the original name
+        // because the user wants the file name to stay exactly the same.
+        let finalNameToSet = replacementDocument.name;
+        let finalFileNameToSet = replacementDocument.fileName;
+        
+        const ext = path.extname(oldDocument.fileName);
+        const baseFileName = path.basename(oldDocument.fileName, ext);
+        // Match "baseFileName (x).ext"
+        const deduplicatedPattern = new RegExp(`^${baseFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\(\\d+\\)${ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+        
+        if (deduplicatedPattern.test(replacementDocument.fileName)) {
+          finalNameToSet = oldDocument.name;
+          finalFileNameToSet = oldDocument.fileName;
+        }
+
         // Second: Update old document record with replacement file's metadata
         await (tx as PrismaClientLike).document.update({
           where: { id: oldDocumentId },
           data: {
-            name: replacementDocument.name,
-            fileName: replacementDocument.fileName,
+            name: finalNameToSet,
+            fileName: finalFileNameToSet,
             fileType: replacementDocument.fileType,
             mimeType: replacementDocument.mimeType,
             fileSize: replacementDocument.fileSize,
