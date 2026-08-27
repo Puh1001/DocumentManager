@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,14 +12,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { kpiAttachmentApi } from '@/lib/api';
+import { api, kpiAttachmentApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { fixFileNameEncoding } from '@/lib/utils/encoding-fix';
+import { Upload, X } from 'lucide-react';
 
 interface KpiAttachmentDeletionRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   attachmentId: string;
+  documentId: string;
   fileName: string;
   onSubmitted?: () => void;
 }
@@ -28,6 +30,7 @@ export function KpiAttachmentDeletionRequestDialog({
   open,
   onOpenChange,
   attachmentId,
+  documentId,
   fileName,
   onSubmitted,
 }: KpiAttachmentDeletionRequestDialogProps) {
@@ -36,7 +39,120 @@ export function KpiAttachmentDeletionRequestDialog({
   const [replacementFileId, setReplacementFileId] = useState<string | null>(
     null,
   );
+  const [replacementFile, setReplacementFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [levelId, setLevelId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch document info to get folderId and levelId when dialog opens
+  useEffect(() => {
+    if (open && documentId) {
+      api
+        .get<{
+          folderId: string;
+          levelId: string;
+        }>(`/storage/documents/${documentId}`)
+        .then((doc) => {
+          setFolderId(doc.folderId);
+          setLevelId(doc.levelId);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch document info:', error);
+        });
+    }
+  }, [open, documentId]);
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setReason('');
+      setReplacementFileId(null);
+      setReplacementFile(null);
+      setFolderId(null);
+      setLevelId(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [open]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // KPI attachments must be PDF
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast({
+        title: 'Error',
+        description: 'Only PDF files are allowed for KPI attachments',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    if (!folderId) {
+      toast({
+        title: 'Error',
+        description: 'Please wait for document information to load',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const uploadData: Record<string, string> = {
+        folderId,
+      };
+      if (levelId) {
+        uploadData.levelId = levelId;
+      }
+
+      const uploadedDoc = await api.upload<{ id: string }>(
+        '/storage/documents/upload',
+        file,
+        uploadData,
+      );
+      setReplacementFileId(uploadedDoc.id);
+      setReplacementFile(file);
+      toast({
+        title: 'Success',
+        description: 'Replacement file uploaded successfully',
+        variant: 'default',
+      });
+    } catch (error: unknown) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { message?: string } };
+      };
+      toast({
+        title: 'Error',
+        description:
+          apiError.response?.data?.message ||
+          apiError.message ||
+          'Failed to upload replacement file',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setReplacementFile(null);
+    setReplacementFileId(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -67,10 +183,6 @@ export function KpiAttachmentDeletionRequestDialog({
 
       onSubmitted?.();
       onOpenChange(false);
-
-      // Reset form
-      setReason('');
-      setReplacementFileId(null);
 
       toast({
         title: 'Success',
@@ -131,16 +243,57 @@ export function KpiAttachmentDeletionRequestDialog({
               Replacement file (optional)
             </Label>
             <p className="text-xs text-muted-foreground">
-              If you have a replacement file, upload it first and provide its
-              ID here. This feature will be enhanced in a future update.
+              Upload a replacement PDF file if you have one. When DCC approves, the
+              new file will replace the old one. If rejected, the new file will
+              be deleted.
             </p>
-            <input
-              type="text"
-              placeholder="Replacement file ID (optional)"
-              value={replacementFileId || ''}
-              onChange={(e) => setReplacementFileId(e.target.value || null)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            />
+            {replacementFile ? (
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-muted">
+                <span className="text-sm flex-1 truncate">
+                  {replacementFile.name}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveFile}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileSelect}
+                  disabled={uploadingFile || !folderId}
+                  className="hidden"
+                  id="kpi-replacement-file-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  disabled={uploadingFile || !folderId}
+                >
+                  <label
+                    htmlFor="kpi-replacement-file-upload"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>
+                      {uploadingFile
+                        ? 'Uploading...'
+                        : 'Upload replacement file'}
+                    </span>
+                  </label>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 

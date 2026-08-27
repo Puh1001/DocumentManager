@@ -89,6 +89,7 @@ export function KpiAttachmentList({
           open={deletionRequestDialogOpen}
           onOpenChange={setDeletionRequestDialogOpen}
           attachmentId={selectedAttachment.id}
+          documentId={selectedAttachment.documentId}
           fileName={selectedAttachment.fileName}
           onSubmitted={() => {
             // Refresh deletion status after request submitted
