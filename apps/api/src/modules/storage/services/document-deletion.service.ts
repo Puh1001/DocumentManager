@@ -623,7 +623,18 @@ export class DocumentDeletionService {
     // Step 3: Update database in transaction
     try {
       await this.prisma.$transaction(async (tx) => {
-        // Update old document record with replacement file's metadata
+        // First: Delete replacement document record (file has been moved, record no longer needed in this folder)
+        // This frees up the fileName in the current folder, avoiding unique constraint conflicts
+        await (tx as PrismaClientLike).document.update({
+          where: { id: replacementDocumentId },
+          data: {
+            folderId: deleteFolder.id,
+            filePath: deletedFilePath,
+            status: "DELETED",
+          },
+        });
+
+        // Second: Update old document record with replacement file's metadata
         await (tx as PrismaClientLike).document.update({
           where: { id: oldDocumentId },
           data: {
@@ -640,16 +651,6 @@ export class DocumentDeletionService {
             uploadedBy: replacementDocument.uploadedBy,
             uploadedAt: replacementDocument.uploadedAt,
             deletionExpiresAt: replacementDocument.deletionExpiresAt,
-          },
-        });
-
-        // Delete replacement document record (file has been moved, record no longer needed)
-        await (tx as PrismaClientLike).document.update({
-          where: { id: replacementDocumentId },
-          data: {
-            folderId: deleteFolder.id,
-            filePath: deletedFilePath,
-            status: "DELETED",
           },
         });
 
