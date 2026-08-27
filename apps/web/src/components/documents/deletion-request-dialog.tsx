@@ -52,10 +52,18 @@ export function DeletionRequestDialog({
     revisionLabel?: string | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replacementFileIdRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    replacementFileIdRef.current = replacementFileId;
+  }, [replacementFileId]);
 
   // Fetch document info to get upload metadata when dialog opens
   useEffect(() => {
     if (open && documentId) {
+      submittedRef.current = false;
       api
         .get<{
           folderId: string;
@@ -91,15 +99,24 @@ export function DeletionRequestDialog({
     }
   }, [open, documentId]);
 
-  // Reset form when dialog closes
+  // Cleanup orphaned replacement file when dialog closes without submitting
   useEffect(() => {
     if (!open) {
+      const orphanedFileId = replacementFileIdRef.current;
+      if (orphanedFileId && !submittedRef.current) {
+        // Delete the orphaned replacement file from server
+        api.delete(`/storage/documents/${orphanedFileId}`).catch((err) => {
+          console.warn('Failed to cleanup orphaned replacement file:', err);
+        });
+      }
+      
       setReason('');
       setReplacementFileId(null);
       setReplacementFile(null);
       setFolderId(null);
       setLevelId(null);
       setIsoMetadata(null);
+      replacementFileIdRef.current = null;
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -188,6 +205,11 @@ export function DeletionRequestDialog({
   };
 
   const handleRemoveFile = () => {
+    if (replacementFileId) {
+      api.delete(`/storage/documents/${replacementFileId}`).catch((err) => {
+        console.warn('Failed to delete replacement file:', err);
+      });
+    }
     setReplacementFile(null);
     setReplacementFileId(null);
     if (fileInputRef.current) {
@@ -221,6 +243,7 @@ export function DeletionRequestDialog({
         replacementFileId: replacementFileId || undefined,
       });
 
+      submittedRef.current = true;
       onSubmitted?.();
       onOpenChange(false);
     } catch (error: unknown) {
@@ -240,7 +263,10 @@ export function DeletionRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Request Document Deletion</DialogTitle>
           <DialogDescription>

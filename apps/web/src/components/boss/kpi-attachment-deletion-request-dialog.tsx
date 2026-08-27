@@ -45,10 +45,18 @@ export function KpiAttachmentDeletionRequestDialog({
   const [folderId, setFolderId] = useState<string | null>(null);
   const [levelId, setLevelId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replacementFileIdRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    replacementFileIdRef.current = replacementFileId;
+  }, [replacementFileId]);
 
   // Fetch document info to get folderId and levelId when dialog opens
   useEffect(() => {
     if (open && documentId) {
+      submittedRef.current = false;
       api
         .get<{
           folderId: string;
@@ -64,14 +72,23 @@ export function KpiAttachmentDeletionRequestDialog({
     }
   }, [open, documentId]);
 
-  // Reset form when dialog closes
+  // Cleanup orphaned replacement file when dialog closes without submitting
   useEffect(() => {
     if (!open) {
+      const orphanedFileId = replacementFileIdRef.current;
+      if (orphanedFileId && !submittedRef.current) {
+        // Delete the orphaned replacement file from server
+        api.delete(`/storage/documents/${orphanedFileId}`).catch((err) => {
+          console.warn('Failed to cleanup orphaned replacement file:', err);
+        });
+      }
+      // Reset form
       setReason('');
       setReplacementFileId(null);
       setReplacementFile(null);
       setFolderId(null);
       setLevelId(null);
+      replacementFileIdRef.current = null;
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -147,6 +164,11 @@ export function KpiAttachmentDeletionRequestDialog({
   };
 
   const handleRemoveFile = () => {
+    if (replacementFileId) {
+      api.delete(`/storage/documents/${replacementFileId}`).catch((err) => {
+        console.warn('Failed to delete replacement file:', err);
+      });
+    }
     setReplacementFile(null);
     setReplacementFileId(null);
     if (fileInputRef.current) {
@@ -181,6 +203,7 @@ export function KpiAttachmentDeletionRequestDialog({
         replacementFileId || undefined,
       );
 
+      submittedRef.current = true;
       onSubmitted?.();
       onOpenChange(false);
 
@@ -205,7 +228,10 @@ export function KpiAttachmentDeletionRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Request KPI Attachment Deletion</DialogTitle>
           <DialogDescription>
